@@ -2,7 +2,7 @@
 <!--- BADGES: START --->
 [![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](TODO)
 [![Arxiv](https://img.shields.io/badge/TODO)][#arxiv-paper-package]
-[![Documentation Status](TODO)][#docs-package]
+[![Documentation Status](https://readthedocs.org/projects/lotus-ai/badge/?version=latest)](https://lotus-ai.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Python Version](TODO)][#pypi-package]
 [![PyPI](TODO)][#pypi-package]
 [![GitHub license](https://img.shields.io/badge/License-MIT-blu.svg)][#license-gh-package]
