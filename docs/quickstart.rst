@@ -42,6 +42,8 @@ Examples
 Let's walk through some use cases of LOTUS.
 First let's configure LOTUS to use GPT-3.5-Turbo for the LLM and E5 as the embedding model.
 Then let's define a dataset of courses and their descriptions/workloads.
+Next let's use LOTUS to filter for machine learning courses and then summarize how to succeed in them.
+This can be achieved by applying a semantic filter followed by a semantic aggregation.
 
 .. code-block:: python
 
@@ -77,15 +79,11 @@ Then let's define a dataset of courses and their descriptions/workloads.
     ]
     df = pd.DataFrame(data, columns=["Course Name", "Description"])
 
-Now let's use LOTUS to filter for machine learning courses and then summarize how to succeed in them.
-This can be achieved by applying a semantic filter followed by a semantic aggregation.
-
-.. code-block:: python
-
+    # Applies semantic filter followed by semantic aggregation
     ml_df = df.sem_filter("{Description} indicates that the class is relevant for machine learning.")
     tips = ml_df.sem_agg(
         "Given each {Course Name} and its {Description}, give me a study plan to succeed in my classes."
-    )
+    )._output[0]
 
 
 If we wanted the challenge of taking courses with a high workload, we can also use the semantic top k operator to get the top 2 courses with the highest workload.

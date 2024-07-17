@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 
+import torch
 from sentence_transformers import CrossEncoder
 
 from lotus.models.reranker import Reranker
@@ -16,9 +17,11 @@ class CrossEncoderModel(Reranker):
     def __init__(
         self,
         model: str = "mixedbread-ai/mxbai-rerank-large-v1",
-        device: str = "cuda",
+        device: Optional[str] = None,
         **kwargs,
     ):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.model = CrossEncoder(model, device=device, **kwargs)
 

@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -14,7 +14,9 @@ from lotus.models.rm import RM
 class E5Model(RM):
     """E5 retriever model"""
 
-    def __init__(self, model: str = "intfloat/e5-base-v2", device: str = "cuda", **kwargs):
+    def __init__(self, model: str = "intfloat/e5-base-v2", device: Optional[str] = None, **kwargs):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.model = AutoModel.from_pretrained(model).to(self.device)
