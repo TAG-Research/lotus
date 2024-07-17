@@ -1,6 +1,6 @@
 # LOTUS:  Enabling Semantic Queries
 <!--- BADGES: START --->
-[![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/16nw3AsmfNxU_wbD2HRZJTz8Ni881ZFLm?usp=sharing)
+[![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing)
 [![Arxiv](https://img.shields.io/badge/TODO)][#arxiv-paper-package]
 [![Documentation Status](https://readthedocs.org/projects/lotus-ai/badge/?version=latest)](https://lotus-ai.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Python Version](TODO)][#pypi-package]
@@ -18,7 +18,7 @@ Easily build knowledge-intensive LLM applications that reason over your data wit
 
 LOTUS provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators** to extend the relational model with a set of modular language-based operators. Programmers can easily compose semantic operators along with traditional data operations to build state-of-the-art AI systems that reason over vast knowledge corpora.
 
-Below are just a few semantic operators provided by LOTUS. For more details, check out the full documentation [documentation](), or [colab tutorial](https://colab.research.google.com/drive/16nw3AsmfNxU_wbD2HRZJTz8Ni881ZFLm?usp=sharing)
+Below are just a few semantic operators provided by LOTUS. For more details, check out the full documentation [documentation](), or [colab tutorial](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing)
 
 | Operator   | Description                                     |
 |------------|-------------------------------------------------|
