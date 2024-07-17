@@ -6,7 +6,7 @@
 LOTUS: Querying with LLMs Over Tables of Unstructured and Structured Data
 =================================================================================
 
-Lotus is a programming model and optimized query engine for serving reasoning-based query pipelines your data with LLMs.
+Lotus is a programming model and optimized query engine for serving reasoning-based query pipelines over your data with LLMs.
 
 .. toctree::
    :hidden:
