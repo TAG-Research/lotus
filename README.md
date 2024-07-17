@@ -1,7 +1,7 @@
 # LOTUS:  Enabling Semantic Queries
 <!--- BADGES: START --->
 [![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing)
-[![Arxiv](https://img.shields.io/badge/TODO)][#arxiv-paper-package]
+[![Arxiv](https://img.shields.io/badge/arXiv-2407.11418-B31B1B.svg)][#arxiv-paper-package]
 [![Documentation Status](https://readthedocs.org/projects/lotus-ai/badge/?version=latest)](https://lotus-ai.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lotus-ai)][#pypi-package]
 [![PyPI](https://img.shields.io/pypi/v/lotus-ai)][#pypi-package]
@@ -72,11 +72,13 @@ print(res)
 # Citation
 If you use LOTUS in a research paper, please cite this work as follows:
 ```bibtex
-@article{patel_lotus_2024,
-  title={LOTUS: Enabling Semantic Queries with LLMs Over Tables of Unstructured and Structured Data},
-  author={Patel, Liana and Jha, Siddharth and Guestrin, Carlos and Zaharia, Matei},
-  journal={arXiv preprint XX},
-  year={2024}
+@misc{patel2024lotusenablingsemanticqueries,
+      title={LOTUS: Enabling Semantic Queries with LLMs Over Tables of Unstructured and Structured Data},
+      author={Liana Patel and Siddharth Jha and Carlos Guestrin and Matei Zaharia},
+      year={2024},
+      eprint={2407.11418},
+      archivePrefix={arXiv},
+      primaryClass={cs.DB},
+      url={https://arxiv.org/abs/2407.11418},
 }
-
 ```
