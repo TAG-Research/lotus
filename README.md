@@ -8,10 +8,8 @@
 [![GitHub license](https://img.shields.io/badge/License-MIT-blu.svg)][#license-gh-package]
 
 [#license-gh-package]: https://lbesson.mit-license.org/
-[#arxiv-paper-package]: TODO
-[#docs-package]:TODO
-[#pypi-package]: TODO
-[#conda-forge-package]: TODO
+[#arxiv-paper-package]: https://arxiv.org/abs/2407.11418
+[#pypi-package]: https://pypi.org/project/lotus-ai/
 <!--- BADGES: END --->
 
 Easily build knowledge-intensive LLM applications that reason over your data with LOTUS!
