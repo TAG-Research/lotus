@@ -63,7 +63,7 @@ courses_df = pd.DataFrame(courses_data)
 skills_df = pd.DataFrame(skills_data)
 
 # lotus sem join 
-res = courses_df.sem_join(skills_df, "Taking {Course Name:left} will help me learn {Skill:right}")
+res = courses_df.sem_join(skills_df, "Taking {Course Name} will help me learn {Skill}")
 print(res)
 ```
 
