@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List
 
 import pandas as pd
 
@@ -11,7 +11,6 @@ def sem_agg(
     model: lotus.models.LM,
     user_instruction: str,
     partition_ids: List[int],
-    **kwargs: Dict[str, Any],
 ) -> str:
     """
     Aggregates multiple documents into a single answer using a model.
@@ -21,7 +20,6 @@ def sem_agg(
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for aggregation.
         partition_ids (List[int]): The partition ids for the documents. Documents with the same partition id will be aggregated together.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         str: The aggregated answer.
@@ -82,10 +80,9 @@ def sem_agg(
             formatted_doc = doc_formatter(tree_level, docs[idx], doc_ctr)
             new_tokens = model.count_tokens(formatted_doc)
 
-            if (
-                new_tokens + context_tokens + template_tokens
-                > lotus.settings.max_ctx_len - lotus.settings.get_max_tokens()
-            ) or (partition_id != cur_partition_id and not do_fold):
+            if (new_tokens + context_tokens + template_tokens > model.max_ctx_len - model.max_tokens) or (
+                partition_id != cur_partition_id and not do_fold
+            ):
                 # close the current prompt
 
                 prompt = template.replace("{{docs_str}}", context_str)
@@ -110,7 +107,7 @@ def sem_agg(
             lotus.logger.debug(f"Prompt added to batch: {prompt}")
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
-        summaries = model(batch, **kwargs)
+        summaries = model(batch)
         partition_ids = new_partition_ids
         new_partition_ids = []
 
@@ -136,6 +133,7 @@ class SemAggDataframe:
     def __call__(
         self,
         user_instruction: str,
+        all_cols: bool = False,
         suffix: str = "_output",
     ) -> pd.DataFrame:
         """
@@ -143,15 +141,19 @@ class SemAggDataframe:
 
         Args:
             user_instruction (str): The user instruction for aggregation.
+            all_cols (bool): Whether to use all columns in the dataframe. Defaults to False.
             suffix (Optional[str]): The suffix for the new column. Defaults to "_output".
 
         Returns:
             pd.DataFrame: The dataframe with the aggregated answer.
         """
 
-        lotus.logger.debug(user_instruction)
-        col_li = lotus.nl_expression.parse_cols(user_instruction)
-        lotus.logger.debug(col_li)
+        lotus.logger.debug(f"User instruction: {user_instruction}")
+        if all_cols:
+            col_li = list(self._obj.columns)
+        else:
+            col_li = lotus.nl_expression.parse_cols(user_instruction)
+        lotus.logger.debug(f"Columns: {col_li}")
 
         # check that column exists
         for column in col_li:
@@ -166,15 +168,15 @@ class SemAggDataframe:
             partition_ids = [0] * len(self._obj)
 
         df_txt = task_instructions.df2text(self._obj, col_li)
-        lotus.logger.debug(df_txt)
+        lotus.logger.debug(f"df_txt: {df_txt}")
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
+        lotus.logger.debug(f"formatted_usr_instr: {formatted_usr_instr}")
 
         answer = sem_agg(
             df_txt,
             lotus.settings.lm,
             formatted_usr_instr,
             partition_ids,
-            **lotus.settings.model_params,
         )
 
         # package answer in a dataframe

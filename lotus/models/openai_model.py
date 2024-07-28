@@ -8,8 +8,8 @@ import tiktoken
 from openai import OpenAI
 from transformers import AutoTokenizer
 
+import lotus
 from lotus.models.lm import LM
-from lotus.settings import settings
 
 # Mapping from Databricks model names to their Hugging Face model names for tokenizers
 DBRX_NAME_TO_MODEL = {
@@ -37,7 +37,9 @@ class OpenAIModel(LM):
         model (str): The name of the model to use.
         api_key (Optional[str]): An API key (e.g. from OpenAI or Databricks).
         api_base (Optional[str]): The endpoint of the server.
-        provider (str): Either openai, dbrx, or vllm
+        provider (str): Either openai, dbrx, or vllm.
+        max_batch_size (int): The maximum batch size for the model.
+        max_ctx_len (int): The maximum context length for the model.
         **kwargs (Dict[str, Any]): Additional keyword arguments. They can be used to specify inference parameters.
     """
 
@@ -47,11 +49,15 @@ class OpenAIModel(LM):
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         provider: str = "openai",
+        max_batch_size=64,
+        max_ctx_len=4096,
         **kwargs: Dict[str, Any],
     ):
         super().__init__()
         self.provider = provider
         self.use_chat = provider in ["openai", "dbrx"]
+        self.max_batch_size = max_batch_size
+        self.max_ctx_len = max_ctx_len
 
         self.kwargs = {
             "model": model,
@@ -113,10 +119,13 @@ class OpenAIModel(LM):
             Union[List, Tuple[List, List]]: A list of outputs for each prompt in the batch. If logprobs is specified in the keyword arguments,
             then a list of logprobs is also returned.
         """
-        prompt = [
-            self.tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
-            for message in messages
-        ]
+        if not isinstance(messages[0], list):
+            prompt = [self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)]
+        else:
+            prompt = [
+                self.tokenizer.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
+                for message in messages
+            ]
 
         kwargs = {**self.kwargs, **kwargs}
         kwargs["prompt"] = prompt
@@ -194,12 +203,14 @@ class OpenAIModel(LM):
     def __call__(
         self, messages_batch: Union[List, List[List]], **kwargs: Dict[str, Any]
     ) -> Union[List, Tuple[List, List]]:
+        lotus.logger.debug(f"OpenAIModel.__call__ messages_batch: {messages_batch}")
+        lotus.logger.debug(f"OpenAIModel.__call__ kwargs: {kwargs}")
         # Bakes max batch size into model call. # TODO: Figure out less hacky way to do this.
-        if isinstance(messages_batch[0], list) and len(messages_batch) > settings.max_batch_size:
+        if isinstance(messages_batch[0], list) and len(messages_batch) > self.max_batch_size:
             text_ret = []
             logprobs_ret = []
-            for i in range(0, len(messages_batch), settings.max_batch_size):
-                res = self(messages_batch[i : i + settings.max_batch_size], **kwargs)
+            for i in range(0, len(messages_batch), self.max_batch_size):
+                res = self(messages_batch[i : i + self.max_batch_size], **kwargs)
                 if kwargs.get("logprobs", False):
                     text, logprobs = res
                     logprobs_ret.extend(logprobs)
@@ -267,3 +278,7 @@ class OpenAIModel(LM):
             dict: OpenAI completion response.
         """
         return self.client.completions.create(**kwargs).model_dump()
+
+    @property
+    def max_tokens(self) -> int:
+        return self.kwargs["max_tokens"]

@@ -9,14 +9,23 @@ import lotus
 from lotus.templates import task_instructions
 
 
-def get_match_prompt_binary(doc1, doc2, user_instruction):
-    sys_prompt = (
-        "Your job is to to select and return the most relevant document to the user's question.\n"
-        "Carefully read the user's question and the two documents provided below.\n"
-        'Respond only with the label of the document such as "Document NUMBER".\n'
-        "NUMBER must be either 1 or 2, depending on which document is most relevant.\n"
-        'You must pick a number and cannot say things like "None" or "Neither"'
-    )
+def get_match_prompt_binary(doc1, doc2, user_instruction, strategy=None):
+    if strategy == "zs-cot":
+        sys_prompt = (
+            "Your job is to to select and return the most relevant document to the user's question.\n"
+            "Carefully read the user's question and the two documents provided below.\n"
+            'First give your reasoning. Then you MUST end your output with "Answer: Document 1 or Document 2"\n'
+            'You must pick a number and cannot say things like "None" or "Neither"\n'
+            'Remember to explicitly state "Answer:" at the end before your choice.'
+        )
+    else:
+        sys_prompt = (
+            "Your job is to to select and return the most relevant document to the user's question.\n"
+            "Carefully read the user's question and the two documents provided below.\n"
+            'Respond only with the label of the document such as "Document NUMBER".\n'
+            "NUMBER must be either 1 or 2, depending on which document is most relevant.\n"
+            'You must pick a number and cannot say things like "None" or "Neither"'
+        )
 
     prompt = f"Question: {user_instruction}\n\n"
     for idx, doc in enumerate([doc1, doc2]):
@@ -28,6 +37,7 @@ def get_match_prompt_binary(doc1, doc2, user_instruction):
 
 
 def parse_ans_binary(answer):
+    lotus.logger.debug(f"Response from model: {answer}")
     try:
         matches = list(re.finditer(r"Document[\s*](\d+)", answer, re.IGNORECASE))
         if len(matches) == 0:
@@ -42,27 +52,27 @@ def parse_ans_binary(answer):
         return True
 
 
-def compare_batch_binary(pairs, user_instruction, **kwargs):
+def compare_batch_binary(pairs, user_instruction, strategy=None):
     match_prompts = []
     results = []
     tokens = 0
     for doc1, doc2 in pairs:
-        match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction))
+        match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
 
-    results = lotus.settings.lm(match_prompts, **kwargs)
+    results = lotus.settings.lm(match_prompts)
     results = list(map(parse_ans_binary, results))
     return results, tokens
 
 
-def compare_batch_binary_cascade(pairs, user_instruction, cascade_threshold, **kwargs):
+def compare_batch_binary_cascade(pairs, user_instruction, cascade_threshold, strategy=None):
     match_prompts = []
     small_tokens = 0
     for doc1, doc2 in pairs:
-        match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction))
+        match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         small_tokens += lotus.settings.helper_lm.count_tokens(match_prompts[-1])
 
-    results, helper_logprobs = lotus.settings.helper_lm(match_prompts, logprobs=True, **kwargs)
+    results, helper_logprobs = lotus.settings.helper_lm(match_prompts, logprobs=True)
     helper_tokens, helper_confidences = lotus.settings.helper_lm.format_logprobs_for_cascade(helper_logprobs)
 
     parsed_results = []
@@ -89,7 +99,7 @@ def compare_batch_binary_cascade(pairs, user_instruction, cascade_threshold, **k
             large_match_prompts.append(match_prompts[i])
             large_tokens += lotus.settings.lm.count_tokens(large_match_prompts[-1])
 
-        results = lotus.settings.lm(large_match_prompts, **kwargs)
+        results = lotus.settings.lm(large_match_prompts)
         for idx, res in enumerate(results):
             new_idx = low_conf_idxs[idx]
             parsed_res = parse_ans_binary(res)
@@ -102,7 +112,7 @@ def compare_batch_binary_cascade(pairs, user_instruction, cascade_threshold, **k
 def llm_naive_sort(
     docs: List[str],
     user_instruction: str,
-    **kwargs: Dict[str, Any],
+    strategy: Optional[str] = None,
 ) -> Tuple[List[int], Dict[str, Any]]:
     """
     Sorts the documents using a naive quadratic method.
@@ -110,7 +120,6 @@ def llm_naive_sort(
     Args:
         docs (List[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         Tuple[List[int], Dict[str, Any]]: The indexes of the top k documents and stats.
@@ -122,7 +131,7 @@ def llm_naive_sort(
             pairs.append((docs[i], docs[j]))
 
     llm_calls = len(pairs)
-    comparisons, tokens = compare_batch_binary(pairs, user_instruction, **kwargs)
+    comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
     votes = [0] * N
     idx = 0
     for i in range(N):
@@ -144,8 +153,8 @@ def llm_quicksort(
     user_instruction: str,
     k: int,
     embedding: bool = False,
+    strategy: Optional[str] = None,
     cascade_threshold=None,
-    **kwargs: Dict[str, Any],
 ) -> Tuple[List[int], Dict[str, Any]]:
     """
     Sorts the documents using quicksort.
@@ -156,7 +165,6 @@ def llm_quicksort(
         k (int): The number of documents to return.
         embedding (bool): Whether to use embedding optimization.
         cascade_threshold (Optional[float]): The confidence threshold for cascading to a larger model.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         Tuple[List[int], Dict[str, Any]]: The indexes of the top k documents and stats
@@ -192,12 +200,15 @@ def llm_quicksort(
 
         pairs = [(docs[indexes[j]], pivot) for j in range(low, high)]
         if cascade_threshold is None:
-            comparisons, tokens = compare_batch_binary(pairs, user_instruction, **kwargs)
+            comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
             stats["total_tokens"] += tokens
             stats["total_llm_calls"] += len(pairs)
         else:
             comparisons, small_tokens, large_tokens, num_large_calls = compare_batch_binary_cascade(
-                pairs, user_instruction, cascade_threshold, **kwargs
+                pairs,
+                user_instruction,
+                cascade_threshold,
+                strategy=strategy,
             )
             stats["total_small_tokens"] += small_tokens
             stats["total_large_tokens"] += large_tokens
@@ -236,15 +247,15 @@ class HeapDoc:
 
     num_calls = 0
     total_tokens = 0
+    strategy = None
 
-    def __init__(self, doc, user_instruction, idx, kwargs):
+    def __init__(self, doc, user_instruction, idx):
         self.doc = doc
         self.user_instruction = user_instruction
         self.idx = idx
-        self.kwargs = kwargs
 
     def __lt__(self, other):
-        prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, **self.kwargs)
+        prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, strategy=self.strategy)
         HeapDoc.num_calls += 1
         HeapDoc.total_tokens += lotus.settings.lm.count_tokens(prompt)
         result = lotus.settings.lm(prompt)
@@ -252,7 +263,10 @@ class HeapDoc:
 
 
 def llm_heapsort(
-    docs: List[str], user_instruction: str, k: int, **kwargs: Dict[str, Any]
+    docs: List[str],
+    user_instruction: str,
+    k: int,
+    strategy: Optional[str] = None,
 ) -> Tuple[List[int], Dict[str, Any]]:
     """
     Sorts the documents using a heap.
@@ -261,15 +275,15 @@ def llm_heapsort(
         docs (List[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
         k (int): The number of documents to return.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         Tuple[List[int], Dict[str, Any]]: The indexes of the top k documents and stats.
     """
     HeapDoc.num_calls = 0
     HeapDoc.total_tokens = 0
+    HeapDoc.strategy = strategy
     N = len(docs)
-    heap = [HeapDoc(docs[idx], user_instruction, idx, kwargs) for idx in range(N)]
+    heap = [HeapDoc(docs[idx], user_instruction, idx) for idx in range(N)]
     heap = heapq.nsmallest(k, heap)
     indexes = [heapq.heappop(heap).idx for _ in range(len(heap))]
 
@@ -294,10 +308,10 @@ class SemTopKDataframe:
         user_instruction: str,
         K: int,
         method: str = "quick",
+        strategy: Optional[str] = None,
         group_by: Optional[List[str]] = None,
         cascade_threshold: Optional[float] = None,
         return_stats: bool = False,
-        **kwargs,
     ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]:
         """
         Sorts the DataFrame based on the user instruction and returns the top K rows.
@@ -309,14 +323,13 @@ class SemTopKDataframe:
             group_by (Optional[List[str]]): The columns to group by before sorting. Each group will be sorted separately.
             cascade_threshold (Optional[float]): The confidence threshold for cascading to a larger model.
             return_stats (bool): Whether to return stats.
-            **kwargs (Dict[str, Any]): Additional keyword arguments.
 
         Returns:
             Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]: The sorted DataFrame. If return_stats is True, returns a tuple with the sorted DataFrame and stats
         """
-        lotus.logger.debug(user_instruction)
+        lotus.logger.debug(f"Sorting DataFrame with user instruction: {user_instruction}")
         col_li = lotus.nl_expression.parse_cols(user_instruction)
-        lotus.logger.debug(col_li)
+        lotus.logger.debug(f"Columns: {col_li}")
 
         # check that column exists
         for column in col_li:
@@ -333,10 +346,10 @@ class SemTopKDataframe:
                     user_instruction,
                     K,
                     method=method,
+                    strategy=strategy,
                     group_by=None,
                     cascade_threshold=cascade_threshold,
                     return_stats=return_stats,
-                    **kwargs,
                 )
 
                 if return_stats:
@@ -360,7 +373,7 @@ class SemTopKDataframe:
             )
 
         df_txt = task_instructions.df2text(self._obj, col_li)
-        lotus.logger.debug(df_txt)
+        lotus.logger.debug(f"df_txt: {df_txt}")
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
 
         if method in ["quick", "quick-sem"]:
@@ -369,16 +382,16 @@ class SemTopKDataframe:
                 formatted_usr_instr,
                 K,
                 embedding=method == "quick-sem",
+                strategy=strategy,
                 cascade_threshold=cascade_threshold,
-                **kwargs,
             )
         elif method == "heap":
-            sorted_order, stats = llm_heapsort(df_txt, formatted_usr_instr, K, **kwargs)
+            sorted_order, stats = llm_heapsort(df_txt, formatted_usr_instr, K, strategy=strategy)
         elif method == "naive":
             sorted_order, stats = llm_naive_sort(
                 df_txt,
                 formatted_usr_instr,
-                **kwargs,
+                strategy=strategy,
             )
         else:
             raise ValueError(f"Method {method} not recognized")

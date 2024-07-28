@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,6 @@ def sem_join(
     examples_answers: Optional[List[bool]] = None,
     cot_reasoning: Optional[List[str]] = None,
     default: bool = True,
-    **kwargs: Dict[str, Any],
 ) -> Tuple:
     """
     Joins two series using a model.
@@ -39,7 +38,6 @@ def sem_join(
         examples_answers (Optional[List[bool]]): The answers for examples. Defaults to None.
         cot_reasoning (Optional[List[str]]): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         Tuple: The join results, filter outputs, all raw outputs, and all explanations.
@@ -62,7 +60,6 @@ def sem_join(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             default=default,
-            **kwargs,
         )
         filter_outputs.extend(outputs)
         all_raw_outputs.extend(raw_outputs)
@@ -95,7 +92,6 @@ def sem_join_cascade(
     examples_answers: Optional[List[bool]] = None,
     cot_reasoning: Optional[List[str]] = None,
     default: bool = True,
-    **kwargs: Dict[str, Any],
 ) -> List[str]:
     filter_outputs = []
     all_raw_outputs = []
@@ -117,7 +113,6 @@ def sem_join_cascade(
             cot_reasoning=cot_reasoning,
             default=default,
             logprobs=True,
-            **kwargs,
         )
 
         high_conf_idxs = set()
@@ -150,7 +145,6 @@ def sem_join_cascade(
             examples_df_txt=examples_df_txt,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
-            **lotus.settings.model_params,
         )
 
         outputs, raw_outputs, explanations = (
@@ -315,7 +309,6 @@ class SemJoinDataframe:
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 default=default,
-                **lotus.settings.model_params,
             )
         else:
             join_results, filter_outputs, all_raw_outputs, all_explanations = sem_join(
@@ -331,7 +324,6 @@ class SemJoinDataframe:
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 default=default,
-                **lotus.settings.model_params,
             )
         lotus.logger.debug(f"join_results: {join_results}")
         lotus.logger.debug(f"all_raw_outputs: {all_raw_outputs}")

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import pandas as pd
 
@@ -16,7 +16,7 @@ def sem_map(
     examples_df_txt: Optional[str] = None,
     examples_answers: Optional[List[str]] = None,
     cot_reasoning: Optional[List[str]] = None,
-    **kwargs: Dict[str, Any],
+    strategy: Optional[str] = None,
 ) -> Tuple:
     """
     Maps a list of documents to a list of outputs using a model.
@@ -29,7 +29,6 @@ def sem_map(
         examples_df_txt (Optional[str]: The text for examples. Defaults to None.
         examples_answers (Optional[List[str]]): The answers for examples. Defaults to None.
         cot_reasoning (Optional[List[str]]): The reasoning for CoT. Defaults to None.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         Tuple: The outputs, raw outputs, and explanations.
@@ -38,19 +37,18 @@ def sem_map(
     inputs = []
     for doc in docs:
         prompt = lotus.templates.task_instructions.map_formatter(
-            doc, user_instruction, examples_df_txt, examples_answers, cot_reasoning
+            doc, user_instruction, examples_df_txt, examples_answers, cot_reasoning, strategy=strategy
         )
         lotus.logger.debug(f"input to model: {prompt}")
         lotus.logger.debug(f"inputs content to model: {[x.get('content') for x in prompt]}")
         inputs.append(prompt)
 
     # call model
-    raw_outputs = model(inputs, **kwargs)
-
-    lotus.logger.debug(f"---\n{raw_outputs}\n---")
+    raw_outputs = model(inputs)
 
     # post process results
-    outputs, explanations = postprocessor(raw_outputs, cot_reasoning=cot_reasoning is not None)
+    outputs, explanations = postprocessor(raw_outputs, cot_reasoning=strategy in ["cot", "zs-cot"])
+    lotus.logger.debug(f"raw_outputs: {raw_outputs}")
     lotus.logger.debug(f"outputs: {outputs}")
     lotus.logger.debug(f"explanations: {explanations}")
 
@@ -125,7 +123,7 @@ class SemMapDataframe:
             examples_df_txt=examples_df_txt,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
-            **lotus.settings.model_params,
+            strategy=strategy,
         )
 
         new_df = self._obj

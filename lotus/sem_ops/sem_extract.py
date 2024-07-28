@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Callable, List, Tuple
 
 import pandas as pd
 
@@ -13,7 +13,6 @@ def sem_extract(
     model: lotus.models.LM,
     user_instruction: str,
     postprocessor: Callable = extract_postprocess,
-    **kwargs: Dict[str, Any],
 ) -> Tuple:
     """
     Extracts from a list of documents using a model.
@@ -23,7 +22,6 @@ def sem_extract(
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for extract.
         postprocessor (Optional[Callable]): The postprocessor for the model outputs. Defaults to extract_postprocess.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         Tuple: The outputs, raw outputs, and quotes.
@@ -37,12 +35,11 @@ def sem_extract(
         inputs.append(prompt)
 
     # call model
-    raw_outputs = model(inputs, **kwargs)
-
-    lotus.logger.debug(f"---\n{raw_outputs}\n---")
+    raw_outputs = model(inputs)
 
     # post process results
     outputs, quotes = postprocessor(raw_outputs)
+    lotus.logger.debug(f"raw_outputs: {raw_outputs}")
     lotus.logger.debug(f"outputs: {outputs}")
     lotus.logger.debug(f"quotes: {quotes}")
 
@@ -95,7 +92,6 @@ class SemExtractDataframe:
             lotus.settings.lm,
             formatted_usr_instr,
             postprocessor=postprocessor,
-            **lotus.settings.model_params,
         )
 
         new_df = self._obj
