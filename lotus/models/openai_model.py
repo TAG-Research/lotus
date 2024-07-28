@@ -62,7 +62,7 @@ class OpenAIModel(LM):
         self.kwargs = {
             "model": model,
             "temperature": 0.0,
-            "max_tokens": 150,
+            "max_tokens": 512,
             "top_p": 1,
             "n": 1,
             **kwargs,
