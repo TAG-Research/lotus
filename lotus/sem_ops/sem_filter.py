@@ -16,8 +16,8 @@ def sem_filter(
     examples_df_txt: Optional[str] = None,
     examples_answers: Optional[List[bool]] = None,
     cot_reasoning: Optional[List[str]] = None,
+    strategy: Optional[str] = None,
     logprobs: bool = False,
-    **kwargs: Dict[str, Any],
 ) -> Tuple:
     """
     Filters a list of documents based on a given user instruction using a language model.
@@ -31,7 +31,6 @@ def sem_filter(
         examples_answers (Optional[List[bool]]): The answers for examples. Defaults to None.
         cot_reasoning (Optional[List[str]]): The reasoning for CoT. Defaults to None.
         logprobs (Optional[bool]): Whether to return log probabilities. Defaults to False.
-        **kwargs (Dict[str, Any]): Additional keyword arguments.
 
     Returns:
         Tuple: A tuple containing the True/False outputs, raw outputs, explanations, and raw log probabilities (if logprobs=True).
@@ -39,18 +38,19 @@ def sem_filter(
     inputs = []
     for doc in docs:
         prompt = lotus.templates.task_instructions.filter_formatter(
-            doc, user_instruction, examples_df_txt, examples_answers, cot_reasoning
+            doc, user_instruction, examples_df_txt, examples_answers, cot_reasoning, strategy
         )
         lotus.logger.debug(f"input to model: {prompt}")
         inputs.append(prompt)
-    res = model(inputs, logprobs=logprobs, **kwargs)
+    res = model(inputs, logprobs=logprobs)
     if logprobs:
         raw_outputs, raw_logprobs = res
     else:
         raw_outputs = res
 
-    lotus.logger.debug(f"---\n{raw_outputs}\n---")
-    outputs, explanations = filter_postprocess(raw_outputs, default=default, cot_reasoning=cot_reasoning is not None)
+    outputs, explanations = filter_postprocess(
+        raw_outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"]
+    )
     lotus.logger.debug(f"outputs: {outputs}")
     lotus.logger.debug(f"raw_outputs: {raw_outputs}")
     lotus.logger.debug(f"explanations: {explanations}")
@@ -158,7 +158,7 @@ class SemFilterDataframe:
                 examples_answers=helper_examples_answers,
                 cot_reasoning=helper_cot_reasoning,
                 logprobs=True,
-                **lotus.settings.model_params,
+                strategy=helper_strategy,
             )
 
             high_conf_idxs = set()
@@ -195,7 +195,7 @@ class SemFilterDataframe:
                     examples_df_txt=examples_df_txt,
                     examples_answers=examples_answers,
                     cot_reasoning=cot_reasoning,
-                    **lotus.settings.model_params,
+                    strategy=strategy,
                 )
 
                 for idx, large_idx in enumerate(low_conf_idxs):
@@ -215,7 +215,7 @@ class SemFilterDataframe:
                 examples_df_txt=examples_df_txt,
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
-                **lotus.settings.model_params,
+                strategy=strategy,
             )
 
         # find indices where output is True

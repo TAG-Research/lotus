@@ -52,22 +52,10 @@ class Settings(object):
                 lm=None,
                 helper_lm=None,
                 rm=None,
-                model_params={},
-                max_batch_size=16,
-                max_ctx_len=4096,
             )
             cls._instance.__append(config)
 
         return cls._instance
-
-    def get_max_tokens(self):
-        model_params = self.config["model_params"]
-        if "max_tokens" in model_params:
-            return model_params["max_tokens"]
-        if "max_new_tokens" in model_params:
-            return model_params["max_new_tokens"]
-
-        raise ValueError("max_tokens or max_new_tokens not found in model_params")
 
     @property
     def config(self):

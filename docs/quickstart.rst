@@ -53,10 +53,10 @@ This can be achieved by applying a semantic filter followed by a semantic aggreg
     from lotus.models import E5Model, OpenAIModel
 
     # Configure models for LOTUS
-    lm = OpenAIModel()
+    lm = OpenAIModel(max_tokens=512)
     rm = E5Model()
 
-    lotus.settings.configure(lm=lm, rm=rm, model_params={"max_tokens": 512})
+    lotus.settings.configure(lm=lm, rm=rm)
 
     # Dataset containing courses and their descriptions/workloads
     data = [

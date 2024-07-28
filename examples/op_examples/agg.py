@@ -6,7 +6,7 @@ from lotus.models import E5Model, OpenAIModel
 lm = OpenAIModel()
 rm = E5Model()
 
-lotus.settings.configure(lm=lm, rm=rm, model_params={"max_tokens": 512})
+lotus.settings.configure(lm=lm, rm=rm)
 data = {
     "Course Name": [
         "Probability and Random Processes",

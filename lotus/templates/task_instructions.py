@@ -40,15 +40,35 @@ def filter_formatter_cot(
     return messages
 
 
+def filter_formatter_zs_cot(
+    df_text: str,
+    user_instruction: str,
+) -> List[str]:
+    sys_instruction = (
+        "The user will povide a claim and some relevant context.\n"
+        "Your job is to determine whether the claim is true for the given context.\n"
+        'First give your reasoning. Then you MUST end your output with "Answer: True or False"'
+    )
+    messages = [
+        {"role": "system", "content": sys_instruction},
+    ]
+
+    messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+    return messages
+
+
 def filter_formatter(
     df_text: str,
     user_instruction: str,
     examples_df_text: Optional[List[str]] = None,
     examples_answer: Optional[List[str]] = None,
     cot_reasoning: Optional[List[str]] = None,
+    strategy: Optional[str] = None,
 ) -> List[str]:
     if cot_reasoning:
         return filter_formatter_cot(df_text, user_instruction, examples_df_text, examples_answer, cot_reasoning)
+    elif strategy == "zs-cot":
+        return filter_formatter_zs_cot(df_text, user_instruction)
 
     sys_instruction = (
         "The user will povide a claim and some relevant context.\n"
@@ -117,15 +137,40 @@ def map_formatter_cot(
     return messages
 
 
+def map_formatter_zs_cot(
+    df_text: str,
+    user_instruction: str,
+) -> List[str]:
+    sys_instruction = (
+        "The user will povide an instruction and some relevant context.\n"
+        "Your job is to answer the user's instruction given the context."
+        'First give your reasoning. Then you MUST end your output with "Answer: your answer"'
+    )
+    messages = [
+        {"role": "system", "content": sys_instruction},
+    ]
+
+    messages.append(
+        {
+            "role": "user",
+            "content": f"Context:\n{df_text}\n\Instruction: {user_instruction}",
+        }
+    )
+    return messages
+
+
 def map_formatter(
     df_text: str,
     user_instruction: str,
     examples_df_text: Optional[List[str]] = None,
     examples_answer: Optional[List[str]] = None,
     cot_reasoning: Optional[List[str]] = None,
+    strategy: Optional[str] = None,
 ) -> List[str]:
     if cot_reasoning:
         return map_formatter_cot(df_text, user_instruction, examples_df_text, examples_answer, cot_reasoning)
+    elif strategy == "zs-cot":
+        return map_formatter_zs_cot(df_text, user_instruction)
 
     sys_instruction = (
         "The user will povide an instruction and some relevant context.\n"
