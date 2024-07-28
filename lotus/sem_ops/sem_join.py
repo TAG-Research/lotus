@@ -21,6 +21,7 @@ def sem_join(
     examples_answers: Optional[List[bool]] = None,
     cot_reasoning: Optional[List[str]] = None,
     default: bool = True,
+    strategy: Optional[str] = None,
 ) -> Tuple:
     """
     Joins two series using a model.
@@ -60,6 +61,7 @@ def sem_join(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             default=default,
+            strategy=strategy,
         )
         filter_outputs.extend(outputs)
         all_raw_outputs.extend(raw_outputs)
@@ -92,6 +94,7 @@ def sem_join_cascade(
     examples_answers: Optional[List[bool]] = None,
     cot_reasoning: Optional[List[str]] = None,
     default: bool = True,
+    strategy: Optional[str] = None,
 ) -> List[str]:
     filter_outputs = []
     all_raw_outputs = []
@@ -113,6 +116,7 @@ def sem_join_cascade(
             cot_reasoning=cot_reasoning,
             default=default,
             logprobs=True,
+            strategy=strategy,
         )
 
         high_conf_idxs = set()
@@ -145,6 +149,7 @@ def sem_join_cascade(
             examples_df_txt=examples_df_txt,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
+            strategy=strategy,
         )
 
         outputs, raw_outputs, explanations = (
@@ -309,6 +314,7 @@ class SemJoinDataframe:
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 default=default,
+                strategy=strategy,
             )
         else:
             join_results, filter_outputs, all_raw_outputs, all_explanations = sem_join(
@@ -324,6 +330,7 @@ class SemJoinDataframe:
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 default=default,
+                strategy=strategy,
             )
         lotus.logger.debug(f"join_results: {join_results}")
         lotus.logger.debug(f"all_raw_outputs: {all_raw_outputs}")
