@@ -9,7 +9,8 @@ on:
       - main
 
 jobs:
-  lint:
+  ruff_lint:
+    name: Ruff Lint
     runs-on: ubuntu-latest
 
     steps:
