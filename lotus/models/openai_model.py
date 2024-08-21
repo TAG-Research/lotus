@@ -45,7 +45,7 @@ class OpenAIModel(LM):
 
     def __init__(
         self,
-        model: str = "gpt-3.5-turbo",
+        model: str = "gpt-4o-mini",
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         provider: str = "openai",
