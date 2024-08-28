@@ -14,7 +14,7 @@
 
 Easily build knowledge-intensive LLM applications that reason over your data with LOTUS!
 
-LOTUS provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators** to extend the relational model with a set of modular language-based operators. Programmers can easily compose semantic operators along with traditional data operations to build state-of-the-art AI systems that reason over vast knowledge corpora.
+LOTUS (**L**LMs **O**ver **T**ables of **U**nstructured and **S**tructured Data) provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators** to extend the relational model with a set of modular language-based operators. Programmers can easily compose semantic operators along with traditional data operations to build state-of-the-art AI systems that reason over vast knowledge corpora.
 
 Below are just a few semantic operators provided by LOTUS. For more details, check out the full [documentation](https://lotus-ai.readthedocs.io/en/latest/), run the [colab tutorial](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing), or read the [research paper](https://arxiv.org/abs/2407.11418).
 
