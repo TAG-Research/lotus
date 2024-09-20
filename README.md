@@ -68,7 +68,7 @@ print(res)
 ```
 
 # Citation
-If you use LOTUS in a research paper, please cite this work as follows:
+If you use LOTUS or semantic operators in a research paper, please cite this work as follows:
 ```bibtex
 @misc{patel2024lotusenablingsemanticqueries,
       title={LOTUS: Enabling Semantic Queries with LLMs Over Tables of Unstructured and Structured Data},
