@@ -5,3 +5,9 @@ __pycache__/
 dist/
 docs/_build
 .ruff_cache
+/EVALUATIONS/data/fever/wiki-pages
+/EVALUATIONS
+/experiments/imageTable/animal_images/dataset
+/_EVALUATIONS
+/.vscode
+/examples/op_examples

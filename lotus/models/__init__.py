@@ -5,10 +5,12 @@ from lotus.models.lm import LM
 from lotus.models.openai_model import OpenAIModel
 from lotus.models.reranker import Reranker
 from lotus.models.rm import RM
+from lotus.models.clip_model import CLIPModelRetriever
 
 __all__ = [
     "OpenAIModel",
     "E5Model",
+    "CLIPModelRetriever",
     "ColBERTv2Model",
     "CrossEncoderModel",
     "LM",

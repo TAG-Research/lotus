@@ -1,7 +1,16 @@
 from typing import List, Optional
-
 import pandas as pd
+import re
 
+def extract_image_data(df_text: str) -> (str, str):
+    """Extracts the base64 image data from df_text if present."""
+    match = re.search(r'data:image[^;]+;base64,[^"]+', df_text)
+    if match:
+        image_data = match.group(0)
+        text_without_image = df_text.replace(image_data, '')
+        return image_data, text_without_image.strip()
+    else:
+        return None, df_text
 
 def filter_formatter_cot(
     df_text: str,
@@ -11,7 +20,7 @@ def filter_formatter_cot(
     cot_reasoning: List[str],
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide a claim and some relevant context.\n"
+        "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
         'First give your reasoning. Then you MUST end your output with "Answer: True or False"'
     )
@@ -36,7 +45,18 @@ def filter_formatter_cot(
             ]
         )
 
-    messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+    image_data, text_without_image = extract_image_data(df_text)
+    if image_data:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_data}},
+                {"type": "text", "text": f"Context:\n{text_without_image}\n\nClaim: {user_instruction}"}
+            ]
+        })
+    else:
+        messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+
     return messages
 
 
@@ -45,7 +65,7 @@ def filter_formatter_zs_cot(
     user_instruction: str,
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide a claim and some relevant context.\n"
+        "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
         'First give your reasoning. Then you MUST end your output with "Answer: True or False"'
     )
@@ -53,7 +73,18 @@ def filter_formatter_zs_cot(
         {"role": "system", "content": sys_instruction},
     ]
 
-    messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+    image_data, text_without_image = extract_image_data(df_text)
+    if image_data:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_data}},
+                {"type": "text", "text": f"Context:\n{text_without_image}\n\nClaim: {user_instruction}"}
+            ]
+        })
+    else:
+        messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+        
     return messages
 
 
@@ -71,7 +102,7 @@ def filter_formatter(
         return filter_formatter_zs_cot(df_text, user_instruction)
 
     sys_instruction = (
-        "The user will povide a claim and some relevant context.\n"
+        "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
         'You must answer with a single word, "True" or "False".'
     )
@@ -91,7 +122,18 @@ def filter_formatter(
                 ]
             )
 
-    messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+    image_data, text_without_image = extract_image_data(df_text)
+    if image_data:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_data}},
+                {"type": "text", "text": f"Context:\n{text_without_image}\n\nClaim: {user_instruction}"}
+            ]
+        })
+    else:
+        messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+        
     return messages
 
 
@@ -103,7 +145,7 @@ def map_formatter_cot(
     cot_reasoning: List[str],
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
         "You must give your reasoning and then your final answer"
     )
@@ -119,7 +161,7 @@ def map_formatter_cot(
             [
                 {
                     "role": "user",
-                    "content": f"Context:\n{ex_df_txt}\n\Instruction: {user_instruction}",
+                    "content": f"Context:\n{ex_df_txt}\n\nInstruction: {user_instruction}",
                 },
                 {
                     "role": "assistant",
@@ -128,12 +170,23 @@ def map_formatter_cot(
             ]
         )
 
-    messages.append(
-        {
+    image_data, text_without_image = extract_image_data(df_text)
+    if image_data:
+        messages.append({
             "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
-        }
-    )
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_data}},
+                {"type": "text", "text": f"Context:\n{text_without_image}\n\nInstruction: {user_instruction}"}
+            ]
+        })
+    else:
+        messages.append(
+            {
+                "role": "user",
+                "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
+            }
+        )
+
     return messages
 
 
@@ -142,7 +195,7 @@ def map_formatter_zs_cot(
     user_instruction: str,
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
         'First give your reasoning. Then you MUST end your output with "Answer: your answer"'
     )
@@ -150,12 +203,23 @@ def map_formatter_zs_cot(
         {"role": "system", "content": sys_instruction},
     ]
 
-    messages.append(
-        {
+    image_data, text_without_image = extract_image_data(df_text)
+    if image_data:
+        messages.append({
             "role": "user",
-            "content": f"Context:\n{df_text}\n\Instruction: {user_instruction}",
-        }
-    )
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_data}},
+                {"type": "text", "text": f"Context:\n{text_without_image}\n\nInstruction: {user_instruction}"}
+            ]
+        })
+    else:
+        messages.append(
+            {
+                "role": "user",
+                "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
+            }
+        )
+        
     return messages
 
 
@@ -173,7 +237,7 @@ def map_formatter(
         return map_formatter_zs_cot(df_text, user_instruction)
 
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
     )
     messages = [
@@ -192,29 +256,55 @@ def map_formatter(
                 ]
             )
 
-    messages.append(
-        {
+    image_data, text_without_image = extract_image_data(df_text)
+    if image_data:
+        messages.append({
             "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
-        }
-    )
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_data}},
+                {"type": "text", "text": f"Context:\n{text_without_image}\n\nInstruction: {user_instruction}"}
+            ]
+        })
+    else:
+        messages.append(
+            {
+                "role": "user",
+                "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
+            }
+        )
+        
     return messages
 
 
 def extract_formatter(df_text: str, user_instruction: str) -> List[str]:
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to extract the information requested in the instruction.\n"
         "Write the response in JSONL format in a single line with the following fields:\n"
         """{"answer": "your answer", "quotes": "quote from context supporting your answer"}"""
     )
+    
     messages = [
         {"role": "system", "content": sys_instruction},
-        {
-            "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
-        },
     ]
+
+    image_data, text_without_image = extract_image_data(df_text)
+    if image_data:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": image_data}},
+                {"type": "text", "text": f"Context:\n{text_without_image}\n\nInstruction: {user_instruction}"}
+            ]
+        })
+    else:
+        messages.append(
+            {
+                "role": "user",
+                "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
+            }
+        )
+        
     return messages
 
 
