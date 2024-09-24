@@ -14,9 +14,12 @@
 
 Easily build knowledge-intensive LLM applications that reason over your data with LOTUS!
 
-LOTUS (**L**LMs **O**ver **T**ables of **U**nstructured and **S**tructured Data) provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators** to extend the relational model with a set of modular language-based operators. Programmers can easily compose semantic operators along with traditional data operations to build state-of-the-art AI systems that reason over vast knowledge corpora.
+LOTUS (**L**LMs **O**ver **T**ables of **U**nstructured and **S**tructured Data) provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators**.
 
-Below are just a few semantic operators provided by LOTUS. For more details, check out the full [documentation](https://lotus-ai.readthedocs.io/en/latest/), run the [colab tutorial](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing), or read the [research paper](https://arxiv.org/abs/2407.11418).
+## Key Concept: Semantic Operators
+LOTUS' programming model is powered by semantic operators. Semantic operators seamlessly extend the relational model with a set of modular language-based operators, allowing you to write AI-based pipelines with high-level logic, leaving the rest of the work to the query engine! Programmers can easily compose semantic operators along with traditional relational data operations to build state-of-the-art AI systems that reason over vast knowledge corpora.
+
+Below are just a few semantic operators provided by LOTUS. To learn more about semantic operators, check out the full [documentation](https://lotus-ai.readthedocs.io/en/latest/), run the [colab tutorial](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing), or read the full [research paper](https://arxiv.org/abs/2407.11418).
 
 | Operator   | Description                                     |
 |------------|-------------------------------------------------|
