@@ -1,4 +1,4 @@
-# LOTUS:  An Engine For Querying Data with LLMs
+# LOTUS:  A Query Engine For Processing Data with LLMs
 <!--- BADGES: START --->
 [![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing)
 [![Arxiv](https://img.shields.io/badge/arXiv-2407.11418-B31B1B.svg)][#arxiv-paper-package]
