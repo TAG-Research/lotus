@@ -11,4 +11,5 @@ __all__ = [
     "sem_sim_join",
     "sem_cluster_by",
     "sem_partition_by",
+    "sem_dedup",
 ]

@@ -16,6 +16,7 @@ from lotus.sem_ops import (
     sem_search,
     sem_sim_join,
     sem_cluster_by,
+    sem_dedup,
     sem_topk,
 )
 from lotus.settings import settings
@@ -36,6 +37,7 @@ __all__ = [
     "sem_sim_join",
     "sem_cluster_by",
     "sem_search",
+    "sem_dedup",
     "settings",
     "nl_expression",
     "templates",
