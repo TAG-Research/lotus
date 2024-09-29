@@ -1,3 +1,4 @@
+import os
 import threading
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -63,6 +64,7 @@ class OpenAIModel(LM):
             **kwargs,
         }
 
+        api_key = api_key or os.environ.get("OPENAI_API_KEY", "None")
         self.client = OpenAI(api_key=api_key if api_key else "None", base_url=api_base)
 
         # TODO: Refactor this
