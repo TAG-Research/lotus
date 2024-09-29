@@ -63,7 +63,7 @@ class OpenAIModel(LM):
             **kwargs,
         }
 
-        self.client = OpenAI(api_key=api_key, base_url=api_base)
+        self.client = OpenAI(api_key=api_key if api_key else "None", base_url=api_base)
 
         # TODO: Refactor this
         if self.provider == "openai":
