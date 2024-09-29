@@ -52,6 +52,7 @@ class OpenAIModel(LM):
         self.use_chat = provider in ["openai", "dbrx", "ollama"]
         self.max_batch_size = max_batch_size
         self.max_ctx_len = max_ctx_len
+        self.hf_name = hf_name if hf_name is not None else model
 
         self.kwargs = {
             "model": model,
@@ -68,7 +69,7 @@ class OpenAIModel(LM):
         if self.provider == "openai":
             self.tokenizer = tiktoken.encoding_for_model(model)
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(hf_name)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.hf_name)
 
     def handle_chat_request(self, messages: List, **kwargs: Dict[str, Any]) -> Union[List, Tuple[List, List]]:
         """Handle single chat request to OpenAI server.
