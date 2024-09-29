@@ -1,3 +1,4 @@
+import os
 import threading
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -10,13 +11,6 @@ from transformers import AutoTokenizer
 
 import lotus
 from lotus.models.lm import LM
-
-# Mapping from Databricks model names to their Hugging Face model names for tokenizers
-DBRX_NAME_TO_MODEL = {
-    "databricks-dbrx-instruct": "databricks/dbrx-instruct",
-    "databricks-llama-2-70b-chat": "meta-llama/Llama-2-70b-chat-hf",
-    "databricks-mixtral-8x7b-instruct": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-}
 
 ERRORS = (openai.RateLimitError, openai.APIError)
 
@@ -46,18 +40,20 @@ class OpenAIModel(LM):
     def __init__(
         self,
         model: str = "gpt-4o-mini",
+        hf_name: Optional[str] = None,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         provider: str = "openai",
-        max_batch_size=64,
-        max_ctx_len=4096,
+        max_batch_size: int = 64,
+        max_ctx_len: int = 4096,
         **kwargs: Dict[str, Any],
     ):
         super().__init__()
         self.provider = provider
-        self.use_chat = provider in ["openai", "dbrx"]
+        self.use_chat = provider in ["openai", "dbrx", "ollama"]
         self.max_batch_size = max_batch_size
         self.max_ctx_len = max_ctx_len
+        self.hf_name = hf_name if hf_name is not None else model
 
         self.kwargs = {
             "model": model,
@@ -68,16 +64,14 @@ class OpenAIModel(LM):
             **kwargs,
         }
 
-        self.client = OpenAI(api_key=api_key, base_url=api_base)
+        api_key = api_key or os.environ.get("OPENAI_API_KEY", "None")
+        self.client = OpenAI(api_key=api_key if api_key else "None", base_url=api_base)
 
-        self.kwargs["model"] = model
         # TODO: Refactor this
         if self.provider == "openai":
             self.tokenizer = tiktoken.encoding_for_model(model)
-        elif model in DBRX_NAME_TO_MODEL:
-            self.tokenizer = AutoTokenizer.from_pretrained(DBRX_NAME_TO_MODEL[model])
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(model)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.hf_name)
 
     def handle_chat_request(self, messages: List, **kwargs: Dict[str, Any]) -> Union[List, Tuple[List, List]]:
         """Handle single chat request to OpenAI server.
