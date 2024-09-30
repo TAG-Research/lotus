@@ -49,6 +49,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
+          pip install pytest
 
       - name: Set OpenAI API Key
         run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
@@ -56,4 +57,4 @@ jobs:
       - name: Run Python tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python .github/tests/lm_tests.py
+        run: pytest .github/tests/lm_tests.py
