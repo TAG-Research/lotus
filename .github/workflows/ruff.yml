@@ -33,6 +33,7 @@ jobs:
   test:
     name: Run LM Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -49,5 +50,10 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
 
+      - name: Set OpenAI API Key
+        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+
       - name: Run Python tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python .github/tests/lm_tests.py
