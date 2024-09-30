@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Tests and Linting
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
         run: ruff check .
 
   test:
-    name: Run LM Tests
+    name: LM Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
