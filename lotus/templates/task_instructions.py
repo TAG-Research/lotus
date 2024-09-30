@@ -11,7 +11,7 @@ def filter_formatter_cot(
     cot_reasoning: List[str],
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide a claim and some relevant context.\n"
+        "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
         'First give your reasoning. Then you MUST end your output with "Answer: True or False"'
     )
@@ -45,7 +45,7 @@ def filter_formatter_zs_cot(
     user_instruction: str,
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide a claim and some relevant context.\n"
+        "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
         'First give your reasoning. Then you MUST end your output with "Answer: True or False"'
     )
@@ -71,7 +71,7 @@ def filter_formatter(
         return filter_formatter_zs_cot(df_text, user_instruction)
 
     sys_instruction = (
-        "The user will povide a claim and some relevant context.\n"
+        "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
         'You must answer with a single word, "True" or "False".'
     )
@@ -103,7 +103,7 @@ def map_formatter_cot(
     cot_reasoning: List[str],
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
         "You must give your reasoning and then your final answer"
     )
@@ -119,7 +119,7 @@ def map_formatter_cot(
             [
                 {
                     "role": "user",
-                    "content": f"Context:\n{ex_df_txt}\n\Instruction: {user_instruction}",
+                    "content": f"Context:\n{ex_df_txt}\nInstruction: {user_instruction}",
                 },
                 {
                     "role": "assistant",
@@ -142,7 +142,7 @@ def map_formatter_zs_cot(
     user_instruction: str,
 ) -> List[str]:
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
         'First give your reasoning. Then you MUST end your output with "Answer: your answer"'
     )
@@ -153,7 +153,7 @@ def map_formatter_zs_cot(
     messages.append(
         {
             "role": "user",
-            "content": f"Context:\n{df_text}\n\Instruction: {user_instruction}",
+            "content": f"Context:\n{df_text}\nInstruction: {user_instruction}",
         }
     )
     return messages
@@ -173,7 +173,7 @@ def map_formatter(
         return map_formatter_zs_cot(df_text, user_instruction)
 
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
     )
     messages = [
@@ -203,7 +203,7 @@ def map_formatter(
 
 def extract_formatter(df_text: str, user_instruction: str) -> List[str]:
     sys_instruction = (
-        "The user will povide an instruction and some relevant context.\n"
+        "The user will provide an instruction and some relevant context.\n"
         "Your job is to extract the information requested in the instruction.\n"
         "Write the response in JSONL format in a single line with the following fields:\n"
         """{"answer": "your answer", "quotes": "quote from context supporting your answer"}"""
