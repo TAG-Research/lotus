@@ -32,13 +32,13 @@ def test_filter_operation(setup_models):
 
 def test_filter_cascade(setup_models):
     gpt_4o_mini, gpt_4o = setup_models
+    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
 
     data = {"Text": ["I am really exicted to go to class today!", "I am very sad"]}
     df = pd.DataFrame(data)
     user_instruction = "{Text} is a positive sentiment"
 
     # All filters resolved by the helper model
-    lotus.settings.configure(lm=gpt_4o_mini, helper_lm=gpt_4o)
     filtered_df, stats = df.sem_filter(user_instruction, cascade_threshold=0, return_stats=True)
     assert stats["filters_resolved_by_large_model"] == 0, stats
     assert stats["filters_resolved_by_helper_model"] == 2, stats
@@ -73,7 +73,10 @@ def test_top_k(setup_models):
     assert top_2_expected == top_2_actual
 
 
-def test_join():
+def test_join(setup_models):
+    gpt_4o_mini, _ = setup_models
+    lotus.settings.configure(lm=gpt_4o_mini)
+
     data1 = {"School": ["UC Berkeley", "Stanford"]}
     data2 = {"School Type": ["Public School", "Private School"]}
 
@@ -86,7 +89,10 @@ def test_join():
     assert joined_pairs == expected_pairs
 
 
-def test_map_fewshot():
+def test_map_fewshot(setup_models):
+    gpt_4o_mini, _ = setup_models
+    lotus.settings.configure(lm=gpt_4o_mini)
+
     data = {"School": ["UC Berkeley", "Carnegie Mellon"]}
     df = pd.DataFrame(data)
     examples = {"School": ["Stanford", "MIT"], "Answer": ["CA", "MA"]}
