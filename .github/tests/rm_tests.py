@@ -79,6 +79,24 @@ def test_search_reranker_only(setup_models):
     assert df["Course Name"].tolist() == ["Optimization Methods in Engineering", "Probability and Random Processes"]
 
 
+def test_search(setup_models):
+    rm, reranker = setup_models
+    lotus.settings.configure(rm=rm, reranker=reranker)
+
+    data = {
+        "Course Name": [
+            "Probability and Random Processes",
+            "Cooking",
+            "Food Sciences",
+            "Optimization Methods in Engineering",
+        ]
+    }
+    df = pd.DataFrame(data)
+    df = df.sem_index("Course Name", "index_dir")
+    df = df.sem_search("Course Name", "Optimization", K=2, n_rerank=1)
+    assert df["Course Name"].tolist() == ["Optimization Methods in Engineering"]
+
+
 def test_dedup(setup_models):
     rm, _ = setup_models
     lotus.settings.configure(rm=rm)
