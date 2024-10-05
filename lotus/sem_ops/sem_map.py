@@ -126,7 +126,7 @@ class SemMapDataframe:
             strategy=strategy,
         )
 
-        new_df = self._obj
+        new_df = self._obj.copy()
         new_df[suffix] = outputs
         if return_explanations:
             new_df["explanation" + suffix] = explanations
