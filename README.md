@@ -1,3 +1,14 @@
+# ABOUT THIS FORK
+I am using this fork to implement support for images into LOTUS.
+To do this I have implemented support for the CLIP retriever/embedding model, and adjusted the code for compiling the prompts to correctly append the image data in a manner compatible with the OpenAI API.
+The only way to load images currently is to create a dataframe with a column containing paths to the image files (one path per table entry) and then to call the load_images function.
+
+Example:
+
+```df_images.load_images("image_paths", "encoded_images")```
+
+Where 'image_paths' is the column containing the image paths, and 'encoded_images' is the new column containing the image encoded as a base64 string. The rest of LOTUS should work the same.
+
 # LOTUS:  An Engine For Querying Data with LLMs
 <!--- BADGES: START --->
 [![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing)
