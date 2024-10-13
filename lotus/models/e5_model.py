@@ -58,18 +58,22 @@ class E5Model(RM):
         kwargs = {**self.kwargs, **kwargs}
 
         batch_size = kwargs.get("batch_size", self.batch_size)
-        embeddings = []
-        for i, batch_start in enumerate(tqdm(range(0, len(docs), batch_size))):
-            batch = docs[batch_start : batch_start + batch_size]
+        
+        # Calculating the embedding dimension
+        total_docs = len(docs)
+        first_batch = self.tokenizer(docs[:1], return_tensors="pt", padding=True, truncation=True)
+        embed_dim = self.model(**first_batch).last_hidden_state.size(-1)
 
-            with torch.no_grad():
+        # Pre-allocate a tensor for all embeddings
+        embeddings = torch.empty((total_docs, embed_dim), device=self.device)
+        # Processing batches
+        with torch.inference_mode():  # Slightly faster than torch.no_grad() for inference
+            for i, batch_start in enumerate(tqdm(range(0, total_docs, batch_size))):
+                batch = docs[batch_start : batch_start + batch_size]
                 batch_dict = self.tokenizer(batch, padding=True, truncation=True, return_tensors="pt").to(self.device)
-
                 outputs = self.model(**batch_dict)
                 batch_embeddings = self.average_pool(outputs.last_hidden_state, batch_dict["attention_mask"])
-                embeddings.append(batch_embeddings)
-
-        embeddings = torch.cat(embeddings, dim=0)
+                embeddings[batch_start : batch_start + batch_size] = batch_embeddings
         if kwargs["normalize"]:
             embeddings = F.normalize(embeddings, p=2, dim=1)
 
