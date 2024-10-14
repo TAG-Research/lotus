@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lotus-ai"
-version = "0.2.0"
+version = "0.2.1"
 description = "lotus"
 readme = "README.md"
 authors = [
@@ -67,6 +67,3 @@ line-ending = "auto"
 [tool.ruff.lint.per-file-ignores]
 "**/{docs}/*" = ["ALL"]
 "**__init__.py" = ["ALL"]
-
-[tool.setuptools]
-packages = ["lotus"]
