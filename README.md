@@ -28,6 +28,7 @@ Below are just a few semantic operators provided by LOTUS. To learn more about s
 | sem_agg    | Performs a natural language aggregation across all rows of a column (e.g. for summarization)           |
 | sem_topk   | Order the dataframe by some natural langauge sorting criteria            |
 | sem_join   | Join two dataframes based on a natural language predicate        |
+| sem_dedup  | Deduplicate rows of a dataframe based on semantic similarity           |
 | sem_index  | Create a semantic similarity index over a text column           |
 | sem_search | Perform top-k search the over a text column          |
 
