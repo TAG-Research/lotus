@@ -11,3 +11,7 @@ docs/_build
 /_EVALUATIONS
 /.vscode
 /examples/op_examples
+/experiments/lotus
+/experiments/imageTable/animal_images_index
+/experiments/imageTable/animal_index
+/experiments/imageTable/species_index
