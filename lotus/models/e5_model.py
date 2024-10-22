@@ -61,7 +61,7 @@ class E5Model(RM):
         
         # Calculating the embedding dimension
         total_docs = len(docs)
-        first_batch = self.tokenizer(docs[:1], return_tensors="pt", padding=True, truncation=True)
+        first_batch = self.tokenizer(docs[:1], return_tensors="pt", padding=True, truncation=True).to(self.device)
         embed_dim = self.model(**first_batch).last_hidden_state.size(-1)
 
         # Pre-allocate a tensor for all embeddings
