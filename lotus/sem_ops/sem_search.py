@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pandas as pd
 
 import lotus
@@ -22,8 +20,8 @@ class SemSearchDataframe:
         self,
         col_name: str,
         query: str,
-        K: Optional[int] = None,
-        n_rerank: Optional[int] = None,
+        K: int | None = None,
+        n_rerank: int | None = None,
         return_scores: bool = False,
         suffix: str = "_sim_score",
     ) -> pd.DataFrame:
@@ -33,8 +31,8 @@ class SemSearchDataframe:
         Args:
             col_name (str): The column name to search on.
             query (str): The query string.
-            K (Optional[int]): The number of documents to retrieve.
-            n_rerank (Optional[int]): The number of documents to rerank.
+            K (int | None): The number of documents to retrieve.
+            n_rerank (int | None): The number of documents to rerank.
             return_scores (bool): Whether to return the similarity scores.
             suffix (str): The suffix to append to the new column containing the similarity scores.
 

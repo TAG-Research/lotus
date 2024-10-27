@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Tuple
+from typing import Callable
 
 import pandas as pd
 
@@ -9,29 +9,29 @@ from .postprocessors import map_postprocess
 
 
 def sem_map(
-    docs: List[str],
+    docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
     postprocessor: Callable = map_postprocess,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[List[str]] = None,
-    cot_reasoning: Optional[List[str]] = None,
-    strategy: Optional[str] = None,
-) -> Tuple:
+    examples_df_txt: str | None = None,
+    examples_answers: list[str] | None = None,
+    cot_reasoning: list[str] | None = None,
+    strategy: str | None = None,
+) -> tuple[list[str], list[str], list[str]]:
     """
     Maps a list of documents to a list of outputs using a model.
 
     Args:
-        docs (List[str]): The list of documents to map.
+        docs (list[str]): The list of documents to map.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for map.
-        postprocessor (Optional[Callable]): The postprocessor for the model outputs. Defaults to map_postprocess.
-        examples_df_txt (Optional[str]: The text for examples. Defaults to None.
-        examples_answers (Optional[List[str]]): The answers for examples. Defaults to None.
-        cot_reasoning (Optional[List[str]]): The reasoning for CoT. Defaults to None.
+        postprocessor (Callable): The postprocessor for the model outputs. Defaults to map_postprocess.
+        examples_df_txt (str | None): The text for examples. Defaults to None.
+        examples_answers (list[str] | None): The answers for examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
 
     Returns:
-        Tuple: The outputs, raw outputs, and explanations.
+        tuple[list[str], list[str], list[str]]: The outputs, raw outputs, and explanations.
     """
     # prepare model inputs
     inputs = []
@@ -75,20 +75,20 @@ class SemMapDataframe:
         return_explanations: bool = False,
         return_raw_outputs: bool = False,
         suffix: str = "_map",
-        examples: Optional[pd.DataFrame] = None,
-        strategy: Optional[str] = None,
+        examples: pd.DataFrame | None = None,
+        strategy: str | None = None,
     ) -> pd.DataFrame:
         """
         Applies semantic map over a dataframe.
 
         Args:
             user_instruction (str): The user instruction for map.
-            postprocessor (Optional[Callable]): The postprocessor for the model outputs. Defaults to map_postprocess.
-            return_explanations (Optional[bool]): Whether to return explanations. Defaults to False.
-            return_raw_outputs (Optional[bool]): Whether to return raw outputs. Defaults to False.
-            suffix (Optional[str]): The suffix for the new columns. Defaults to "_map".
-            examples (Optional[pd.DataFrame]): The examples dataframe. Defaults to None.
-            strategy (Optional[str]): The reasoning strategy. Defaults to None.
+            postprocessor (Callable): The postprocessor for the model outputs. Defaults to map_postprocess.
+            return_explanations (bool): Whether to return explanations. Defaults to False.
+            return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
+            suffix (str): The suffix for the new columns. Defaults to "_map".
+            examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
+            strategy (str | None): The reasoning strategy. Defaults to None.
 
         Returns:
             pd.DataFrame: The dataframe with the new mapped columns.

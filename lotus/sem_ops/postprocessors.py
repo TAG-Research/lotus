@@ -1,18 +1,17 @@
 import json
-from typing import List, Tuple
 
 import lotus
 
 
-def map_postprocess_cot(llm_answers: List[str]) -> Tuple[List[str], List[str]]:
+def map_postprocess_cot(llm_answers: list[str]) -> tuple[list[str], list[str]]:
     """
     Postprocess the output of the map operator with CoT reasoning.
 
     Args:
-        llm_answers (List[str]): The list of llm answers.
+        llm_answers (list[str]): The list of llm answers.
 
     Returns:
-        Tuple[List[str], List[str]]: The list of answers and explanations.
+        tuple[list[str], list[str]]: The list of answers and explanations.
     """
     outputs = []
     explanations = []
@@ -33,16 +32,16 @@ def map_postprocess_cot(llm_answers: List[str]) -> Tuple[List[str], List[str]]:
     return outputs, explanations
 
 
-def map_postprocess(llm_answers: List[str], cot_reasoning: bool = False) -> Tuple[List[str], List[str]]:
+def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> tuple[list[str], list[str]]:
     """
     Postprocess the output of the map operator.
 
     Args:
-        llm_answers (List[str]): The list of llm answers.
+        llm_answers (list[str]): The list of llm answers.
         cot_reasoning (bool): Whether there is CoT reasoning.
 
     Returns:
-        Tuple[List[str], List[str]]: The list of answers and explanations.
+        tuple[list[str], list[str]]: The list of answers and explanations.
     """
     if cot_reasoning:
         return map_postprocess_cot(llm_answers)
@@ -52,16 +51,16 @@ def map_postprocess(llm_answers: List[str], cot_reasoning: bool = False) -> Tupl
     return outputs, explanations
 
 
-def filter_postprocess_cot(llm_answers: List[str], default: bool) -> Tuple[List[str], List[str]]:
+def filter_postprocess_cot(llm_answers: list[str], default: bool) -> tuple[list[str], list[str]]:
     """
     Postprocess the output of the filter operator with CoT reasoning.
 
     Args:
-        llm_answers (List[str]): The list of llm answers.
+        llm_answers (list[str]): The list of llm answers.
         default (bool): The default value to use if we fail to parse the answer.
 
     Returns:
-        Tuple[List[str], List[str]]: The list of answers and explanations.
+        tuple[list[str], list[str]]: The list of answers and explanations.
     """
     outputs = []
     explanations = []
@@ -91,20 +90,20 @@ def filter_postprocess_cot(llm_answers: List[str], default: bool) -> Tuple[List[
 
 
 def filter_postprocess(
-    llm_answers: List[str],
+    llm_answers: list[str],
     default: bool = True,
     cot_reasoning: bool = False,
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """
     Postprocess the output of the filter operator.
 
     Args:
-        llm_answers (List[str]): The list of llm answers.
+        llm_answers (list[str]): The list of llm answers.
         default (bool): The default value to use if we fail to parse the answer.
         cot_reasoning (bool): Whether there is CoT reasoning.
 
     Returns:
-        Tuple[List[str], List[str]]: The list of answers and explanations.
+        tuple[list[str], list[str]]: The list of answers and explanations.
     """
     if cot_reasoning:
         return filter_postprocess_cot(llm_answers, default)
@@ -123,16 +122,16 @@ def filter_postprocess(
     return outputs, explanations
 
 
-def extract_postprocess(llm_answers: List[str]) -> Tuple[List[str], List[str]]:
+def extract_postprocess(llm_answers: list[str]) -> tuple[list[str], list[str]]:
     """
     Postprocess the output of the extract operator, which we assume to
     be a JSONL with an answer and quotes field.
 
     Args:
-        llm_answers (List[str]): The list of llm answers.
+        llm_answers (list[str]): The list of llm answers.
 
     Returns:
-        Tuple[List[str], List[str]]: The list of answers and quotes.
+        tuple[list[str], list[str]]: The list of answers and quotes.
     """
     answers = []
     quotes = []

@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -14,7 +14,7 @@ from lotus.models.rm import RM
 class E5Model(RM):
     """E5 retriever model"""
 
-    def __init__(self, model: str = "intfloat/e5-base-v2", device: Optional[str] = None, **kwargs):
+    def __init__(self, model: str = "intfloat/e5-base-v2", device: str | None = None, **kwargs):
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
@@ -45,7 +45,7 @@ class E5Model(RM):
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
-    def embed(self, docs: List[str], **kwargs: Dict[str, Any]) -> np.ndarray:
+    def embed(self, docs: list[str], **kwargs: dict[str, Any]) -> np.ndarray:
         """Run the embedding model.
 
         Args:
@@ -79,7 +79,7 @@ class E5Model(RM):
 
         return embeddings.numpy(force=True)
 
-    def index(self, docs: List[str], index_dir: str, **kwargs: Dict[str, Any]) -> None:
+    def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
         # Make index directory
         os.makedirs(index_dir, exist_ok=True)
 
@@ -110,17 +110,17 @@ class E5Model(RM):
             self.vecs = pickle.load(fp)
 
     @classmethod
-    def get_vectors_from_index(self, index_dir: str, ids: List[int]) -> List:
+    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> list:
         with open(f"{index_dir}/vecs", "rb") as fp:
             vecs = pickle.load(fp)
 
         return vecs[ids]
 
-    def load_vecs(self, index_dir: str, ids: List[int]) -> List:
+    def load_vecs(self, index_dir: str, ids: list[int]) -> list:
         """loads vectors to the rm and returns them
         Args:
             index_dir (str): Directory of the index.
-            ids (List[int]): The ids of the vectors to retrieve
+            ids (list[int]): The ids of the vectors to retrieve
 
         Returns:
             The vectors matching the specified ids.
@@ -134,10 +134,10 @@ class E5Model(RM):
 
     def __call__(
         self,
-        queries: Union[str, List[str], List[List[float]]],
+        queries: str | list[str] | list[list[float]],
         k: int,
-        **kwargs: Dict[str, Any],
-    ) -> Tuple[List[float], List[int]]:
+        **kwargs: dict[str, Any],
+    ) -> tuple[list[float], list[int]]:
         if isinstance(queries, str):
             queries = [queries]
 

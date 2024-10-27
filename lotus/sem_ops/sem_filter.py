@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd
 
@@ -9,31 +9,31 @@ from .postprocessors import filter_postprocess
 
 
 def sem_filter(
-    docs: List[str],
+    docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
     default: bool = True,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[List[bool]] = None,
-    cot_reasoning: Optional[List[str]] = None,
-    strategy: Optional[str] = None,
+    examples_df_txt: str | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
+    strategy: str | None = None,
     logprobs: bool = False,
-) -> Tuple:
+) -> tuple[list[str], list[str], list[str]]:
     """
     Filters a list of documents based on a given user instruction using a language model.
 
     Args:
-        docs (List[str]): The list of documents to filter.
+        docs (list[str]): The list of documents to filter.
         model (lotus.models.LM): The language model used for filtering.
         user_instruction (str): The user instruction for filtering.
-        default (Optional[bool]): The default value for filtering in case of parsing errors. Defaults to True.
-        examples_df_txt (Optional[str]: The text for examples. Defaults to None.
-        examples_answers (Optional[List[bool]]): The answers for examples. Defaults to None.
-        cot_reasoning (Optional[List[str]]): The reasoning for CoT. Defaults to None.
-        logprobs (Optional[bool]): Whether to return log probabilities. Defaults to False.
+        default (bool): The default value for filtering in case of parsing errors. Defaults to True.
+        examples_df_txt (str | None): The text for examples. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
+        logprobs (bool): Whether to return log probabilities. Defaults to False.
 
     Returns:
-        Tuple: A tuple containing the True/False outputs, raw outputs, explanations, and raw log probabilities (if logprobs=True).
+        tuple[list[str], list[str], list[str]]: A tuple containing the True/False outputs, raw outputs, and explanations.
     """
     inputs = []
     for doc in docs:
@@ -81,30 +81,30 @@ class SemFilterDataframe:
         return_explanations: bool = False,
         default: bool = True,
         suffix: str = "_filter",
-        examples: Optional[pd.DataFrame] = None,
-        helper_examples: Optional[pd.DataFrame] = None,
-        strategy: Optional[str] = None,
-        helper_strategy: Optional[str] = None,
-        cascade_threshold: Optional[float] = None,
+        examples: pd.DataFrame | None = None,
+        helper_examples: pd.DataFrame | None = None,
+        strategy: str | None = None,
+        helper_strategy: str | None = None,
+        cascade_threshold: float | None = None,
         return_stats: bool = False,
-    ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]:
+    ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]:
         """
         Applies semantic filter over a dataframe.
 
         Args:
             user_instruction (str): The user instruction for filtering.
-            return_raw_outputs (Optional[bool]): Whether to return raw outputs. Defaults to False.
-            default (Optional[bool]): The default value for filtering in case of parsing errors. Defaults to True.
-            suffix (Optional[str]): The suffix for the new columns. Defaults to "_filter".
-            examples (Optional[pd.DataFrame]): The examples dataframe. Defaults to None.
-            helper_examples (Optional[pd.DataFrame]): The helper examples dataframe. Defaults to None.
-            strategy (Optional[str]): TThe reasoning strategy. Defaults to None.
-            helper_strategy (Optional[str]): The reasoning strategy for helper. Defaults to None.
-            cascade_threshold (Optional[float]): The threshold for cascading. Defaults to None.
-            return_stats (Optional[bool]): Whether to return statistics. Defaults to False.
+            return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
+            default (bool): The default value for filtering in case of parsing errors. Defaults to True.
+            suffix (str): The suffix for the new columns. Defaults to "_filter".
+            examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
+            helper_examples (pd.DataFrame | None): The helper examples dataframe. Defaults to None.
+            strategy (str | None): The reasoning strategy. Defaults to None.
+            helper_strategy (str | None): The reasoning strategy for helper. Defaults to None.
+            cascade_threshold (float | None): The threshold for cascading. Defaults to None.
+            return_stats (bool): Whether to return statistics. Defaults to False.
 
         Returns:
-            Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]: The filtered dataframe or a tuple containing the filtered dataframe and statistics.
+            pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]: The filtered dataframe or a tuple containing the filtered dataframe and statistics.
         """
         stats = {}
         lotus.logger.debug(user_instruction)

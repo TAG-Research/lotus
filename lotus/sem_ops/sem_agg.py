@@ -1,5 +1,3 @@
-from typing import List
-
 import pandas as pd
 
 import lotus
@@ -7,19 +5,19 @@ from lotus.templates import task_instructions
 
 
 def sem_agg(
-    docs: List[str],
+    docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
-    partition_ids: List[int],
+    partition_ids: list[int],
 ) -> str:
     """
     Aggregates multiple documents into a single answer using a model.
 
     Args:
-        docs (List[str]): The list of documents to aggregate.
+        docs (list[str]): The list of documents to aggregate.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for aggregation.
-        partition_ids (List[int]): The partition ids for the documents. Documents with the same partition id will be aggregated together.
+        partition_ids (list[int]): The partition ids for the documents. Documents with the same partition id will be aggregated together.
 
     Returns:
         str: The aggregated answer.
@@ -142,7 +140,7 @@ class SemAggDataframe:
         Args:
             user_instruction (str): The user instruction for aggregation.
             all_cols (bool): Whether to use all columns in the dataframe. Defaults to False.
-            suffix (Optional[str]): The suffix for the new column. Defaults to "_output".
+            suffix (str): The suffix for the new column. Defaults to "_output".
 
         Returns:
             pd.DataFrame: The dataframe with the aggregated answer.

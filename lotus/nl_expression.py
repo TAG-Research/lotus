@@ -1,5 +1,4 @@
 import re
-from typing import List
 
 # create a type natural_language_expr which inherits from type str
 natural_language_expr = type("natural_language_expr", (str,), {})
@@ -13,7 +12,7 @@ def parse_cols(text):
     return matches
 
 
-def nle2str(nle: natural_language_expr, cols: List[str]) -> str:
+def nle2str(nle: natural_language_expr, cols: list[str]) -> str:
     dict = {}
     for col in cols:
         dict[col] = f"{col.capitalize()}"

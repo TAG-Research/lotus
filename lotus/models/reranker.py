@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 
 class Reranker(ABC):
@@ -9,15 +8,15 @@ class Reranker(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, query: str, docs: List[str], k: int) -> List[int]:
+    def __call__(self, query: str, docs: list[str], k: int) -> list[int]:
         """Invoke the reranker.
 
         Args:
             query (str): The query to use for reranking.
-            docs (List[str]): A list of documents to rerank.
+            docs (list[str]): A list of documents to rerank.
             k (int): The number of documents to keep after reranking.
 
         Returns:
-            List[int]: The indicies of the reranked documents.
+            list[int]: The indicies of the reranked documents.
         """
         pass

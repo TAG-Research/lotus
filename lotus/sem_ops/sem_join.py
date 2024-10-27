@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple, Union
-
 import numpy as np
 import pandas as pd
 
@@ -11,37 +9,37 @@ from .sem_filter import sem_filter
 def sem_join(
     l1: pd.Series,
     l2: pd.Series,
-    ids1: List[int],
-    ids2: List[int],
+    ids1: list[int],
+    ids2: list[int],
     col1_label: str,
     col2_label: str,
     model: lotus.models.LM,
     user_instruction: str,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[List[bool]] = None,
-    cot_reasoning: Optional[List[str]] = None,
+    examples_df_txt: str | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
     default: bool = True,
-    strategy: Optional[str] = None,
-) -> Tuple:
+    strategy: str | None = None,
+) -> tuple[list[tuple[int, int, str]], list[str], list[str], list[str]]:
     """
     Joins two series using a model.
 
     Args:
         l1 (pd.Series): The first series.
         l2 (pd.Series): The second series.
-        ids1 (List[int]): The ids for the first series.
-        ids2 (List[int]): The ids for the second series.
+        ids1 (list[int]): The ids for the first series.
+        ids2 (list[int]): The ids for the second series.
         col1_label (str): The label for the first column.
         col2_label (str): The label for the second column.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for join.
-        examples_df_txt (Optional[str]): The examples dataframe text. Defaults to None.
-        examples_answers (Optional[List[bool]]): The answers for examples. Defaults to None.
-        cot_reasoning (Optional[List[str]]): The reasoning for CoT. Defaults to None.
+        examples_df_txt (str | None): The examples dataframe text. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
 
     Returns:
-        Tuple: The join results, filter outputs, all raw outputs, and all explanations.
+        tuple[list[tuple[int, int, str]], list[str], list[str], list[str]]: The join results, filter outputs, all raw outputs, and all explanations.
     """
     filter_outputs = []
     all_raw_outputs = []
@@ -84,18 +82,18 @@ def sem_join(
 def sem_join_cascade(
     l1: pd.Series,
     l2: pd.Series,
-    ids1: List[int],
-    ids2: List[int],
+    ids1: list[int],
+    ids2: list[int],
     col1_label: str,
     col2_label: str,
     user_instruction: str,
     cascade_threshold: int,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[List[bool]] = None,
-    cot_reasoning: Optional[List[str]] = None,
+    examples_df_txt: str | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
     default: bool = True,
-    strategy: Optional[str] = None,
-) -> List[str]:
+    strategy: str | None = None,
+) -> list[str]:
     filter_outputs = []
     all_raw_outputs = []
     all_explanations = []
@@ -210,29 +208,29 @@ class SemJoinDataframe:
 
     def __call__(
         self,
-        other: Union[pd.DataFrame, pd.Series],
+        other: pd.DataFrame | pd.Series,
         join_instruction: str,
         return_explanations: bool = False,
         how: str = "inner",
         suffix: str = "_join",
-        examples: Optional[pd.DataFrame] = None,
-        strategy: Optional[str] = None,
+        examples: pd.DataFrame | None = None,
+        strategy: str | None = None,
         default: bool = True,
-        cascade_threshold: Optional[float] = None,
+        cascade_threshold: float | None = None,
     ) -> pd.DataFrame:
         """
         Applies semantic join over a dataframe.
 
         Args:
-            other (Union[pd.DataFrame, pd.Series]): The other dataframe or series to join with.
+            other (pd.DataFrame | pd.Series): The other dataframe or series to join with.
             join_instruction (str): The user instruction for join.
             return_explanations (bool): Whether to return explanations. Defaults to False.
             how (str): The type of join to perform. Defaults to "inner".
             suffix (str): The suffix for the new columns. Defaults to "_join".
-            examples (Optional[pd.DataFrame]): The examples dataframe. Defaults to None.
-            strategy (Optional[str]): The reasoning strategy. Defaults to None.
+            examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
+            strategy (str | None): The reasoning strategy. Defaults to None.
             default (bool): The default value for the join in case of parsing errors. Defaults to True.
-            cascade_threshold (Optional[float]): The threshold for cascading. Defaults to None.
+            cascade_threshold (float | None): The threshold for cascading. Defaults to None.
 
         Returns:
             pd.DataFrame: The dataframe with the new joined columns.

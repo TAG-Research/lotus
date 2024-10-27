@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple
+from typing import Callable
 
 import pandas as pd
 
@@ -9,22 +9,22 @@ from .postprocessors import extract_postprocess
 
 
 def sem_extract(
-    docs: List[str],
+    docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
     postprocessor: Callable = extract_postprocess,
-) -> Tuple:
+) -> tuple[list[str], list[str], list[str]]:
     """
     Extracts from a list of documents using a model.
 
     Args:
-        docs (List[str]): The list of documents to extract from.
+        docs (list[str]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for extract.
-        postprocessor (Optional[Callable]): The postprocessor for the model outputs. Defaults to extract_postprocess.
+        postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
 
     Returns:
-        Tuple: The outputs, raw outputs, and quotes.
+        tuple[list[str], list[str], list[str]]: The outputs, raw outputs, and quotes.
     """
     # prepare model inputs
     inputs = []
@@ -71,9 +71,9 @@ class SemExtractDataframe:
 
         Args:
             user_instruction (str): The user instruction for extract.
-            postprocessor (Optional[Callable]): The postprocessor for the model outputs. Defaults to extract_postprocess.
-            return_raw_outputs (Optional[bool]): Whether to return raw outputs. Defaults to False.
-            suffix (Optional[str]): The suffix for the new columns. Defaults to "_extract".
+            postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
+            return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
+            suffix (str): The suffix for the new columns. Defaults to "_extract".
         Returns:
             pd.DataFrame: The dataframe with the new extracted values.
         """

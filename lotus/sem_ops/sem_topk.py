@@ -1,6 +1,6 @@
 import heapq
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -110,19 +110,19 @@ def compare_batch_binary_cascade(pairs, user_instruction, cascade_threshold, str
 
 
 def llm_naive_sort(
-    docs: List[str],
+    docs: list[str],
     user_instruction: str,
-    strategy: Optional[str] = None,
-) -> Tuple[List[int], Dict[str, Any]]:
+    strategy: str | None = None,
+) -> tuple[list[int], dict[str, Any]]:
     """
     Sorts the documents using a naive quadratic method.
 
     Args:
-        docs (List[str]): The list of documents to sort.
+        docs (list[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
 
     Returns:
-        Tuple[List[int], Dict[str, Any]]: The indexes of the top k documents and stats.
+        tuple[list[int], dict[str, Any]]: The indexes of the top k documents and stats.
     """
     N = len(docs)
     pairs = []
@@ -149,25 +149,25 @@ def llm_naive_sort(
 
 
 def llm_quicksort(
-    docs: List[str],
+    docs: list[str],
     user_instruction: str,
     k: int,
     embedding: bool = False,
-    strategy: Optional[str] = None,
-    cascade_threshold=None,
-) -> Tuple[List[int], Dict[str, Any]]:
+    strategy: str | None = None,
+    cascade_threshold: float | None = None,
+) -> tuple[list[int], dict[str, Any]]:
     """
     Sorts the documents using quicksort.
 
     Args:
-        docs (List[str]): The list of documents to sort.
+        docs (list[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
         k (int): The number of documents to return.
         embedding (bool): Whether to use embedding optimization.
-        cascade_threshold (Optional[float]): The confidence threshold for cascading to a larger model.
+        cascade_threshold (float | None): The confidence threshold for cascading to a larger model.
 
     Returns:
-        Tuple[List[int], Dict[str, Any]]: The indexes of the top k documents and stats
+        tuple[list[int], dict[str, Any]]: The indexes of the top k documents and stats
     """
     stats = {}
     stats["total_tokens"] = 0
@@ -263,21 +263,21 @@ class HeapDoc:
 
 
 def llm_heapsort(
-    docs: List[str],
+    docs: list[str],
     user_instruction: str,
     k: int,
-    strategy: Optional[str] = None,
-) -> Tuple[List[int], Dict[str, Any]]:
+    strategy: str | None = None,
+) -> tuple[list[int], dict[str, Any]]:
     """
     Sorts the documents using a heap.
 
     Args:
-        docs (List[str]): The list of documents to sort.
+        docs (list[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
         k (int): The number of documents to return.
 
     Returns:
-        Tuple[List[int], Dict[str, Any]]: The indexes of the top k documents and stats.
+        tuple[list[int], dict[str, Any]]: The indexes of the top k documents and stats.
     """
     HeapDoc.num_calls = 0
     HeapDoc.total_tokens = 0
@@ -308,11 +308,11 @@ class SemTopKDataframe:
         user_instruction: str,
         K: int,
         method: str = "quick",
-        strategy: Optional[str] = None,
-        group_by: Optional[List[str]] = None,
-        cascade_threshold: Optional[float] = None,
+        strategy: str | None = None,
+        group_by: list[str] | None = None,
+        cascade_threshold: float | None = None,
         return_stats: bool = False,
-    ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]:
+    ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]:
         """
         Sorts the DataFrame based on the user instruction and returns the top K rows.
 
@@ -320,12 +320,12 @@ class SemTopKDataframe:
             user_instruction (str): The user instruction for sorting.
             K (int): The number of rows to return.
             method (str): The method to use for sorting. Options are "quick", "heap", "naive", "quick-sem".
-            group_by (Optional[List[str]]): The columns to group by before sorting. Each group will be sorted separately.
-            cascade_threshold (Optional[float]): The confidence threshold for cascading to a larger model.
+            group_by (list[str] | None): The columns to group by before sorting. Each group will be sorted separately.
+            cascade_threshold (float | None): The confidence threshold for cascading to a larger model.
             return_stats (bool): Whether to return stats.
 
         Returns:
-            Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]: The sorted DataFrame. If return_stats is True, returns a tuple with the sorted DataFrame and stats
+            pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]: The sorted DataFrame. If return_stats is True, returns a tuple with the sorted DataFrame and stats
         """
         lotus.logger.debug(f"Sorting DataFrame with user instruction: {user_instruction}")
         col_li = lotus.nl_expression.parse_cols(user_instruction)
