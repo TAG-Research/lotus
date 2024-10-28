@@ -1,39 +1,40 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
+from lotus.types import SemanticFilterOutput
 
 from .postprocessors import filter_postprocess
 
 
 def sem_filter(
-    docs: List[str],
+    docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
     default: bool = True,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[List[bool]] = None,
-    cot_reasoning: Optional[List[str]] = None,
-    strategy: Optional[str] = None,
+    examples_df_txt: list[str] | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
+    strategy: str | None = None,
     logprobs: bool = False,
-) -> Tuple:
+) -> SemanticFilterOutput:
     """
     Filters a list of documents based on a given user instruction using a language model.
 
     Args:
-        docs (List[str]): The list of documents to filter.
+        docs (list[str]): The list of documents to filter.
         model (lotus.models.LM): The language model used for filtering.
         user_instruction (str): The user instruction for filtering.
-        default (Optional[bool]): The default value for filtering in case of parsing errors. Defaults to True.
-        examples_df_txt (Optional[str]: The text for examples. Defaults to None.
-        examples_answers (Optional[List[bool]]): The answers for examples. Defaults to None.
-        cot_reasoning (Optional[List[str]]): The reasoning for CoT. Defaults to None.
-        logprobs (Optional[bool]): Whether to return log probabilities. Defaults to False.
+        default (bool): The default value for filtering in case of parsing errors. Defaults to True.
+        examples_df_txt (list[str] | None): The text for examples. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
+        logprobs (bool): Whether to return log probabilities. Defaults to False.
 
     Returns:
-        Tuple: A tuple containing the True/False outputs, raw outputs, explanations, and raw log probabilities (if logprobs=True).
+        SemanticFilterOutput: The True/False outputs, raw outputs, and explanations, and log probabilities.
     """
     inputs = []
     for doc in docs:
@@ -42,34 +43,33 @@ def sem_filter(
         )
         lotus.logger.debug(f"input to model: {prompt}")
         inputs.append(prompt)
-    res = model(inputs, logprobs=logprobs)
+    kwargs: dict[str, Any] = {"logprobs": logprobs}
+    res = model(inputs, **kwargs)
     if logprobs:
+        assert isinstance(res, tuple)
         raw_outputs, raw_logprobs = res
     else:
+        assert isinstance(res, list)
         raw_outputs = res
 
-    outputs, explanations = filter_postprocess(
-        raw_outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"]
-    )
-    lotus.logger.debug(f"outputs: {outputs}")
-    lotus.logger.debug(f"raw_outputs: {raw_outputs}")
-    lotus.logger.debug(f"explanations: {explanations}")
+    postprocess_output = filter_postprocess(raw_outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"])
+    lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
+    lotus.logger.debug(f"raw_outputs: {postprocess_output.raw_outputs}")
+    lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
 
-    if logprobs:
-        return outputs, raw_outputs, explanations, raw_logprobs
-    return outputs, raw_outputs, explanations
+    return SemanticFilterOutput(**postprocess_output.model_dump(), logprobs=raw_logprobs if logprobs else None)
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_filter")
 class SemFilterDataframe:
     """DataFrame accessor for semantic filter."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         # verify that the Series has the correct type
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
@@ -81,30 +81,30 @@ class SemFilterDataframe:
         return_explanations: bool = False,
         default: bool = True,
         suffix: str = "_filter",
-        examples: Optional[pd.DataFrame] = None,
-        helper_examples: Optional[pd.DataFrame] = None,
-        strategy: Optional[str] = None,
-        helper_strategy: Optional[str] = None,
-        cascade_threshold: Optional[float] = None,
+        examples: pd.DataFrame | None = None,
+        helper_examples: pd.DataFrame | None = None,
+        strategy: str | None = None,
+        helper_strategy: str | None = None,
+        cascade_threshold: float | None = None,
         return_stats: bool = False,
-    ) -> Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]:
+    ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]:
         """
         Applies semantic filter over a dataframe.
 
         Args:
             user_instruction (str): The user instruction for filtering.
-            return_raw_outputs (Optional[bool]): Whether to return raw outputs. Defaults to False.
-            default (Optional[bool]): The default value for filtering in case of parsing errors. Defaults to True.
-            suffix (Optional[str]): The suffix for the new columns. Defaults to "_filter".
-            examples (Optional[pd.DataFrame]): The examples dataframe. Defaults to None.
-            helper_examples (Optional[pd.DataFrame]): The helper examples dataframe. Defaults to None.
-            strategy (Optional[str]): TThe reasoning strategy. Defaults to None.
-            helper_strategy (Optional[str]): The reasoning strategy for helper. Defaults to None.
-            cascade_threshold (Optional[float]): The threshold for cascading. Defaults to None.
-            return_stats (Optional[bool]): Whether to return statistics. Defaults to False.
+            return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
+            default (bool): The default value for filtering in case of parsing errors. Defaults to True.
+            suffix (str): The suffix for the new columns. Defaults to "_filter".
+            examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
+            helper_examples (pd.DataFrame | None): The helper examples dataframe. Defaults to None.
+            strategy (str | None): The reasoning strategy. Defaults to None.
+            helper_strategy (str | None): The reasoning strategy for helper. Defaults to None.
+            cascade_threshold (float | None): The threshold for cascading. Defaults to None.
+            return_stats (bool): Whether to return statistics. Defaults to False.
 
         Returns:
-            Union[pd.DataFrame, Tuple[pd.DataFrame, Dict[str, Any]]]: The filtered dataframe or a tuple containing the filtered dataframe and statistics.
+            pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]: The filtered dataframe or a tuple containing the filtered dataframe and statistics.
         """
         stats = {}
         lotus.logger.debug(user_instruction)
@@ -149,7 +149,7 @@ class SemFilterDataframe:
                     helper_cot_reasoning = examples["Reasoning"].tolist()
 
             # Run small LM and get logits
-            helper_outputs, helper_raw_outputs, helper_explanations, helper_logprobs = sem_filter(
+            helper_output = sem_filter(
                 df_txt,
                 lotus.settings.helper_lm,
                 formatted_usr_instr,
@@ -162,7 +162,9 @@ class SemFilterDataframe:
             )
 
             high_conf_idxs = set()
-            helper_tokens, helper_confidences = lotus.settings.helper_lm.format_logprobs_for_cascade(helper_logprobs)
+            helper_tokens, helper_confidences = lotus.settings.helper_lm.format_logprobs_for_cascade(
+                helper_output.logprobs
+            )
 
             # Find where true/false is said and look at confidence
             for idx_i, (tokens, confidences) in enumerate(zip(helper_tokens, helper_confidences)):
@@ -172,22 +174,23 @@ class SemFilterDataframe:
                         if conf >= cascade_threshold:
                             high_conf_idxs.add(idx_i)
 
-            outputs, raw_outputs, explanations = (
-                [None] * len(df_txt),
-                [None] * len(df_txt),
-                [None] * len(df_txt),
-            )
+            outputs: list[bool] = [False] * len(df_txt)
+            raw_outputs: list[str] = [""] * len(df_txt)
+            explanations: list[str | None] = [None] * len(df_txt)
 
+            assert all(isinstance(x, str) for x in helper_output.explanations) or all(
+                x is None for x in helper_output.explanations
+            )
             for idx in high_conf_idxs:
-                outputs[idx] = helper_outputs[idx]
-                raw_outputs[idx] = helper_raw_outputs[idx]
-                explanations[idx] = helper_explanations[idx]
+                outputs[idx] = helper_output.outputs[idx]
+                raw_outputs[idx] = helper_output.raw_outputs[idx]
+                explanations[idx] = helper_output.explanations[idx]
 
             # Send low confidence samples to large LM if any
-            low_conf_idxs = sorted([i for i in range(len(helper_outputs)) if i not in high_conf_idxs])
+            low_conf_idxs = sorted([i for i in range(len(helper_output.outputs)) if i not in high_conf_idxs])
             low_conf_df_txt = [df_txt[idx] for idx in low_conf_idxs]
             if low_conf_idxs:
-                large_outputs, large_raw_outputs, large_explanations = sem_filter(
+                large_output = sem_filter(
                     low_conf_df_txt,
                     lotus.settings.lm,
                     formatted_usr_instr,
@@ -199,15 +202,15 @@ class SemFilterDataframe:
                 )
 
                 for idx, large_idx in enumerate(low_conf_idxs):
-                    outputs[large_idx] = large_outputs[idx]
-                    raw_outputs[large_idx] = large_raw_outputs[idx]
-                    explanations[large_idx] = large_explanations[idx]
+                    outputs[large_idx] = large_output.outputs[idx]
+                    raw_outputs[large_idx] = large_output.raw_outputs[idx]
+                    explanations[large_idx] = large_output.explanations[idx]
 
             stats["filters_resolved_by_helper_model"] += len(high_conf_idxs)
             stats["filters_resolved_by_large_model"] += len(low_conf_idxs)
 
         else:
-            outputs, raw_outputs, explanations = sem_filter(
+            output = sem_filter(
                 df_txt,
                 lotus.settings.lm,
                 formatted_usr_instr,
@@ -217,6 +220,9 @@ class SemFilterDataframe:
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
             )
+            outputs = output.outputs
+            raw_outputs = output.raw_outputs
+            explanations = output.explanations
 
         # find indices where output is True
         ids = [i for i, x in enumerate(outputs) if x]

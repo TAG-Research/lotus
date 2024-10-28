@@ -89,6 +89,33 @@ def test_join(setup_models):
     assert joined_pairs == expected_pairs
 
 
+def test_join_cascade(setup_models):
+    gpt_4o_mini, gpt_4o = setup_models
+    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
+
+    data1 = {"School": ["UC Berkeley", "Stanford"]}
+    data2 = {"School Type": ["Public School", "Private School"]}
+
+    df1 = pd.DataFrame(data1)
+    df2 = pd.DataFrame(data2)
+    join_instruction = "{School} is a {School Type}"
+    expected_pairs = set([("UC Berkeley", "Public School"), ("Stanford", "Private School")])
+
+    # All joins resolved by the helper model
+    joined_df, stats = df1.sem_join(df2, join_instruction, cascade_threshold=0, return_stats=True)
+    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
+    assert joined_pairs == expected_pairs
+    assert stats["filters_resolved_by_large_model"] == 0, stats
+    assert stats["filters_resolved_by_helper_model"] == 4, stats
+
+    # All joins resolved by the large model
+    joined_df, stats = df1.sem_join(df2, join_instruction, cascade_threshold=1.01, return_stats=True)
+    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
+    assert joined_pairs == expected_pairs
+    assert stats["filters_resolved_by_large_model"] == 4, stats
+    assert stats["filters_resolved_by_helper_model"] == 0, stats
+
+
 def test_map_fewshot(setup_models):
     gpt_4o_mini, _ = setup_models
     lotus.settings.configure(lm=gpt_4o_mini)

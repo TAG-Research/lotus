@@ -1,9 +1,11 @@
 from typing import Callable
 
+import pandas as pd
+
 import lotus
 
 
-def cluster(col_name: str, ncentroids: int) -> Callable:
+def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:
     """
     Returns a function that clusters a DataFrame by a column using kmeans.
 
@@ -16,10 +18,10 @@ def cluster(col_name: str, ncentroids: int) -> Callable:
     """
 
     def ret(
-        df,
+        df: pd.DataFrame,
         niter: int = 20,
         verbose: bool = False,
-    ):
+    ) -> list[int]:
         import faiss
 
         """Cluster by column, and return a series in the dataframe with cluster-ids"""
@@ -48,6 +50,6 @@ def cluster(col_name: str, ncentroids: int) -> Callable:
 
         # get nearest centroid to each vector
         _, indices = kmeans.index.search(vec_set, 1)
-        return indices.flatten()
+        return list(map(int, indices.flatten().tolist()))
 
     return ret

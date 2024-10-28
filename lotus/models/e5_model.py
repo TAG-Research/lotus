@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -14,18 +14,18 @@ from lotus.models.rm import RM
 class E5Model(RM):
     """E5 retriever model"""
 
-    def __init__(self, model: str = "intfloat/e5-base-v2", device: Optional[str] = None, **kwargs):
+    def __init__(self, model: str = "intfloat/e5-base-v2", device: str | None = None, **kwargs: dict[str, Any]) -> None:
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.model = AutoModel.from_pretrained(model).to(self.device)
         self.faiss_index = None
-        self.index_dir = None
-        self.docs = None
-        self.kwargs = {"normalize": True, "index_type": "Flat", **kwargs}
-        self.batch_size = 100
-        self.vecs = None
+        self.index_dir: str | None = None
+        self.docs: list[str] | None = None
+        self.kwargs: dict[str, Any] = {"normalize": True, "index_type": "Flat", **kwargs}
+        self.batch_size: int = 100
+        self.vecs: np.ndarray[Any, np.dtype[np.float32]] | None = None
 
         import faiss
 
@@ -45,7 +45,7 @@ class E5Model(RM):
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
-    def embed(self, docs: List[str], **kwargs: Dict[str, Any]) -> np.ndarray:
+    def embed(self, docs: list[str], **kwargs: dict[str, Any]) -> np.ndarray[Any, np.dtype[np.float32]]:
         """Run the embedding model.
 
         Args:
@@ -55,10 +55,11 @@ class E5Model(RM):
             Embeddings of the documents.
         """
 
-        kwargs = {**self.kwargs, **kwargs}
+        kwargs = {**self.kwargs, **dict(kwargs)}
 
         batch_size = kwargs.get("batch_size", self.batch_size)
-        
+        assert isinstance(batch_size, int), "batch_size must be an integer"
+
         # Calculating the embedding dimension
         total_docs = len(docs)
         first_batch = self.tokenizer(docs[:1], return_tensors="pt", padding=True, truncation=True).to(self.device)
@@ -79,7 +80,7 @@ class E5Model(RM):
 
         return embeddings.numpy(force=True)
 
-    def index(self, docs: List[str], index_dir: str, **kwargs: Dict[str, Any]) -> None:
+    def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
         # Make index directory
         os.makedirs(index_dir, exist_ok=True)
 
@@ -110,17 +111,17 @@ class E5Model(RM):
             self.vecs = pickle.load(fp)
 
     @classmethod
-    def get_vectors_from_index(self, index_dir: str, ids: List[int]) -> List:
+    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> list[np.ndarray[Any, np.dtype[np.float32]]]:
         with open(f"{index_dir}/vecs", "rb") as fp:
-            vecs = pickle.load(fp)
+            vecs: np.ndarray[Any, np.dtype[np.float32]] = pickle.load(fp)
 
         return vecs[ids]
 
-    def load_vecs(self, index_dir: str, ids: List[int]) -> List:
+    def load_vecs(self, index_dir: str, ids: list[int]) -> list:
         """loads vectors to the rm and returns them
         Args:
             index_dir (str): Directory of the index.
-            ids (List[int]): The ids of the vectors to retrieve
+            ids (list[int]): The ids of the vectors to retrieve
 
         Returns:
             The vectors matching the specified ids.
@@ -134,10 +135,10 @@ class E5Model(RM):
 
     def __call__(
         self,
-        queries: Union[str, List[str], List[List[float]]],
+        queries: str | list[str] | list[list[float]],
         k: int,
-        **kwargs: Dict[str, Any],
-    ) -> Tuple[List[float], List[int]]:
+        **kwargs: dict[str, Any],
+    ) -> tuple[list[float], list[int]]:
         if isinstance(queries, str):
             queries = [queries]
 

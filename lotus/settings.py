@@ -1,11 +1,12 @@
 import copy
 import threading
 from contextlib import contextmanager
+from typing import Any, Generator
 
 
 # This code was adapted from DSPy: https://github.com/stanfordnlp/dspy/blob/main/dsp/utils/settings.py
-class dotdict(dict):
-    def __getattr__(self, key):
+class dotdict(dict[str, Any]):
+    def __getattr__(self, key: str) -> Any:
         if key.startswith("__") and key.endswith("__"):
             return super().__getattr__(key)
         try:
@@ -13,19 +14,19 @@ class dotdict(dict):
         except KeyError:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'")
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
         if key.startswith("__") and key.endswith("__"):
             super().__setattr__(key, value)
         else:
             self[key] = value
 
-    def __delattr__(self, key):
+    def __delattr__(self, key: str) -> None:
         if key.startswith("__") and key.endswith("__"):
             super().__delattr__(key)
         else:
             del self[key]
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: Any) -> "dotdict":
         # Use the default dict copying method to avoid infinite recursion.
         return dotdict(copy.deepcopy(dict(self), memo))
 
@@ -35,7 +36,7 @@ class Settings(object):
 
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls) -> "Settings":
         """
         Singleton Pattern. See https://python-patterns.guide/gang-of-four/singleton/
         """
@@ -58,13 +59,13 @@ class Settings(object):
         return cls._instance
 
     @property
-    def config(self):
+    def config(self) -> dotdict:
         thread_id = threading.get_ident()
         if thread_id not in self.stack_by_thread:
             self.stack_by_thread[thread_id] = [self.main_stack[-1].copy()]
         return self.stack_by_thread[thread_id][-1]
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         if hasattr(self.config, name):
             return getattr(self.config, name)
 
@@ -73,13 +74,13 @@ class Settings(object):
 
         super().__getattr__(name)
 
-    def __append(self, config):
+    def __append(self, config: dotdict) -> None:
         thread_id = threading.get_ident()
         if thread_id not in self.stack_by_thread:
             self.stack_by_thread[thread_id] = [self.main_stack[-1].copy()]
         self.stack_by_thread[thread_id].append(config)
 
-    def __pop(self):
+    def __pop(self) -> None:
         thread_id = threading.get_ident()
         if thread_id in self.stack_by_thread:
             self.stack_by_thread[thread_id].pop()
@@ -98,7 +99,7 @@ class Settings(object):
         self.__append(config)
 
     @contextmanager
-    def context(self, inherit_config=True, **kwargs):
+    def context(self, inherit_config: bool = True, **kwargs: Any) -> Generator[None, None, None]:
         self.configure(inherit_config=inherit_config, **kwargs)
 
         try:

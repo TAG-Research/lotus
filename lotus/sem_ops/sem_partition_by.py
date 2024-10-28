@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Any, Callable
 
 import pandas as pd
 
@@ -7,18 +7,18 @@ import pandas as pd
 class SemPartitionByDataframe:
     """DataFrame accessor for semantic partitioning."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 
     def __call__(
         self,
-        partition_fn: Callable,
+        partition_fn: Callable[[pd.DataFrame], list[int]],
     ) -> pd.DataFrame:
         """
         Perform semantic partitioning on the DataFrame.

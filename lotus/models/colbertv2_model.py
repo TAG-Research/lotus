@@ -1,5 +1,5 @@
 import pickle
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from lotus.models.rm import RM
 
@@ -8,9 +8,9 @@ class ColBERTv2Model(RM):
     """ColBERTv2 Model"""
 
     def __init__(self, **kwargs):
-        self.docs: Optional[List[str]] = None
-        self.kwargs: Dict[str, Any] = {"doc_maxlen": 300, "nbits": 2, **kwargs}
-        self.index_dir: Optional[str] = None
+        self.docs: list[str] | None = None
+        self.kwargs: dict[str, Any] = {"doc_maxlen": 300, "nbits": 2, **kwargs}
+        self.index_dir: str | None = None
 
         from colbert import Indexer, Searcher
         from colbert.infra import ColBERTConfig, Run, RunConfig
@@ -21,7 +21,7 @@ class ColBERTv2Model(RM):
         self.Run = Run
         self.RunConfig = RunConfig
 
-    def index(self, docs: List[str], index_dir: str, **kwargs: Dict[str, Any]) -> None:
+    def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
         kwargs = {**self.kwargs, **kwargs}
         checkpoint = "colbert-ir/colbertv2.0"
 
@@ -41,15 +41,15 @@ class ColBERTv2Model(RM):
         with open(f"experiments/lotus/indexes/{index_dir}/index/docs", "rb") as fp:
             self.docs = pickle.load(fp)
 
-    def get_vectors_from_index(self, index_dir: str, ids: List[int]) -> List:
+    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> list:
         raise NotImplementedError("This method is not implemented for ColBERTv2Model")
 
     def __call__(
         self,
-        queries: Union[str, List[str], List[List[float]]],
+        queries: str | list[str] | list[list[float]],
         k: int,
-        **kwargs: Dict[str, Any],
-    ) -> Tuple[List[float], List[int]]:
+        **kwargs: dict[str, Any],
+    ) -> tuple[list[float], list[int]]:
         if isinstance(queries, str):
             queries = [queries]
 

@@ -1,6 +1,6 @@
 import os
 import threading
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import backoff
 import numpy as np
@@ -29,31 +29,31 @@ class OpenAIModel(LM):
 
     Args:
         model (str): The name of the model to use.
-        api_key (Optional[str]): An API key (e.g. from OpenAI or Databricks).
-        api_base (Optional[str]): The endpoint of the server.
+        api_key (str | None): An API key (e.g. from OpenAI or Databricks).
+        api_base (str | None): The endpoint of the server.
         provider (str): Either openai, dbrx, or vllm.
         max_batch_size (int): The maximum batch size for the model.
         max_ctx_len (int): The maximum context length for the model.
-        **kwargs (Dict[str, Any]): Additional keyword arguments. They can be used to specify inference parameters.
+        **kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify inference parameters.
     """
 
     def __init__(
         self,
         model: str = "gpt-4o-mini",
-        hf_name: Optional[str] = None,
-        api_key: Optional[str] = None,
-        api_base: Optional[str] = None,
+        hf_name: str | None = None,
+        api_key: str | None = None,
+        api_base: str | None = None,
         provider: str = "openai",
         max_batch_size: int = 64,
         max_ctx_len: int = 4096,
-        **kwargs: Dict[str, Any],
+        **kwargs: dict[str, Any],
     ):
         super().__init__()
         self.provider = provider
         self.use_chat = provider in ["openai", "dbrx", "ollama"]
         self.max_batch_size = max_batch_size
-        self.max_ctx_len = max_ctx_len
         self.hf_name = hf_name if hf_name is not None else model
+        self.__dict__["max_ctx_len"] = max_ctx_len
 
         self.kwargs = {
             "model": model,
@@ -73,16 +73,18 @@ class OpenAIModel(LM):
         else:
             self.tokenizer = AutoTokenizer.from_pretrained(self.hf_name)
 
-    def handle_chat_request(self, messages: List, **kwargs: Dict[str, Any]) -> Union[List, Tuple[List, List]]:
+    def handle_chat_request(
+        self, messages: list, **kwargs: dict[str, Any]
+    ) -> list | tuple[list[list[str]], list[list[float]]]:
         """Handle single chat request to OpenAI server.
 
         Args:
-            messages_batch (List): A prompt in message format.
-            **kwargs (Dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
+            messages_batch (list): A prompt in message format.
+            **kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
                       model name, max tokens, etc.
 
         Returns:
-            Union[List, Tuple[List, List]]: A list of outputs for each prompt in the batch (just one in this case). If logprobs is specified in the keyword arguments,
+            list | tuple[list[list[str]], list[list[float]]]: A list of outputs for each prompt in the batch (just one in this case). If logprobs is specified in the keyword arguments,
             then a list of logprobs is also returned.
         """
         if kwargs.get("logprobs", False):
@@ -101,16 +103,18 @@ class OpenAIModel(LM):
 
         return completions
 
-    def handle_completion_request(self, messages: List, **kwargs):
+    def handle_completion_request(
+        self, messages: list, **kwargs: dict[str, Any]
+    ) -> list | tuple[list[list[str]], list[list[float]]]:
         """Handle a potentially batched completions request to OpenAI server.
 
         Args:
-            messages_batch: A list of prompts in message format.
-            **kwargs: Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
+            messages_batch (list): A list of prompts in message format.
+            **kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
                       model name, max tokens, etc.
 
         Returns:
-            Union[List, Tuple[List, List]]: A list of outputs for each prompt in the batch. If logprobs is specified in the keyword arguments,
+            list | tuple[list[list[str]], list[list[float]]]: A list of outputs for each prompt in the batch. If logprobs is specified in the keyword arguments,
             then a list of logprobs is also returned.
         """
         if not isinstance(messages[0], list):
@@ -140,12 +144,12 @@ class OpenAIModel(LM):
         max_time=1000,
         on_backoff=backoff_hdlr,
     )
-    def request(self, messages: List, **kwargs) -> Union[List, Tuple[List, List]]:
+    def request(self, messages: list, **kwargs: dict[str, Any]) -> list | tuple[list[list[str]], list[list[float]]]:
         """Handle single request to OpenAI server. Decides whether chat or completion endpoint is necessary.
 
         Args:
-            messages_batch: A prompt in message format.
-            **kwargs: Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
+            messages_batch (list): A prompt in message format.
+            **kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
                       model name, max tokens, etc.
 
         Returns:
@@ -157,15 +161,17 @@ class OpenAIModel(LM):
         else:
             return self.handle_completion_request(messages, **kwargs)
 
-    def batched_chat_request(self, messages_batch: List, **kwargs) -> Union[List, Tuple[List, List]]:
+    def batched_chat_request(
+        self, messages_batch: list, **kwargs: dict[str, Any]
+    ) -> list | tuple[list[list[str]], list[list[float]]]:
         """Handle batched chat request to OpenAI server.
 
         Args:
-            messages_batch (List): Either one prompt or a list of prompts in message format.
-            **kwargs (Dict[str, Any]): Additional keyword arguments. They can be used to specify inference parameters.
+            messages_batch (list): Either one prompt or a list of prompts in message format.
+            **kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify inference parameters.
 
         Returns:
-            Union[List, Tuple[List, List]]: A list of outputs for each prompt in the batch. If logprobs is specified in the keyword arguments,
+            list | tuple[list[list[str]], list[list[float]]]: A list of outputs for each prompt in the batch. If logprobs is specified in the keyword arguments,
             then a list of logprobs is also returned.
         """
 
@@ -195,8 +201,8 @@ class OpenAIModel(LM):
         return text_ret
 
     def __call__(
-        self, messages_batch: Union[List, List[List]], **kwargs: Dict[str, Any]
-    ) -> Union[List, Tuple[List, List]]:
+        self, messages_batch: list | list[list], **kwargs: dict[str, Any]
+    ) -> list[str] | tuple[list[str], list[dict[str, Any]]]:
         lotus.logger.debug(f"OpenAIModel.__call__ messages_batch: {messages_batch}")
         lotus.logger.debug(f"OpenAIModel.__call__ kwargs: {kwargs}")
         # Bakes max batch size into model call. # TODO: Figure out less hacky way to do this.
@@ -221,7 +227,7 @@ class OpenAIModel(LM):
 
         return self.request(messages_batch, **kwargs)
 
-    def count_tokens(self, prompt: Union[str, list]) -> int:
+    def count_tokens(self, prompt: str | list) -> int:
         if isinstance(prompt, str):
             if self.provider != "openai":
                 return len(self.tokenizer(prompt)["input_ids"])
@@ -233,7 +239,7 @@ class OpenAIModel(LM):
 
             return sum(len(self.tokenizer.encode(message["content"])) for message in prompt)
 
-    def format_logprobs_for_cascade(self, logprobs: List) -> Tuple[List[List[str]], List[List[float]]]:
+    def format_logprobs_for_cascade(self, logprobs: list) -> tuple[list[list[str]], list[list[float]]]:
         all_tokens = []
         all_confidences = []
         for idx in range(len(logprobs)):
@@ -249,11 +255,11 @@ class OpenAIModel(LM):
 
         return all_tokens, all_confidences
 
-    def chat_request(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def chat_request(self, **kwargs: dict[str, Any]) -> dict[str, Any]:
         """Send chat request to OpenAI server.
 
         Args:
-            **kwargs (Dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
+            **kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
                       model name, max tokens, etc.
 
         Returns:
@@ -261,11 +267,11 @@ class OpenAIModel(LM):
         """
         return self.client.chat.completions.create(**kwargs).model_dump()
 
-    def completion_request(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def completion_request(self, **kwargs: dict[str, Any]) -> dict[str, Any]:
         """Send completion request to OpenAI server.
 
         Args:
-            **kwargs (Dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
+            **kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify things such as the prompt, temperature,
                       model name, max tokens, etc.
 
         Returns:
@@ -276,3 +282,7 @@ class OpenAIModel(LM):
     @property
     def max_tokens(self) -> int:
         return self.kwargs["max_tokens"]
+
+    @property
+    def max_ctx_len(self) -> int:
+        return self.__dict__["max_ctx_len"]

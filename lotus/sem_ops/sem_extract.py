@@ -1,30 +1,31 @@
-from typing import Callable, List, Tuple
+from typing import Any, Callable
 
 import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
+from lotus.types import SemanticExtractOutput, SemanticExtractPostprocessOutput
 
 from .postprocessors import extract_postprocess
 
 
 def sem_extract(
-    docs: List[str],
+    docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
-    postprocessor: Callable = extract_postprocess,
-) -> Tuple:
+    postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
+) -> SemanticExtractOutput:
     """
     Extracts from a list of documents using a model.
 
     Args:
-        docs (List[str]): The list of documents to extract from.
+        docs (list[str]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for extract.
-        postprocessor (Optional[Callable]): The postprocessor for the model outputs. Defaults to extract_postprocess.
+        postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
 
     Returns:
-        Tuple: The outputs, raw outputs, and quotes.
+        SemanticExtractOutput: The outputs, raw outputs, and quotes.
     """
     # prepare model inputs
     inputs = []
@@ -36,33 +37,37 @@ def sem_extract(
 
     # call model
     raw_outputs = model(inputs)
+    if isinstance(raw_outputs, tuple):
+        raw_outputs, _ = raw_outputs
+    else:
+        assert isinstance(raw_outputs, list)
 
     # post process results
-    outputs, quotes = postprocessor(raw_outputs)
+    postprocess_output = postprocessor(raw_outputs)
     lotus.logger.debug(f"raw_outputs: {raw_outputs}")
-    lotus.logger.debug(f"outputs: {outputs}")
-    lotus.logger.debug(f"quotes: {quotes}")
+    lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
+    lotus.logger.debug(f"quotes: {postprocess_output.quotes}")
 
-    return outputs, raw_outputs, quotes
+    return SemanticExtractOutput(**postprocess_output.model_dump())
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_extract")
 class SemExtractDataframe:
     """DataFrame accessor for semantic extract."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 
     def __call__(
         self,
         user_instruction: str,
-        postprocessor: Callable = extract_postprocess,
+        postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
         return_raw_outputs: bool = False,
         suffix: str = "_extract",
     ) -> pd.DataFrame:
@@ -71,9 +76,9 @@ class SemExtractDataframe:
 
         Args:
             user_instruction (str): The user instruction for extract.
-            postprocessor (Optional[Callable]): The postprocessor for the model outputs. Defaults to extract_postprocess.
-            return_raw_outputs (Optional[bool]): Whether to return raw outputs. Defaults to False.
-            suffix (Optional[str]): The suffix for the new columns. Defaults to "_extract".
+            postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
+            return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
+            suffix (str): The suffix for the new columns. Defaults to "_extract".
         Returns:
             pd.DataFrame: The dataframe with the new extracted values.
         """
@@ -87,7 +92,7 @@ class SemExtractDataframe:
         df_txt = task_instructions.df2text(self._obj, col_li)
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
 
-        outputs, raw_outputs, quotes = sem_extract(
+        output = sem_extract(
             df_txt,
             lotus.settings.lm,
             formatted_usr_instr,
@@ -95,9 +100,9 @@ class SemExtractDataframe:
         )
 
         new_df = self._obj
-        new_df["answers" + suffix] = outputs
-        new_df["quotes" + suffix] = quotes
+        new_df["answers" + suffix] = output.outputs
+        new_df["quotes" + suffix] = output.quotes
         if return_raw_outputs:
-            new_df["raw_output" + suffix] = raw_outputs
+            new_df["raw_output" + suffix] = output.raw_outputs
 
         return new_df

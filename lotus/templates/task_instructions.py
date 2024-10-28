@@ -1,15 +1,13 @@
-from typing import List, Optional
-
 import pandas as pd
 
 
 def filter_formatter_cot(
     df_text: str,
     user_instruction: str,
-    examples_df_text: List[str],
-    examples_answer: List[str],
-    cot_reasoning: List[str],
-) -> List[str]:
+    examples_df_text: list[str],
+    examples_answer: list[bool],
+    cot_reasoning: list[str],
+) -> list[dict[str, str]]:
     sys_instruction = (
         "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
@@ -43,7 +41,7 @@ def filter_formatter_cot(
 def filter_formatter_zs_cot(
     df_text: str,
     user_instruction: str,
-) -> List[str]:
+) -> list[dict[str, str]]:
     sys_instruction = (
         "The user will provide a claim and some relevant context.\n"
         "Your job is to determine whether the claim is true for the given context.\n"
@@ -60,12 +58,13 @@ def filter_formatter_zs_cot(
 def filter_formatter(
     df_text: str,
     user_instruction: str,
-    examples_df_text: Optional[List[str]] = None,
-    examples_answer: Optional[List[str]] = None,
-    cot_reasoning: Optional[List[str]] = None,
-    strategy: Optional[str] = None,
-) -> List[str]:
+    examples_df_text: list[str] | None = None,
+    examples_answer: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
+    strategy: str | None = None,
+) -> list[dict[str, str]]:
     if cot_reasoning:
+        assert examples_df_text is not None and examples_answer is not None
         return filter_formatter_cot(df_text, user_instruction, examples_df_text, examples_answer, cot_reasoning)
     elif strategy == "zs-cot":
         return filter_formatter_zs_cot(df_text, user_instruction)
@@ -80,6 +79,7 @@ def filter_formatter(
     ]
 
     if examples_df_text:
+        assert examples_answer is not None
         for ex_df_txt, ex_ans in zip(examples_df_text, examples_answer):
             messages.extend(
                 [
@@ -98,10 +98,10 @@ def filter_formatter(
 def map_formatter_cot(
     df_text: str,
     user_instruction: str,
-    examples_df_text: List[str],
-    examples_answer: List[str],
-    cot_reasoning: List[str],
-) -> List[str]:
+    examples_df_text: list[str],
+    examples_answer: list[str],
+    cot_reasoning: list[str],
+) -> list[dict[str, str]]:
     sys_instruction = (
         "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
@@ -140,7 +140,7 @@ def map_formatter_cot(
 def map_formatter_zs_cot(
     df_text: str,
     user_instruction: str,
-) -> List[str]:
+) -> list[dict[str, str]]:
     sys_instruction = (
         "The user will provide an instruction and some relevant context.\n"
         "Your job is to answer the user's instruction given the context."
@@ -162,12 +162,13 @@ def map_formatter_zs_cot(
 def map_formatter(
     df_text: str,
     user_instruction: str,
-    examples_df_text: Optional[List[str]] = None,
-    examples_answer: Optional[List[str]] = None,
-    cot_reasoning: Optional[List[str]] = None,
-    strategy: Optional[str] = None,
-) -> List[str]:
+    examples_df_text: list[str] | None = None,
+    examples_answer: list[str] | None = None,
+    cot_reasoning: list[str] | None = None,
+    strategy: str | None = None,
+) -> list[dict[str, str]]:
     if cot_reasoning:
+        assert examples_df_text is not None and examples_answer is not None
         return map_formatter_cot(df_text, user_instruction, examples_df_text, examples_answer, cot_reasoning)
     elif strategy == "zs-cot":
         return map_formatter_zs_cot(df_text, user_instruction)
@@ -181,6 +182,7 @@ def map_formatter(
     ]
 
     if examples_df_text:
+        assert examples_answer is not None
         for ex_df_txt, ex_ans in zip(examples_df_text, examples_answer):
             messages.extend(
                 [
@@ -201,7 +203,7 @@ def map_formatter(
     return messages
 
 
-def extract_formatter(df_text: str, user_instruction: str) -> List[str]:
+def extract_formatter(df_text: str, user_instruction: str) -> list[dict[str, str]]:
     sys_instruction = (
         "The user will provide an instruction and some relevant context.\n"
         "Your job is to extract the information requested in the instruction.\n"
@@ -219,16 +221,17 @@ def extract_formatter(df_text: str, user_instruction: str) -> List[str]:
 
 
 # returns a list of strings corresponding to df rows
-def df2text(df: pd.DataFrame, cols: List[str]) -> List[str]:
+def df2text(df: pd.DataFrame, cols: list[str]) -> list[str]:
     """Formats the given DataFrame into a string containing info from cols."""
 
-    def format_row(x, cols):
+    def format_row(x: pd.Series, cols: list[str]) -> str:
         return "".join([f"[{cols[i].capitalize()}]: «{x[cols[i]]}»\n" for i in range(len(cols))])
 
     # take cols that are in df
     cols = [col for col in cols if col in df.columns]
-    return df.apply(lambda x: format_row(x, cols), axis=1).tolist()
+    formatted_rows: list[str] = df.apply(lambda x: format_row(x, cols), axis=1).tolist()
+    return formatted_rows
 
 
-def li2text(li: List[str], name) -> str:
+def li2text(li: list[str], name: str) -> str:
     return "".join([f"[{name}] {li[i]}\n" for i in range(len(li))])
