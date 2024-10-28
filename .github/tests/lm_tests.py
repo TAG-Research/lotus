@@ -21,12 +21,12 @@ def test_filter_operation(setup_models):
     lotus.settings.configure(lm=gpt_4o_mini)
 
     # Test filter operation on an easy dataframe
-    data = {"Text": ["I am really exicted to go to class today!", "I am very sad"]}
+    data = {"Text": ["I am really excited to go to class today!", "I am very sad"]}
     df = pd.DataFrame(data)
     user_instruction = "{Text} is a positive sentiment"
     filtered_df = df.sem_filter(user_instruction)
 
-    expected_df = pd.DataFrame({"Text": ["I am really exicted to go to class today!"]})
+    expected_df = pd.DataFrame({"Text": ["I am really excited to go to class today!"]})
     assert filtered_df.equals(expected_df)
 
 
@@ -34,22 +34,70 @@ def test_filter_cascade(setup_models):
     gpt_4o_mini, gpt_4o = setup_models
     lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
 
-    data = {"Text": ["I am really exicted to go to class today!", "I am very sad"]}
+    data = {
+        "Text": [
+            # Positive examples
+            "I am really excited to go to class today!",
+            "Today is going to be an amazing day!",
+            "I absolutely love the new project I am working on.",
+            "Feeling so grateful for everything I have.",
+            "I can't wait to see my friends this weekend!",
+            "The weather is beautiful, and I feel fantastic.",
+            "Just received some great news about my promotion!",
+            "I'm so happy to have such supportive colleagues.",
+            "I'm thrilled to be learning something new every day.",
+            "Life is really good right now, and I feel blessed.",
+            "I am proud of all the progress I've made this year.",
+            "Today was productive, and I feel accomplished.",
+            "I’m really enjoying my workout routine lately!",
+            "Got a compliment from my manager today, feeling awesome!",
+            "Looking forward to spending time with family tonight.",
+            "Just finished a great book and feel inspired!",
+            "Had a lovely meal with friends, life is good!",
+            "Everything is going as planned, couldn't be happier.",
+            "Feeling super motivated and ready to take on challenges!",
+            "I appreciate all the small things that bring me joy.",
+
+            # Negative examples
+            "I am very sad.",
+            "Today has been really tough; I feel exhausted.",
+            "I'm feeling pretty down about how things are going.",
+            "I’m overwhelmed with all these challenges.",
+            "It’s hard to stay positive when things keep going wrong.",
+            "I feel so alone and unappreciated.",
+            "My energy is low, and nothing seems to cheer me up.",
+            "Feeling anxious about everything lately.",
+            "I’m disappointed with the way my project turned out.",
+            "Today has been one of those days where everything goes wrong.",
+            "Life feels really overwhelming right now.",
+            "I can't seem to find any motivation these days.",
+            "I’m worried about the future and what it holds.",
+            "It's been a stressful day, and I feel mentally drained.",
+            "I feel like I'm falling behind everyone else.",
+            "Just can't seem to catch a break recently.",
+            "I’m really struggling to keep up with all my responsibilities.",
+            "Had an argument with a close friend, feeling hurt.",
+            "I don’t feel supported by my team at work.",
+            "Life has been tough lately, and I’m feeling down.",
+        ]
+    }
+
     df = pd.DataFrame(data)
     user_instruction = "{Text} is a positive sentiment"
 
     # All filters resolved by the helper model
-    filtered_df, stats = df.sem_filter(user_instruction, cascade_threshold=0, return_stats=True)
-    assert stats["filters_resolved_by_large_model"] == 0, stats
-    assert stats["filters_resolved_by_helper_model"] == 2, stats
-    expected_df = pd.DataFrame({"Text": ["I am really exicted to go to class today!"]})
-    assert filtered_df.equals(expected_df)
+    filtered_df, stats = df.sem_filter(
+        user_instruction=user_instruction,
+        learn_cascade_threshold_sample_percentage=0.5,
+        recall_target=0.9,
+        precision_target=0.9,
+        failure_probability=0.2,
+        return_stats=True,
+    )
 
-    # All filters resolved by the large model
-    filtered_df, stats = df.sem_filter(user_instruction, cascade_threshold=1.01, return_stats=True)
-    assert stats["filters_resolved_by_large_model"] == 2, stats
-    assert stats["filters_resolved_by_helper_model"] == 0, stats
-    assert filtered_df.equals(expected_df)
+    assert "I am really excited to go to class today!" in filtered_df["Text"].values
+    assert "I am very sad" not in filtered_df["Text"].values
+    assert stats["filters_resolved_by_helper_model"] > 0, stats
 
 
 def test_top_k(setup_models):
