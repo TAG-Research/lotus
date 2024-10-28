@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 
 import lotus
@@ -7,12 +9,12 @@ import lotus
 class SemSearchDataframe:
     """DataFrame accessor for semantic search."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 

@@ -67,3 +67,8 @@ line-ending = "auto"
 [tool.ruff.lint.per-file-ignores]
 "**/{docs}/*" = ["ALL"]
 "**__init__.py" = ["ALL"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true

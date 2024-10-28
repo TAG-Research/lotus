@@ -1,10 +1,6 @@
 import re
 
-# create a type natural_language_expr which inherits from type str
-natural_language_expr = type("natural_language_expr", (str,), {})
-
-
-def parse_cols(text):
+def parse_cols(text: str) -> list[str]:
     # Regular expression pattern to match variables in brackets not escaped by double brackets
     pattern = r"(?<!\{)\{(?!\{)(.*?)(?<!\})\}(?!\})"
     # Find all matches in the text
@@ -12,7 +8,7 @@ def parse_cols(text):
     return matches
 
 
-def nle2str(nle: natural_language_expr, cols: list[str]) -> str:
+def nle2str(nle: str, cols: list[str]) -> str:
     dict = {}
     for col in cols:
         dict[col] = f"{col.capitalize()}"

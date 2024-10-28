@@ -52,8 +52,8 @@ class OpenAIModel(LM):
         self.provider = provider
         self.use_chat = provider in ["openai", "dbrx", "ollama"]
         self.max_batch_size = max_batch_size
-        self.max_ctx_len = max_ctx_len
         self.hf_name = hf_name if hf_name is not None else model
+        self.__dict__['max_ctx_len'] = max_ctx_len
 
         self.kwargs = {
             "model": model,
@@ -202,7 +202,7 @@ class OpenAIModel(LM):
 
     def __call__(
         self, messages_batch: list | list[list], **kwargs: dict[str, Any]
-    ) -> list | tuple[list[list[str]], list[list[float]]]:
+    ) -> list[str] | tuple[list[str], list[dict[str, Any]]]:
         lotus.logger.debug(f"OpenAIModel.__call__ messages_batch: {messages_batch}")
         lotus.logger.debug(f"OpenAIModel.__call__ kwargs: {kwargs}")
         # Bakes max batch size into model call. # TODO: Figure out less hacky way to do this.
@@ -282,3 +282,7 @@ class OpenAIModel(LM):
     @property
     def max_tokens(self) -> int:
         return self.kwargs["max_tokens"]
+
+    @property
+    def max_ctx_len(self) -> int:
+        return self.__dict__["max_ctx_len"]

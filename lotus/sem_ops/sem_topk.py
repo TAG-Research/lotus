@@ -10,7 +10,7 @@ from lotus.templates import task_instructions
 from lotus.types import SemanticTopKOutput
 
 
-def get_match_prompt_binary(doc1, doc2, user_instruction, strategy=None):
+def get_match_prompt_binary(doc1: str, doc2: str, user_instruction: str, strategy: str | None = None) -> list[dict[str, Any]]:
     if strategy == "zs-cot":
         sys_prompt = (
             "Your job is to to select and return the most relevant document to the user's question.\n"
@@ -37,7 +37,7 @@ def get_match_prompt_binary(doc1, doc2, user_instruction, strategy=None):
     return messages
 
 
-def parse_ans_binary(answer):
+def parse_ans_binary(answer: str) -> bool:
     lotus.logger.debug(f"Response from model: {answer}")
     try:
         matches = list(re.finditer(r"Document[\s*](\d+)", answer, re.IGNORECASE))
@@ -53,7 +53,7 @@ def parse_ans_binary(answer):
         return True
 
 
-def compare_batch_binary(pairs, user_instruction, strategy=None):
+def compare_batch_binary(pairs: list[tuple[str, str]], user_instruction: str, strategy: str | None = None) -> tuple[list[bool], int]:
     match_prompts = []
     results = []
     tokens = 0
@@ -66,7 +66,12 @@ def compare_batch_binary(pairs, user_instruction, strategy=None):
     return results, tokens
 
 
-def compare_batch_binary_cascade(pairs, user_instruction, cascade_threshold, strategy=None):
+def compare_batch_binary_cascade(
+    pairs: list[tuple[str, str]],
+    user_instruction: str,
+    cascade_threshold: float,
+    strategy: str | None = None,
+) -> tuple[list[bool], int, int, int]:
     match_prompts = []
     small_tokens = 0
     for doc1, doc2 in pairs:
@@ -180,7 +185,7 @@ def llm_quicksort(
         stats["total_small_calls"] = 0
         stats["total_large_calls"] = 0
 
-    def partition(indexes, low, high, k):
+    def partition(indexes: list[int], low: int, high: int, k: int) -> int:
         nonlocal stats
         i = low - 1
 
@@ -224,7 +229,7 @@ def llm_quicksort(
         indexes[i + 1], indexes[high] = indexes[high], indexes[i + 1]
         return i + 1
 
-    def quicksort_recursive(indexes, low, high, k):
+    def quicksort_recursive(indexes: list[int], low: int, high: int, k: int) -> None:
         if high <= low:
             return
 
@@ -246,16 +251,16 @@ def llm_quicksort(
 class HeapDoc:
     """Class to define a document for the heap. Keeps track of the number of calls and tokens."""
 
-    num_calls = 0
-    total_tokens = 0
-    strategy = None
+    num_calls: int = 0
+    total_tokens: int = 0
+    strategy: str | None = None
 
-    def __init__(self, doc, user_instruction, idx):
+    def __init__(self, doc: str, user_instruction: str, idx: int) -> None:
         self.doc = doc
         self.user_instruction = user_instruction
         self.idx = idx
 
-    def __lt__(self, other):
+    def __lt__(self, other: "HeapDoc") -> bool:
         prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, strategy=self.strategy)
         HeapDoc.num_calls += 1
         HeapDoc.total_tokens += lotus.settings.lm.count_tokens(prompt)
@@ -296,12 +301,12 @@ def llm_heapsort(
 class SemTopKDataframe:
     """DataFrame accessor for semantic top k."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any) -> None:
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         pass
 
     def __call__(

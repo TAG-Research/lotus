@@ -1,7 +1,7 @@
 import json
 
 import lotus
-from lotus.types import SemanticFilterPostprocessOutput, SemanticMapPostprocessOutput
+from lotus.types import SemanticFilterPostprocessOutput, SemanticMapPostprocessOutput, SemanticExtractPostprocessOutput
 
 
 def map_postprocess_cot(llm_answers: list[str]) -> SemanticMapPostprocessOutput:
@@ -14,8 +14,8 @@ def map_postprocess_cot(llm_answers: list[str]) -> SemanticMapPostprocessOutput:
     Returns:
         SemanticMapPostprocessOutput
     """
-    outputs = []
-    explanations = []
+    outputs: list[str] = []
+    explanations: list[str | None] = []
 
     for llm_answer in llm_answers:
         reasoning_idx = llm_answer.find("Reasoning:\n")
@@ -47,8 +47,8 @@ def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> Sema
     if cot_reasoning:
         return map_postprocess_cot(llm_answers)
 
-    outputs = llm_answers
-    explanations = [None] * len(llm_answers)
+    outputs: list[str] = llm_answers
+    explanations: list[str | None] = [None] * len(llm_answers)
     return SemanticMapPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
 
 
@@ -63,8 +63,8 @@ def filter_postprocess_cot(llm_answers: list[str], default: bool) -> SemanticFil
     Returns:
         SemanticFilterPostprocessOutput
     """
-    outputs = []
-    explanations = []
+    outputs: list[bool] = []
+    explanations: list[str | None] = []
 
     for llm_answer in llm_answers:
         reasoning_idx = llm_answer.find("Reasoning:\n")
@@ -109,8 +109,8 @@ def filter_postprocess(
     if cot_reasoning:
         return filter_postprocess_cot(llm_answers, default)
 
-    outputs = []
-    explanations = [None] * len(llm_answers)
+    outputs: list[bool] = []
+    explanations: list[str | None] = [None] * len(llm_answers)
     for answer in llm_answers:
         if "True" in answer:
             outputs.append(True)
@@ -123,7 +123,7 @@ def filter_postprocess(
     return SemanticFilterPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
 
 
-def extract_postprocess(llm_answers: list[str]) -> tuple[list[str], list[str]]:
+def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOutput:
     """
     Postprocess the output of the extract operator, which we assume to
     be a JSONL with an answer and quotes field.
@@ -132,7 +132,7 @@ def extract_postprocess(llm_answers: list[str]) -> tuple[list[str], list[str]]:
         llm_answers (list[str]): The list of llm answers.
 
     Returns:
-        tuple[list[str], list[str]]: The list of answers and quotes.
+        SemanticExtractPostprocessOutput
     """
     answers = []
     quotes = []
@@ -147,4 +147,4 @@ def extract_postprocess(llm_answers: list[str]) -> tuple[list[str], list[str]]:
             answers.append(None)
             quotes.append(None)
 
-    return answers, quotes
+    return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=answers, quotes=quotes)

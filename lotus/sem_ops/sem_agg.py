@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 
 import lotus
@@ -49,18 +51,18 @@ def sem_agg(
         f"Instruction:  {user_instruction}\n\nAnswer:\n"
     )
 
-    def leaf_doc_formatter(doc, ctr):
+    def leaf_doc_formatter(doc: str, ctr: int) -> str:
         return f"\n\tDocument {ctr}: {doc}"
 
-    def node_doc_formatter(doc, ctr):
+    def node_doc_formatter(doc: str, ctr: int) -> str:
         return f"\n\tSource {ctr}: {doc}"
 
-    def doc_formatter(tree_level, doc, ctr):
+    def doc_formatter(tree_level: int, doc: str, ctr: int) -> str:
         return leaf_doc_formatter(doc, ctr) if tree_level == 0 else node_doc_formatter(doc, ctr)
 
     tree_level = 0
-    summaries = []
-    new_partition_ids = []
+    summaries: list[str] = []
+    new_partition_ids: list[int] = []
     while len(docs) != 1 or summaries == []:
         cur_partition_id = partition_ids[0]
         do_fold = len(partition_ids) == len(set(partition_ids))
@@ -106,7 +108,13 @@ def sem_agg(
             lotus.logger.debug(f"Prompt added to batch: {prompt}")
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
-        summaries = model(batch)
+        result = model(batch)
+
+        # TODO: this is a weird hack for model typing
+        if isinstance(result, tuple):
+            summaries, _ = result
+        else:
+            summaries = result
         partition_ids = new_partition_ids
         new_partition_ids = []
 
@@ -121,12 +129,12 @@ def sem_agg(
 class SemAggDataframe:
     """DataFrame accessor for semantic aggregation."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         pass
 
     def __call__(

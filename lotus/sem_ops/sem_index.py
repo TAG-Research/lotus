@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 
 import lotus
@@ -7,13 +9,13 @@ import lotus
 class SemIndexDataframe:
     """DataFrame accessor for semantic indexing."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any) -> None:
         self._validate(pandas_obj)
         self._obj = pandas_obj
         self._obj.attrs["index_dirs"] = {}
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 

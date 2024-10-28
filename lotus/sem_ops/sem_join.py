@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -16,7 +18,7 @@ def sem_join(
     col2_label: str,
     model: lotus.models.LM,
     user_instruction: str,
-    examples_df_txt: str | None = None,
+    examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     default: bool = True,
@@ -34,7 +36,7 @@ def sem_join(
         col2_label (str): The label for the second column.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for join.
-        examples_df_txt (str | None): The examples dataframe text. Defaults to None.
+        examples_df_txt (list[str] | None): The examples dataframe text. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
@@ -98,18 +100,18 @@ def sem_join_cascade(
     col1_label: str,
     col2_label: str,
     user_instruction: str,
-    cascade_threshold: int,
-    examples_df_txt: str | None = None,
+    cascade_threshold: float,
+    examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
 ) -> SemanticJoinOutput:
-    filter_outputs = []
-    all_raw_outputs = []
-    all_explanations = []
+    filter_outputs: list[bool] = []
+    all_raw_outputs: list[str] = []
+    all_explanations: list[str | None] = []
 
-    join_results = []
+    join_results: list[tuple[int, int, str | None]] = []
     num_helper = 0
     num_large = 0
 
@@ -131,15 +133,18 @@ def sem_join_cascade(
         helper_raw_outputs = helper_output.raw_outputs
         helper_explanations = helper_output.explanations
         helper_logprobs = helper_output.logprobs
+        assert helper_logprobs is not None
 
         high_conf_idxs = set()
         for idx_i in range(len(helper_outputs)):
+            tokens: list[str]
+            confidences: np.ndarray[Any, np.dtype[np.float64]]
             # Get the logprobs
             if lotus.settings.helper_lm.provider == "vllm":
                 tokens = helper_logprobs[idx_i]["tokens"]
                 confidences = np.exp(helper_logprobs[idx_i]["token_logprobs"])
             elif lotus.settings.helper_lm.provider == "openai":
-                content = helper_logprobs[idx_i]["content"]
+                content: list[dict[str, Any]] = helper_logprobs[idx_i]["content"]
                 tokens = [content[t_idx]["token"] for t_idx in range(len(content))]
                 confidences = np.exp([content[t_idx]["logprob"] for t_idx in range(len(content))])
 
@@ -169,11 +174,10 @@ def sem_join_cascade(
             large_raw_outputs = large_output.raw_outputs
             large_explanations = large_output.explanations
 
-        outputs, raw_outputs, explanations = (
-            [None] * len(modified_docs),
-            [None] * len(modified_docs),
-            [None] * len(modified_docs),
-        )
+        outputs: list[bool] = [False] * len(modified_docs)
+        raw_outputs: list[str] = [""] * len(modified_docs)
+        explanations: list[str | None] = [None] * len(modified_docs)
+
         for idx in high_conf_idxs:
             outputs[idx] = helper_outputs[idx]
             raw_outputs[idx] = helper_raw_outputs[idx]
@@ -216,12 +220,12 @@ def sem_join_cascade(
 class SemJoinDataframe:
     """DataFrame accessor for semantic join."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 
@@ -363,8 +367,7 @@ class SemJoinDataframe:
         if return_explanations:
             temp_df = pd.DataFrame(join_results, columns=["_left_id", "_right_id", f"explanation{suffix}"])
         else:
-            join_results = [(jr[0], jr[1]) for jr in join_results]
-            temp_df = pd.DataFrame(join_results, columns=["_left_id", "_right_id"])
+            temp_df = pd.DataFrame([(jr[0], jr[1]) for jr in join_results], columns=["_left_id", "_right_id"])
 
         joined_df = (
             df1.join(temp_df.set_index("_left_id"), how="right", on="_left_id")

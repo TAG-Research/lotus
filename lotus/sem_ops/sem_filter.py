@@ -14,7 +14,7 @@ def sem_filter(
     model: lotus.models.LM,
     user_instruction: str,
     default: bool = True,
-    examples_df_txt: str | None = None,
+    examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
@@ -28,7 +28,7 @@ def sem_filter(
         model (lotus.models.LM): The language model used for filtering.
         user_instruction (str): The user instruction for filtering.
         default (bool): The default value for filtering in case of parsing errors. Defaults to True.
-        examples_df_txt (str | None): The text for examples. Defaults to None.
+        examples_df_txt (list[str] | None): The text for examples. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         logprobs (bool): Whether to return log probabilities. Defaults to False.
@@ -43,10 +43,13 @@ def sem_filter(
         )
         lotus.logger.debug(f"input to model: {prompt}")
         inputs.append(prompt)
-    res = model(inputs, logprobs=logprobs)
+    kwargs: dict[str, Any] = {"logprobs": logprobs}
+    res = model(inputs, **kwargs)
     if logprobs:
+        assert isinstance(res, tuple)
         raw_outputs, raw_logprobs = res
     else:
+        assert isinstance(res, list)
         raw_outputs = res
 
     postprocess_output = filter_postprocess(raw_outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"])
@@ -61,12 +64,12 @@ def sem_filter(
 class SemFilterDataframe:
     """DataFrame accessor for semantic filter."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         # verify that the Series has the correct type
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
@@ -171,12 +174,11 @@ class SemFilterDataframe:
                         if conf >= cascade_threshold:
                             high_conf_idxs.add(idx_i)
 
-            outputs, raw_outputs, explanations = (
-                [None] * len(df_txt),
-                [None] * len(df_txt),
-                [None] * len(df_txt),
-            )
+            outputs: list[bool] = [False] * len(df_txt)
+            raw_outputs: list[str] = [""] * len(df_txt)
+            explanations: list[str | None] = [None] * len(df_txt)
 
+            assert all(isinstance(x, str) for x in helper_output.explanations) or all(x is None for x in helper_output.explanations)
             for idx in high_conf_idxs:
                 outputs[idx] = helper_output.outputs[idx]
                 raw_outputs[idx] = helper_output.raw_outputs[idx]

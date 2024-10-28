@@ -1,10 +1,10 @@
-from typing import Callable
+from typing import Any, Callable
 
 import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticExtractOutput
+from lotus.types import SemanticExtractOutput, SemanticExtractPostprocessOutput
 
 from .postprocessors import extract_postprocess
 
@@ -13,7 +13,7 @@ def sem_extract(
     docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
-    postprocessor: Callable = extract_postprocess,
+    postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
 ) -> SemanticExtractOutput:
     """
     Extracts from a list of documents using a model.
@@ -37,6 +37,10 @@ def sem_extract(
 
     # call model
     raw_outputs = model(inputs)
+    if isinstance(raw_outputs, tuple):
+        raw_outputs, _ = raw_outputs
+    else:
+        assert isinstance(raw_outputs, list)
 
     # post process results
     postprocess_output = postprocessor(raw_outputs)
@@ -51,19 +55,19 @@ def sem_extract(
 class SemExtractDataframe:
     """DataFrame accessor for semantic extract."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 
     def __call__(
         self,
         user_instruction: str,
-        postprocessor: Callable = extract_postprocess,
+        postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
         return_raw_outputs: bool = False,
         suffix: str = "_extract",
     ) -> pd.DataFrame:

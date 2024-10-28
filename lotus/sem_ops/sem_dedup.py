@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+from typing import Any
 import pandas as pd
 
 import lotus
@@ -9,12 +9,12 @@ import lotus
 class SemDedupByDataframe:
     """DataFrame accessor for semantic deduplication."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 
@@ -46,7 +46,7 @@ class SemDedupByDataframe:
                 continue
             pairs.add((left_val, right_val))
 
-        def find_connected_components(pairs):
+        def find_connected_components(pairs: set[tuple[str, str]]) -> list[list[str]]:
             graph = defaultdict(set)
             for left_val, right_val in pairs:
                 graph[left_val].add(right_val)
@@ -55,7 +55,7 @@ class SemDedupByDataframe:
             visited = set()
             components = []
 
-            def dfs(node, component):
+            def dfs(node: str, component: list[str]) -> None:
                 stack = [node]
                 while stack:
                     current = stack.pop()
@@ -66,7 +66,7 @@ class SemDedupByDataframe:
 
             for node in graph:
                 if node not in visited:
-                    component = []
+                    component: list[str] = []
                     dfs(node, component)
                     components.append(component)
 
@@ -75,7 +75,7 @@ class SemDedupByDataframe:
         connected_components = find_connected_components(pairs)
         lotus.logger.debug(f"dedup connected components: {connected_components}")
 
-        removed_vals = []
+        removed_vals: list[str] = []
         for component in connected_components:
             removed_vals.extend(component[1:])
 
