@@ -1,5 +1,6 @@
 import re
 
+
 def parse_cols(text: str) -> list[str]:
     # Regular expression pattern to match variables in brackets not escaped by double brackets
     pattern = r"(?<!\{)\{(?!\{)(.*?)(?<!\})\}(?!\})"

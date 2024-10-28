@@ -1,7 +1,8 @@
 from typing import Callable
 
-import lotus
 import pandas as pd
+
+import lotus
 
 
 def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:

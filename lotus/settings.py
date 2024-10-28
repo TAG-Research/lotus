@@ -3,6 +3,7 @@ import threading
 from contextlib import contextmanager
 from typing import Any, Generator
 
+
 # This code was adapted from DSPy: https://github.com/stanfordnlp/dspy/blob/main/dsp/utils/settings.py
 class dotdict(dict[str, Any]):
     def __getattr__(self, key: str) -> Any:

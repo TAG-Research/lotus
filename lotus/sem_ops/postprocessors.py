@@ -1,7 +1,7 @@
 import json
 
 import lotus
-from lotus.types import SemanticFilterPostprocessOutput, SemanticMapPostprocessOutput, SemanticExtractPostprocessOutput
+from lotus.types import SemanticExtractPostprocessOutput, SemanticFilterPostprocessOutput, SemanticMapPostprocessOutput
 
 
 def map_postprocess_cot(llm_answers: list[str]) -> SemanticMapPostprocessOutput:

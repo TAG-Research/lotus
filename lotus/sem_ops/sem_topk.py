@@ -10,7 +10,9 @@ from lotus.templates import task_instructions
 from lotus.types import SemanticTopKOutput
 
 
-def get_match_prompt_binary(doc1: str, doc2: str, user_instruction: str, strategy: str | None = None) -> list[dict[str, Any]]:
+def get_match_prompt_binary(
+    doc1: str, doc2: str, user_instruction: str, strategy: str | None = None
+) -> list[dict[str, Any]]:
     if strategy == "zs-cot":
         sys_prompt = (
             "Your job is to to select and return the most relevant document to the user's question.\n"
@@ -53,7 +55,9 @@ def parse_ans_binary(answer: str) -> bool:
         return True
 
 
-def compare_batch_binary(pairs: list[tuple[str, str]], user_instruction: str, strategy: str | None = None) -> tuple[list[bool], int]:
+def compare_batch_binary(
+    pairs: list[tuple[str, str]], user_instruction: str, strategy: str | None = None
+) -> tuple[list[bool], int]:
     match_prompts = []
     results = []
     tokens = 0

@@ -46,7 +46,9 @@ def sem_map(
 
     # call model
     raw_outputs = model(inputs)
-    assert isinstance(raw_outputs, list) and all(isinstance(item, str) for item in raw_outputs), "Model must return a list of strings"
+    assert isinstance(raw_outputs, list) and all(
+        isinstance(item, str) for item in raw_outputs
+    ), "Model must return a list of strings"
 
     # post process results
     postprocess_output = postprocessor(raw_outputs, strategy in ["cot", "zs-cot"])

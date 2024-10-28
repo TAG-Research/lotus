@@ -178,7 +178,9 @@ class SemFilterDataframe:
             raw_outputs: list[str] = [""] * len(df_txt)
             explanations: list[str | None] = [None] * len(df_txt)
 
-            assert all(isinstance(x, str) for x in helper_output.explanations) or all(x is None for x in helper_output.explanations)
+            assert all(isinstance(x, str) for x in helper_output.explanations) or all(
+                x is None for x in helper_output.explanations
+            )
             for idx in high_conf_idxs:
                 outputs[idx] = helper_output.outputs[idx]
                 raw_outputs[idx] = helper_output.raw_outputs[idx]

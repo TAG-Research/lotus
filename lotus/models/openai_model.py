@@ -53,7 +53,7 @@ class OpenAIModel(LM):
         self.use_chat = provider in ["openai", "dbrx", "ollama"]
         self.max_batch_size = max_batch_size
         self.hf_name = hf_name if hf_name is not None else model
-        self.__dict__['max_ctx_len'] = max_ctx_len
+        self.__dict__["max_ctx_len"] = max_ctx_len
 
         self.kwargs = {
             "model": model,
