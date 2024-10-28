@@ -2,6 +2,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
+from lotus.types import SemanticAggOutput
 
 
 def sem_agg(
@@ -9,7 +10,7 @@ def sem_agg(
     model: lotus.models.LM,
     user_instruction: str,
     partition_ids: list[int],
-) -> str:
+) -> SemanticAggOutput:
     """
     Aggregates multiple documents into a single answer using a model.
 
@@ -113,7 +114,7 @@ def sem_agg(
         lotus.logger.debug(f"Model outputs from tree level {tree_level}: {summaries}")
         tree_level += 1
 
-    return summaries[0]
+    return SemanticAggOutput(outputs=summaries)
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_agg")
@@ -178,5 +179,5 @@ class SemAggDataframe:
         )
 
         # package answer in a dataframe
-        answer_df = pd.DataFrame([answer], columns=[suffix])
+        answer_df = pd.DataFrame(answer.outputs, columns=[suffix])
         return answer_df

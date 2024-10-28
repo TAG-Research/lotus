@@ -4,6 +4,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
+from lotus.types import SemanticMapOutput
 
 from .postprocessors import map_postprocess
 
@@ -17,7 +18,7 @@ def sem_map(
     examples_answers: list[str] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
-) -> tuple[list[str], list[str], list[str]]:
+) -> SemanticMapOutput:
     """
     Maps a list of documents to a list of outputs using a model.
 
@@ -31,7 +32,7 @@ def sem_map(
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
 
     Returns:
-        tuple[list[str], list[str], list[str]]: The outputs, raw outputs, and explanations.
+        SemanticMapOutput: The outputs, raw outputs, and explanations.
     """
     # prepare model inputs
     inputs = []
@@ -47,12 +48,12 @@ def sem_map(
     raw_outputs = model(inputs)
 
     # post process results
-    outputs, explanations = postprocessor(raw_outputs, cot_reasoning=strategy in ["cot", "zs-cot"])
+    postprocess_output = postprocessor(raw_outputs, cot_reasoning=strategy in ["cot", "zs-cot"])
     lotus.logger.debug(f"raw_outputs: {raw_outputs}")
-    lotus.logger.debug(f"outputs: {outputs}")
-    lotus.logger.debug(f"explanations: {explanations}")
+    lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
+    lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
 
-    return outputs, raw_outputs, explanations
+    return SemanticMapOutput(**postprocess_output.model_dump())
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_map")
@@ -115,7 +116,7 @@ class SemMapDataframe:
                 return_explanations = True
                 cot_reasoning = examples["Reasoning"].tolist()
 
-        outputs, raw_outputs, explanations = sem_map(
+        output = sem_map(
             df_txt,
             lotus.settings.lm,
             formatted_usr_instr,
@@ -127,10 +128,10 @@ class SemMapDataframe:
         )
 
         new_df = self._obj.copy()
-        new_df[suffix] = outputs
+        new_df[suffix] = output.outputs
         if return_explanations:
-            new_df["explanation" + suffix] = explanations
+            new_df["explanation" + suffix] = output.explanations
         if return_raw_outputs:
-            new_df["raw_output" + suffix] = raw_outputs
+            new_df["raw_output" + suffix] = output.raw_outputs
 
         return new_df

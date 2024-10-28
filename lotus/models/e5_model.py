@@ -58,7 +58,7 @@ class E5Model(RM):
         kwargs = {**self.kwargs, **kwargs}
 
         batch_size = kwargs.get("batch_size", self.batch_size)
-        
+
         # Calculating the embedding dimension
         total_docs = len(docs)
         first_batch = self.tokenizer(docs[:1], return_tensors="pt", padding=True, truncation=True).to(self.device)

@@ -7,6 +7,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
+from lotus.types import SemanticTopKOutput
 
 
 def get_match_prompt_binary(doc1, doc2, user_instruction, strategy=None):
@@ -113,7 +114,7 @@ def llm_naive_sort(
     docs: list[str],
     user_instruction: str,
     strategy: str | None = None,
-) -> tuple[list[int], dict[str, Any]]:
+) -> SemanticTopKOutput:
     """
     Sorts the documents using a naive quadratic method.
 
@@ -122,7 +123,7 @@ def llm_naive_sort(
         user_instruction (str): The user instruction for sorting.
 
     Returns:
-        tuple[list[int], dict[str, Any]]: The indexes of the top k documents and stats.
+        SemanticTopKOutput: The indexes of the top k documents and stats.
     """
     N = len(docs)
     pairs = []
@@ -145,7 +146,7 @@ def llm_naive_sort(
     indexes = sorted(range(len(votes)), key=lambda i: votes[i], reverse=True)
 
     stats = {"total_tokens": tokens, "total_llm_calls": llm_calls}
-    return indexes, stats
+    return SemanticTopKOutput(indexes=indexes, stats=stats)
 
 
 def llm_quicksort(
@@ -155,7 +156,7 @@ def llm_quicksort(
     embedding: bool = False,
     strategy: str | None = None,
     cascade_threshold: float | None = None,
-) -> tuple[list[int], dict[str, Any]]:
+) -> SemanticTopKOutput:
     """
     Sorts the documents using quicksort.
 
@@ -167,7 +168,7 @@ def llm_quicksort(
         cascade_threshold (float | None): The confidence threshold for cascading to a larger model.
 
     Returns:
-        tuple[list[int], dict[str, Any]]: The indexes of the top k documents and stats
+        SemanticTopKOutput: The indexes of the top k documents and stats
     """
     stats = {}
     stats["total_tokens"] = 0
@@ -239,7 +240,7 @@ def llm_quicksort(
     indexes = list(range(len(docs)))
     quicksort_recursive(indexes, 0, len(indexes) - 1, k)
 
-    return indexes, stats
+    return SemanticTopKOutput(indexes=indexes, stats=stats)
 
 
 class HeapDoc:
@@ -267,7 +268,7 @@ def llm_heapsort(
     user_instruction: str,
     k: int,
     strategy: str | None = None,
-) -> tuple[list[int], dict[str, Any]]:
+) -> SemanticTopKOutput:
     """
     Sorts the documents using a heap.
 
@@ -277,7 +278,7 @@ def llm_heapsort(
         k (int): The number of documents to return.
 
     Returns:
-        tuple[list[int], dict[str, Any]]: The indexes of the top k documents and stats.
+        SemanticTopKOutput: The indexes of the top k documents and stats.
     """
     HeapDoc.num_calls = 0
     HeapDoc.total_tokens = 0
@@ -288,7 +289,7 @@ def llm_heapsort(
     indexes = [heapq.heappop(heap).idx for _ in range(len(heap))]
 
     stats = {"total_tokens": HeapDoc.total_tokens, "total_llm_calls": HeapDoc.num_calls}
-    return indexes, stats
+    return SemanticTopKOutput(indexes=indexes, stats=stats)
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_topk")
@@ -377,7 +378,7 @@ class SemTopKDataframe:
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
 
         if method in ["quick", "quick-sem"]:
-            sorted_order, stats = llm_quicksort(
+            output = llm_quicksort(
                 df_txt,
                 formatted_usr_instr,
                 K,
@@ -386,9 +387,9 @@ class SemTopKDataframe:
                 cascade_threshold=cascade_threshold,
             )
         elif method == "heap":
-            sorted_order, stats = llm_heapsort(df_txt, formatted_usr_instr, K, strategy=strategy)
+            output = llm_heapsort(df_txt, formatted_usr_instr, K, strategy=strategy)
         elif method == "naive":
-            sorted_order, stats = llm_naive_sort(
+            output = llm_naive_sort(
                 df_txt,
                 formatted_usr_instr,
                 strategy=strategy,
@@ -397,8 +398,8 @@ class SemTopKDataframe:
             raise ValueError(f"Method {method} not recognized")
 
         new_df = self._obj.reset_index(drop=True)
-        new_df = new_df.reindex(sorted_order).reset_index(drop=True)
+        new_df = new_df.reindex(output.indexes).reset_index(drop=True)
         new_df = new_df.head(K)
         if return_stats:
-            return new_df, stats
+            return new_df, output.stats
         return new_df

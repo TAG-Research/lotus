@@ -4,6 +4,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
+from lotus.types import SemanticFilterOutput
 
 from .postprocessors import filter_postprocess
 
@@ -18,7 +19,7 @@ def sem_filter(
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
     logprobs: bool = False,
-) -> tuple[list[str], list[str], list[str]]:
+) -> SemanticFilterOutput:
     """
     Filters a list of documents based on a given user instruction using a language model.
 
@@ -33,7 +34,7 @@ def sem_filter(
         logprobs (bool): Whether to return log probabilities. Defaults to False.
 
     Returns:
-        tuple[list[str], list[str], list[str]]: A tuple containing the True/False outputs, raw outputs, and explanations.
+        SemanticFilterOutput: The True/False outputs, raw outputs, and explanations, and log probabilities.
     """
     inputs = []
     for doc in docs:
@@ -48,16 +49,12 @@ def sem_filter(
     else:
         raw_outputs = res
 
-    outputs, explanations = filter_postprocess(
-        raw_outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"]
-    )
-    lotus.logger.debug(f"outputs: {outputs}")
-    lotus.logger.debug(f"raw_outputs: {raw_outputs}")
-    lotus.logger.debug(f"explanations: {explanations}")
+    postprocess_output = filter_postprocess(raw_outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"])
+    lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
+    lotus.logger.debug(f"raw_outputs: {postprocess_output.raw_outputs}")
+    lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
 
-    if logprobs:
-        return outputs, raw_outputs, explanations, raw_logprobs
-    return outputs, raw_outputs, explanations
+    return SemanticFilterOutput(**postprocess_output.model_dump(), logprobs=raw_logprobs if logprobs else None)
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_filter")
@@ -149,7 +146,7 @@ class SemFilterDataframe:
                     helper_cot_reasoning = examples["Reasoning"].tolist()
 
             # Run small LM and get logits
-            helper_outputs, helper_raw_outputs, helper_explanations, helper_logprobs = sem_filter(
+            helper_output = sem_filter(
                 df_txt,
                 lotus.settings.helper_lm,
                 formatted_usr_instr,
@@ -162,7 +159,9 @@ class SemFilterDataframe:
             )
 
             high_conf_idxs = set()
-            helper_tokens, helper_confidences = lotus.settings.helper_lm.format_logprobs_for_cascade(helper_logprobs)
+            helper_tokens, helper_confidences = lotus.settings.helper_lm.format_logprobs_for_cascade(
+                helper_output.logprobs
+            )
 
             # Find where true/false is said and look at confidence
             for idx_i, (tokens, confidences) in enumerate(zip(helper_tokens, helper_confidences)):
@@ -179,15 +178,15 @@ class SemFilterDataframe:
             )
 
             for idx in high_conf_idxs:
-                outputs[idx] = helper_outputs[idx]
-                raw_outputs[idx] = helper_raw_outputs[idx]
-                explanations[idx] = helper_explanations[idx]
+                outputs[idx] = helper_output.outputs[idx]
+                raw_outputs[idx] = helper_output.raw_outputs[idx]
+                explanations[idx] = helper_output.explanations[idx]
 
             # Send low confidence samples to large LM if any
-            low_conf_idxs = sorted([i for i in range(len(helper_outputs)) if i not in high_conf_idxs])
+            low_conf_idxs = sorted([i for i in range(len(helper_output.outputs)) if i not in high_conf_idxs])
             low_conf_df_txt = [df_txt[idx] for idx in low_conf_idxs]
             if low_conf_idxs:
-                large_outputs, large_raw_outputs, large_explanations = sem_filter(
+                large_output = sem_filter(
                     low_conf_df_txt,
                     lotus.settings.lm,
                     formatted_usr_instr,
@@ -199,15 +198,15 @@ class SemFilterDataframe:
                 )
 
                 for idx, large_idx in enumerate(low_conf_idxs):
-                    outputs[large_idx] = large_outputs[idx]
-                    raw_outputs[large_idx] = large_raw_outputs[idx]
-                    explanations[large_idx] = large_explanations[idx]
+                    outputs[large_idx] = large_output.outputs[idx]
+                    raw_outputs[large_idx] = large_output.raw_outputs[idx]
+                    explanations[large_idx] = large_output.explanations[idx]
 
             stats["filters_resolved_by_helper_model"] += len(high_conf_idxs)
             stats["filters_resolved_by_large_model"] += len(low_conf_idxs)
 
         else:
-            outputs, raw_outputs, explanations = sem_filter(
+            output = sem_filter(
                 df_txt,
                 lotus.settings.lm,
                 formatted_usr_instr,
@@ -217,6 +216,9 @@ class SemFilterDataframe:
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
             )
+            outputs = output.outputs
+            raw_outputs = output.raw_outputs
+            explanations = output.explanations
 
         # find indices where output is True
         ids = [i for i, x in enumerate(outputs) if x]

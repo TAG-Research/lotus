@@ -1,9 +1,10 @@
 import json
 
 import lotus
+from lotus.types import SemanticFilterPostprocessOutput, SemanticMapPostprocessOutput
 
 
-def map_postprocess_cot(llm_answers: list[str]) -> tuple[list[str], list[str]]:
+def map_postprocess_cot(llm_answers: list[str]) -> SemanticMapPostprocessOutput:
     """
     Postprocess the output of the map operator with CoT reasoning.
 
@@ -11,7 +12,7 @@ def map_postprocess_cot(llm_answers: list[str]) -> tuple[list[str], list[str]]:
         llm_answers (list[str]): The list of llm answers.
 
     Returns:
-        tuple[list[str], list[str]]: The list of answers and explanations.
+        SemanticMapPostprocessOutput
     """
     outputs = []
     explanations = []
@@ -29,10 +30,10 @@ def map_postprocess_cot(llm_answers: list[str]) -> tuple[list[str], list[str]]:
         outputs.append(answer)
         explanations.append(reasoning)
 
-    return outputs, explanations
+    return SemanticMapPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
 
 
-def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> tuple[list[str], list[str]]:
+def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> SemanticMapPostprocessOutput:
     """
     Postprocess the output of the map operator.
 
@@ -41,17 +42,17 @@ def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> tupl
         cot_reasoning (bool): Whether there is CoT reasoning.
 
     Returns:
-        tuple[list[str], list[str]]: The list of answers and explanations.
+        SemanticMapPostprocessOutput
     """
     if cot_reasoning:
         return map_postprocess_cot(llm_answers)
 
     outputs = llm_answers
     explanations = [None] * len(llm_answers)
-    return outputs, explanations
+    return SemanticMapPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
 
 
-def filter_postprocess_cot(llm_answers: list[str], default: bool) -> tuple[list[str], list[str]]:
+def filter_postprocess_cot(llm_answers: list[str], default: bool) -> SemanticFilterPostprocessOutput:
     """
     Postprocess the output of the filter operator with CoT reasoning.
 
@@ -60,7 +61,7 @@ def filter_postprocess_cot(llm_answers: list[str], default: bool) -> tuple[list[
         default (bool): The default value to use if we fail to parse the answer.
 
     Returns:
-        tuple[list[str], list[str]]: The list of answers and explanations.
+        SemanticFilterPostprocessOutput
     """
     outputs = []
     explanations = []
@@ -86,14 +87,14 @@ def filter_postprocess_cot(llm_answers: list[str], default: bool) -> tuple[list[
             lotus.logger.info(f"\t Failed to parse: defaulting to {default}")
             outputs.append(default)
 
-    return outputs, explanations
+    return SemanticFilterPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
 
 
 def filter_postprocess(
     llm_answers: list[str],
     default: bool = True,
     cot_reasoning: bool = False,
-) -> tuple[list[str], list[str]]:
+) -> SemanticFilterPostprocessOutput:
     """
     Postprocess the output of the filter operator.
 
@@ -103,7 +104,7 @@ def filter_postprocess(
         cot_reasoning (bool): Whether there is CoT reasoning.
 
     Returns:
-        tuple[list[str], list[str]]: The list of answers and explanations.
+        SemanticFilterPostprocessOutput
     """
     if cot_reasoning:
         return filter_postprocess_cot(llm_answers, default)
@@ -119,7 +120,7 @@ def filter_postprocess(
             lotus.logger.info(f"\t Failed to parse: defaulting to {default}")
             outputs.append(default)
 
-    return outputs, explanations
+    return SemanticFilterPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
 
 
 def extract_postprocess(llm_answers: list[str]) -> tuple[list[str], list[str]]:

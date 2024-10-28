@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 import lotus
+from lotus.types import SemanticJoinOutput
 
 from .sem_filter import sem_filter
 
@@ -20,7 +21,7 @@ def sem_join(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
-) -> tuple[list[tuple[int, int, str]], list[str], list[str], list[str]]:
+) -> SemanticJoinOutput:
     """
     Joins two series using a model.
 
@@ -39,7 +40,7 @@ def sem_join(
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
 
     Returns:
-        tuple[list[tuple[int, int, str]], list[str], list[str], list[str]]: The join results, filter outputs, all raw outputs, and all explanations.
+        SemanticJoinOutput: The join results, filter outputs, all raw outputs, and all explanations.
     """
     filter_outputs = []
     all_raw_outputs = []
@@ -51,7 +52,7 @@ def sem_join(
     for id1, i1 in zip(ids1, l1):
         # perform llm filter
         modified_docs = l2.apply(lambda doc: f"{col1_label}: {i1}\n{col2_label}: {doc}")
-        outputs, raw_outputs, explanations = sem_filter(
+        output = sem_filter(
             modified_docs,
             model,
             user_instruction,
@@ -61,6 +62,10 @@ def sem_join(
             default=default,
             strategy=strategy,
         )
+        outputs = output.outputs
+        raw_outputs = output.raw_outputs
+        explanations = output.explanations
+
         filter_outputs.extend(outputs)
         all_raw_outputs.extend(raw_outputs)
         all_explanations.extend(explanations)
@@ -76,9 +81,15 @@ def sem_join(
     lotus.logger.debug(f"outputs: {filter_outputs}")
     lotus.logger.debug(f"explanations: {all_explanations}")
 
-    return join_results, filter_outputs, all_raw_outputs, all_explanations
+    return SemanticJoinOutput(
+        join_results=join_results,
+        filter_outputs=filter_outputs,
+        all_raw_outputs=all_raw_outputs,
+        all_explanations=all_explanations,
+    )
 
 
+# TODO: THIS CODE CURRENTLY BREAKS
 def sem_join_cascade(
     l1: pd.Series,
     l2: pd.Series,
@@ -93,7 +104,7 @@ def sem_join_cascade(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
-) -> list[str]:
+) -> SemanticJoinOutput:
     filter_outputs = []
     all_raw_outputs = []
     all_explanations = []
@@ -105,7 +116,7 @@ def sem_join_cascade(
     for id1, i1 in zip(ids1, l1):
         # perform llm filter
         modified_docs = l2.apply(lambda doc: f"{col1_label}: {i1}\n{col2_label}: {doc}")
-        helper_outputs, helper_raw_outputs, helper_explanations, helper_logprobs = sem_filter(
+        helper_output = sem_filter(
             modified_docs,
             lotus.settings.helper_lm,
             user_instruction,
@@ -116,6 +127,10 @@ def sem_join_cascade(
             logprobs=True,
             strategy=strategy,
         )
+        helper_outputs = helper_output.outputs
+        helper_raw_outputs = helper_output.raw_outputs
+        helper_explanations = helper_output.explanations
+        helper_logprobs = helper_output.logprobs
 
         high_conf_idxs = set()
         for idx_i in range(len(helper_outputs)):
@@ -139,16 +154,20 @@ def sem_join_cascade(
         low_conf_idxs = sorted([i for i in range(len(helper_outputs)) if i not in high_conf_idxs])
         low_conf_docs = [modified_docs[idx] for idx in low_conf_idxs]
 
-        large_outputs, large_raw_outputs, large_explanations = sem_filter(
-            low_conf_docs,
-            lotus.settings.lm,
-            user_instruction,
-            default=default,
-            examples_df_txt=examples_df_txt,
-            examples_answers=examples_answers,
-            cot_reasoning=cot_reasoning,
-            strategy=strategy,
-        )
+        if len(low_conf_docs) > 0:
+            large_output = sem_filter(
+                low_conf_docs,
+                lotus.settings.lm,
+                user_instruction,
+                default=default,
+                examples_df_txt=examples_df_txt,
+                examples_answers=examples_answers,
+                cot_reasoning=cot_reasoning,
+                strategy=strategy,
+            )
+            large_outputs = large_output.outputs
+            large_raw_outputs = large_output.raw_outputs
+            large_explanations = large_output.explanations
 
         outputs, raw_outputs, explanations = (
             [None] * len(modified_docs),
@@ -183,13 +202,13 @@ def sem_join_cascade(
     lotus.logger.debug(f"outputs: {filter_outputs}")
     lotus.logger.debug(f"explanations: {all_explanations}")
 
-    return (
-        join_results,
-        filter_outputs,
-        all_raw_outputs,
-        all_explanations,
-        num_helper,
-        num_large,
+    stats = {"filters_resolved_by_helper_model": num_helper, "filters_resolved_by_large_model": num_large}
+    return SemanticJoinOutput(
+        join_results=join_results,
+        filter_outputs=filter_outputs,
+        all_raw_outputs=all_raw_outputs,
+        all_explanations=all_explanations,
+        stats=stats,
     )
 
 
@@ -217,6 +236,7 @@ class SemJoinDataframe:
         strategy: str | None = None,
         default: bool = True,
         cascade_threshold: float | None = None,
+        return_stats: bool = False,
     ) -> pd.DataFrame:
         """
         Applies semantic join over a dataframe.
@@ -231,6 +251,7 @@ class SemJoinDataframe:
             strategy (str | None): The reasoning strategy. Defaults to None.
             default (bool): The default value for the join in case of parsing errors. Defaults to True.
             cascade_threshold (float | None): The threshold for cascading. Defaults to None.
+            return_stats (bool): Whether to return stats. Defaults to False.
 
         Returns:
             pd.DataFrame: The dataframe with the new joined columns.
@@ -292,14 +313,7 @@ class SemJoinDataframe:
                 cot_reasoning = examples["Reasoning"].tolist()
 
         if cascade_threshold is not None:
-            (
-                join_results,
-                filter_outputs,
-                all_raw_outputs,
-                all_explanations,
-                num_helper,
-                num_large,
-            ) = sem_join_cascade(
+            output = sem_join_cascade(
                 self._obj[real_left_on],
                 other[real_right_on],
                 self._obj.index,
@@ -315,7 +329,7 @@ class SemJoinDataframe:
                 strategy=strategy,
             )
         else:
-            join_results, filter_outputs, all_raw_outputs, all_explanations = sem_join(
+            output = sem_join(
                 self._obj[real_left_on],
                 other[real_right_on],
                 self._obj.index,
@@ -330,6 +344,9 @@ class SemJoinDataframe:
                 default=default,
                 strategy=strategy,
             )
+        join_results = output.join_results
+        all_raw_outputs = output.all_raw_outputs
+
         lotus.logger.debug(f"join_results: {join_results}")
         lotus.logger.debug(f"all_raw_outputs: {all_raw_outputs}")
 
@@ -355,7 +372,7 @@ class SemJoinDataframe:
             .drop(columns=["_left_id", "_right_id"])
         )
 
-        if cascade_threshold is not None:
-            return joined_df, num_helper, num_large
+        if return_stats:
+            return joined_df, output.stats
 
         return joined_df
