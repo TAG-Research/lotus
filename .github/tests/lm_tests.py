@@ -2,19 +2,28 @@ import pandas as pd
 import pytest
 
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
 # Set logger level to DEBUG
 lotus.logger.setLevel("DEBUG")
 
 
 @pytest.fixture
+
+@pytest.fixture
 def setup_models():
     # Setup GPT models
-    gpt_4o_mini = OpenAIModel(model="gpt-4o-mini")
-    gpt_4o = OpenAIModel(model="gpt-4o")
+    gpt_4o_mini = LM(model="gpt-4o-mini")
+    gpt_4o = LM(model="gpt-4o")
     return gpt_4o_mini, gpt_4o
 
+def test_lm_initialization():
+    lm = LM(model="test-model", temperature=0.5, max_tokens=100)
+    assert lm.model == "test-model"
+    assert lm.kwargs["temperature"] == 0.5
+    assert lm.kwargs["max_tokens"] == 100
+    assert lm.cache == True
+    assert lm.max_ctx_len == 4096
 
 def test_filter_operation(setup_models):
     gpt_4o_mini, _ = setup_models
