@@ -6,7 +6,7 @@ import lotus
 def importance_sampling(
     proxy_scores: list[float],
     sample_percentage: float,
-):
+) -> tuple[list[int], list[float]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
 
     w = np.sqrt(proxy_scores)
@@ -18,7 +18,7 @@ def importance_sampling(
 
     return sample_indices, correction_factors
 
-def calibrate_llm_logprobs(true_probs: list[float]):
+def calibrate_llm_logprobs(true_probs: list[float]) -> list[float]:
     """Transforms true probabilities to calibrate LLM proxies."""
     num_quantiles = 50
     quantile_values = np.percentile(true_probs, np.linspace(0, 100, num_quantiles + 1))
@@ -33,7 +33,7 @@ def learn_cascade_thresholds(
     recall_target: float,
     precision_target: float,
     delta: float
-):
+) -> tuple[tuple[float, float], int]:
     """Learns cascade thresholds given targets and proxy scores, 
     oracle outputs over the sample, and correction factors for the
     sample."""
@@ -105,6 +105,6 @@ def learn_cascade_thresholds(
 
     return best_combination, oracle_calls
 
-def calibrate_sem_sim_join(true_score: list[float]):
+def calibrate_sem_sim_join(true_score: list[float]) -> list[float]:
     true_score = np.clip(true_score, 0, 1)
     return true_score
