@@ -6,7 +6,7 @@ from lotus.models import OpenAIModel
 gpt_35_turbo = OpenAIModel("gpt-3.5-turbo")
 gpt_4o = OpenAIModel("gpt-4o")
 
-lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_35_turbo)
+lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_35_turbo, is_weight=0.3)
 data = {
     "Course Name": [
         "Probability and Random Processes",

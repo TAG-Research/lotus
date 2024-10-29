@@ -113,3 +113,4 @@ class Settings(object):
 
 # set defaults
 settings = Settings()
+settings.configure(is_weight=0.5, num_helper_lm_calibration_quantiles=50)
