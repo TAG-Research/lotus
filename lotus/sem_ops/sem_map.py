@@ -4,7 +4,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticMapOutput, SemanticMapPostprocessOutput
+from lotus.types import LMOutput, SemanticMapOutput, SemanticMapPostprocessOutput
 
 from .postprocessors import map_postprocess
 
@@ -45,14 +45,11 @@ def sem_map(
         inputs.append(prompt)
 
     # call model
-    raw_outputs = model(inputs)
-    assert isinstance(raw_outputs, list) and all(
-        isinstance(item, str) for item in raw_outputs
-    ), "Model must return a list of strings"
+    lm_output: LMOutput = model(inputs)
 
     # post process results
-    postprocess_output = postprocessor(raw_outputs, strategy in ["cot", "zs-cot"])
-    lotus.logger.debug(f"raw_outputs: {raw_outputs}")
+    postprocess_output = postprocessor(lm_output.outputs, strategy in ["cot", "zs-cot"])
+    lotus.logger.debug(f"raw_outputs: {lm_output.outputs}")
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
     lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
 

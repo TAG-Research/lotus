@@ -1,5 +1,6 @@
 from typing import Any
 
+from litellm.types.utils import ChatCompletionTokenLogprob
 from pydantic import BaseModel
 
 
@@ -9,10 +10,11 @@ class StatsMixin(BaseModel):
 
 # TODO: Figure out better logprobs type
 class LogprobsMixin(BaseModel):
-    logprobs: list[dict[str, Any]] | None = None
+    # for each response, we have a list of tokens, and for each token, we have a ChatCompletionTokenLogprob
+    logprobs: list[list[ChatCompletionTokenLogprob]] | None = None
 
 
-class SemanticMapPostprocessOutput(StatsMixin, LogprobsMixin):
+class SemanticMapPostprocessOutput(BaseModel):
     raw_outputs: list[str]
     outputs: list[str]
     explanations: list[str | None]
@@ -55,3 +57,16 @@ class SemanticJoinOutput(StatsMixin):
 
 class SemanticTopKOutput(StatsMixin):
     indexes: list[int]
+
+
+class LMOutput(LogprobsMixin):
+    outputs: list[str]
+
+
+class LogprobsForCascade(BaseModel):
+    tokens: list[list[str]]
+    confidences: list[list[float]]
+
+
+class LogprobsForFilterCascade(LogprobsForCascade):
+    true_probs: list[float]

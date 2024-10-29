@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
 # Set logger level to DEBUG
 lotus.logger.setLevel("DEBUG")
@@ -11,8 +11,8 @@ lotus.logger.setLevel("DEBUG")
 @pytest.fixture
 def setup_models():
     # Setup GPT models
-    gpt_4o_mini = OpenAIModel(model="gpt-4o-mini")
-    gpt_4o = OpenAIModel(model="gpt-4o")
+    gpt_4o_mini = LM(model="gpt-4o-mini")
+    gpt_4o = LM(model="gpt-4o")
     return gpt_4o_mini, gpt_4o
 
 
@@ -57,7 +57,6 @@ def test_filter_cascade(setup_models):
             "Everything is going as planned, couldn't be happier.",
             "Feeling super motivated and ready to take on challenges!",
             "I appreciate all the small things that bring me joy.",
-
             # Negative examples
             "I am very sad.",
             "Today has been really tough; I feel exhausted.",

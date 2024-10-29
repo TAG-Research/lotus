@@ -1,9 +1,9 @@
 import pandas as pd
 
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
-lm = OpenAIModel(
+lm = LM(
     model="meta-llama/Meta-Llama-3.1-70B-Instruct",
     api_base="http://localhost:8000/v1",
     provider="vllm",
