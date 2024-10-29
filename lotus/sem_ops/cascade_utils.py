@@ -10,7 +10,7 @@ def importance_sampling(
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
 
     w = np.sqrt(proxy_scores)
-    is_weight = lotus.settings.is_weight
+    is_weight = lotus.settings.cascade_is_weight
     w = is_weight * w / np.sum(w) + (1 - is_weight) * np.ones((len(proxy_scores))) / len(proxy_scores)
     indices = np.arange(len(proxy_scores))
     sample_size = (int) (sample_percentage * len(proxy_scores))
@@ -21,7 +21,7 @@ def importance_sampling(
 
 def calibrate_llm_logprobs(true_probs: list[float]) -> list[float]:
     """Transforms true probabilities to calibrate LLM proxies."""
-    num_quantiles = lotus.settings.num_helper_lm_calibration_quantiles
+    num_quantiles = lotus.settings.cascade_num_calibration_quantiles
     quantile_values = np.percentile(true_probs, np.linspace(0, 100, num_quantiles + 1))
     true_probs = ((np.digitize(true_probs, quantile_values) - 1) / num_quantiles)
     true_probs = np.clip(true_probs, 0, 1)
