@@ -113,3 +113,4 @@ class Settings(object):
 
 # set defaults
 settings = Settings()
+settings.configure(cascade_is_weight=0.5, cascade_num_calibration_quantiles=50)
