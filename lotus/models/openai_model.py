@@ -88,7 +88,7 @@ class OpenAIModel(LM):
             then a list of logprobs is also returned.
         """
         if kwargs.get("logprobs", False):
-            kwargs["top_logprobs"] = 1
+            kwargs["top_logprobs"] = 10
 
         kwargs = {**self.kwargs, **kwargs}
         kwargs["messages"] = messages
@@ -127,6 +127,8 @@ class OpenAIModel(LM):
 
         kwargs = {**self.kwargs, **kwargs}
         kwargs["prompt"] = prompt
+        if kwargs.get("logprobs", False):
+            kwargs["logprobs"] = 10
         response = self.completion_request(**kwargs)
 
         choices = response["choices"]
@@ -254,6 +256,41 @@ class OpenAIModel(LM):
             all_confidences.append(confidences)
 
         return all_tokens, all_confidences
+    
+    def format_logprobs_for_filter_cascade(self, logprobs: list) -> tuple[list[list[str]], list[list[float]]]:
+        all_tokens = []
+        all_confidences = []
+        all_true_probs = []
+        for idx in range(len(logprobs)):
+            if self.provider == "vllm":
+                tokens = logprobs[idx]["tokens"]
+                confidences = np.exp(logprobs[idx]["token_logprobs"])
+                top_logprobs = logprobs[idx]["top_logprobs"][0]
+                if 'True' in top_logprobs and 'False' in top_logprobs:
+                    true_prob = np.exp(top_logprobs['True'])
+                    false_prob = np.exp(top_logprobs['False'])
+                    all_true_probs.append(true_prob / (true_prob + false_prob))
+                else:
+                    all_true_probs.append(1 if 'True' in top_logprobs else 0)
+
+            elif self.provider == "openai":
+                content = logprobs[idx]["content"]
+                tokens = [content[t_idx]["token"] for t_idx in range(len(content))]
+                confidences = np.exp([content[t_idx]["logprob"] for t_idx in range(len(content))])
+                top_logprobs = {x["token"]:x["logprob"] for x in content[0]["top_logprobs"]}
+
+                true_prob, false_prob = 0, 0
+                if top_logprobs and 'True' in top_logprobs and 'False' in top_logprobs:
+                    true_prob = np.exp(top_logprobs['True'])
+                    false_prob = np.exp(top_logprobs['False'])
+                    all_true_probs.append(true_prob / (true_prob + false_prob))
+                else:
+                    all_true_probs.append(1 if 'True' in top_logprobs else 0)
+
+            all_tokens.append(tokens)
+            all_confidences.append(confidences)
+
+        return all_tokens, all_confidences, all_true_probs
 
     def chat_request(self, **kwargs: dict[str, Any]) -> dict[str, Any]:
         """Send chat request to OpenAI server.
