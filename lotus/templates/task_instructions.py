@@ -4,7 +4,7 @@ import re
 
 def extract_image_data(df_text: str) -> (List[str], str):
     """Extracts all instances of base64 image data from df_text and returns them as a list."""
-    matches = re.findall(r'data:image[^;]+;base64,[^"]+', df_text)
+    matches = re.findall(r'data:image/[^;]+;base64,[A-Za-z0-9+/=]+', df_text)
     text_without_images = df_text
     for match in matches:
         text_without_images = text_without_images.replace(match, '')
