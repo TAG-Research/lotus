@@ -7,7 +7,15 @@ from lotus.types import LMOutput, LogprobsForCascade, LogprobsForFilterCascade
 
 
 class LM:
-    def __init__(self, model: str = "gpt-4o-mini", temperature: float = 0.0, max_ctx_len: int = 128000, max_tokens: int = 512, tokenizer: Tokenizer = None, **kwargs):
+    def __init__(
+        self,
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.0,
+        max_ctx_len: int = 128000,
+        max_tokens: int = 512,
+        tokenizer: Tokenizer = None,
+        **kwargs,
+    ):
         self.model = model
         self.max_ctx_len = max_ctx_len
         self.max_tokens = max_tokens
@@ -69,25 +77,20 @@ class LM:
             # Default to 1 if "True" in tokens, 0 if not
             if true_prob is None:
                 true_prob = 1 if "True" in base_cascade.tokens[resp_idx] else 0
-                
+
             all_true_probs.append(true_prob)
 
         return LogprobsForFilterCascade(
-            tokens=base_cascade.tokens,
-            confidences=base_cascade.confidences,
-            true_probs=all_true_probs
+            tokens=base_cascade.tokens, confidences=base_cascade.confidences, true_probs=all_true_probs
         )
 
     def count_tokens(self, messages: list[dict[str, str]] | str) -> int:
         """Count tokens in messages using either custom tokenizer or model's default tokenizer"""
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
-            
+
         kwargs = {"model": self.model, "messages": messages}
         if self.tokenizer:
-            kwargs["custom_tokenizer"] = {
-                "type": "huggingface_tokenizer", 
-                "tokenizer": self.tokenizer
-            }
-            
+            kwargs["custom_tokenizer"] = {"type": "huggingface_tokenizer", "tokenizer": self.tokenizer}
+
         return token_counter(**kwargs)

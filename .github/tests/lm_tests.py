@@ -1,9 +1,9 @@
 import pandas as pd
 import pytest
+from tokenizers import Tokenizer
 
 import lotus
 from lotus.models import LM
-from tokenizers import Tokenizer
 
 # Set logger level to DEBUG
 lotus.logger.setLevel("DEBUG")
@@ -179,6 +179,7 @@ def test_map_fewshot(setup_gpt_models):
     expected_pairs = set([("UC Berkeley", "CA"), ("Carnegie Mellon", "PA")])
     assert pairs == expected_pairs
 
+
 def test_agg_then_map(setup_gpt_models):
     _, gpt_4o = setup_gpt_models
     lotus.settings.configure(lm=gpt_4o)
@@ -187,9 +188,10 @@ def test_agg_then_map(setup_gpt_models):
     df = pd.DataFrame(data)
     agg_instruction = "What is the most common name in {Text}?"
     agg_df = df.sem_agg(agg_instruction, suffix="draft_output")
-    map_instruction = f"{{draft_output}} is a draft answer to the question 'What is the most common name?'. Clean up the draft answer so that there is just a single name. Your answer MUST be on word"
+    map_instruction = "{draft_output} is a draft answer to the question 'What is the most common name?'. Clean up the draft answer so that there is just a single name. Your answer MUST be on word"
     cleaned_df = agg_df.sem_map(map_instruction, suffix="final_output")
     assert cleaned_df["final_output"].values[0] == "John"
+
 
 def test_count_tokens(setup_gpt_models):
     gpt_4o_mini, _ = setup_gpt_models
