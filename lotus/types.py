@@ -8,7 +8,6 @@ class StatsMixin(BaseModel):
     stats: dict[str, Any] | None = None
 
 
-# TODO: Figure out better logprobs type
 class LogprobsMixin(BaseModel):
     # for each response, we have a list of tokens, and for each token, we have a ChatCompletionTokenLogprob
     logprobs: list[list[ChatCompletionTokenLogprob]] | None = None

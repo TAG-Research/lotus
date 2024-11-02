@@ -3,21 +3,22 @@ import pytest
 
 import lotus
 from lotus.models import LM
+from tokenizers import Tokenizer
 
 # Set logger level to DEBUG
 lotus.logger.setLevel("DEBUG")
 
 
 @pytest.fixture
-def setup_models():
+def setup_gpt_models():
     # Setup GPT models
     gpt_4o_mini = LM(model="gpt-4o-mini")
     gpt_4o = LM(model="gpt-4o")
     return gpt_4o_mini, gpt_4o
 
 
-def test_filter_operation(setup_models):
-    gpt_4o_mini, _ = setup_models
+def test_filter_operation(setup_gpt_models):
+    gpt_4o_mini, _ = setup_gpt_models
     lotus.settings.configure(lm=gpt_4o_mini)
 
     # Test filter operation on an easy dataframe
@@ -30,8 +31,8 @@ def test_filter_operation(setup_models):
     assert filtered_df.equals(expected_df)
 
 
-def test_filter_cascade(setup_models):
-    gpt_4o_mini, gpt_4o = setup_models
+def test_filter_cascade(setup_gpt_models):
+    gpt_4o_mini, gpt_4o = setup_gpt_models
     lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
 
     data = {
@@ -99,8 +100,8 @@ def test_filter_cascade(setup_models):
     assert stats["filters_resolved_by_helper_model"] > 0, stats
 
 
-def test_top_k(setup_models):
-    gpt_4o_mini, _ = setup_models
+def test_top_k(setup_gpt_models):
+    gpt_4o_mini, _ = setup_gpt_models
     lotus.settings.configure(lm=gpt_4o_mini)
 
     data = {
@@ -120,8 +121,8 @@ def test_top_k(setup_models):
     assert top_2_expected == top_2_actual
 
 
-def test_join(setup_models):
-    gpt_4o_mini, _ = setup_models
+def test_join(setup_gpt_models):
+    gpt_4o_mini, _ = setup_gpt_models
     lotus.settings.configure(lm=gpt_4o_mini)
 
     data1 = {"School": ["UC Berkeley", "Stanford"]}
@@ -136,8 +137,8 @@ def test_join(setup_models):
     assert joined_pairs == expected_pairs
 
 
-def test_join_cascade(setup_models):
-    gpt_4o_mini, gpt_4o = setup_models
+def test_join_cascade(setup_gpt_models):
+    gpt_4o_mini, gpt_4o = setup_gpt_models
     lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
 
     data1 = {"School": ["UC Berkeley", "Stanford"]}
@@ -163,8 +164,8 @@ def test_join_cascade(setup_models):
     assert stats["filters_resolved_by_helper_model"] == 0, stats
 
 
-def test_map_fewshot(setup_models):
-    gpt_4o_mini, _ = setup_models
+def test_map_fewshot(setup_gpt_models):
+    gpt_4o_mini, _ = setup_gpt_models
     lotus.settings.configure(lm=gpt_4o_mini)
 
     data = {"School": ["UC Berkeley", "Carnegie Mellon"]}
@@ -177,3 +178,29 @@ def test_map_fewshot(setup_models):
     pairs = set(zip(df["School"], df["State"]))
     expected_pairs = set([("UC Berkeley", "CA"), ("Carnegie Mellon", "PA")])
     assert pairs == expected_pairs
+
+def test_agg_then_map(setup_gpt_models):
+    _, gpt_4o = setup_gpt_models
+    lotus.settings.configure(lm=gpt_4o)
+
+    data = {"Text": ["My name is John", "My name is Jane", "My name is John"]}
+    df = pd.DataFrame(data)
+    agg_instruction = "What is the most common name in {Text}?"
+    agg_df = df.sem_agg(agg_instruction, suffix="draft_output")
+    map_instruction = f"{{draft_output}} is a draft answer to the question 'What is the most common name?'. Clean up the draft answer so that there is just a single name. Your answer MUST be on word"
+    cleaned_df = agg_df.sem_map(map_instruction, suffix="final_output")
+    assert cleaned_df["final_output"].values[0] == "John"
+
+def test_count_tokens(setup_gpt_models):
+    gpt_4o_mini, _ = setup_gpt_models
+    lotus.settings.configure(lm=gpt_4o_mini)
+
+    tokens = gpt_4o_mini.count_tokens("Hello, world!")
+    assert gpt_4o_mini.count_tokens([{"role": "user", "content": "Hello, world!"}]) == tokens
+    assert tokens < 100
+
+    custom_tokenizer = Tokenizer.from_pretrained("gpt2")
+    custom_lm = LM(model="doesn't matter", tokenizer=custom_tokenizer)
+    tokens = custom_lm.count_tokens("Hello, world!")
+    assert custom_lm.count_tokens([{"role": "user", "content": "Hello, world!"}]) == tokens
+    assert tokens < 100
