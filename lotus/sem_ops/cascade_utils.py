@@ -7,7 +7,7 @@ import lotus
 def importance_sampling(
     proxy_scores: list[float],
     sample_percentage: float,
-) -> tuple[NDArray[np.int_], NDArray[np.float64]]:
+) -> tuple[NDArray[np.int64], NDArray[np.float64]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
 
     w = np.sqrt(proxy_scores)
