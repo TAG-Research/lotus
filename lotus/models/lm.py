@@ -19,12 +19,14 @@ class LM:
         temperature: float = 0.0,
         max_ctx_len: int = 128000,
         max_tokens: int = 512,
+        max_batch_size: int = 64,
         tokenizer: Tokenizer | None = None,
         **kwargs: dict[str, Any],
     ):
         self.model = model
         self.max_ctx_len = max_ctx_len
         self.max_tokens = max_tokens
+        self.max_batch_size = max_batch_size
         self.tokenizer = tokenizer
         self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
 
@@ -37,22 +39,28 @@ class LM:
         if all_kwargs.get("logprobs", False):
             all_kwargs["top_logprobs"] = all_kwargs.get("top_logprobs", 10)
 
-        responses: list[ModelResponse] = batch_completion(
-            self.model,
-            messages,
-            drop_params=True,
-            **all_kwargs,  # type: ignore
-        )
+        all_responses: list[ModelResponse] = []
+        for i in range(0, len(messages), self.max_batch_size):
+            batch = messages[i : i + self.max_batch_size]
+            responses: list[ModelResponse] = batch_completion(
+                self.model,
+                batch,
+                drop_params=True,
+                **all_kwargs,  # type: ignore
+            )
+            all_responses.extend(responses)
 
         # throw errors, if any
-        for resp in responses:
+        for resp in all_responses:
             if isinstance(resp, OpenAIError):
                 raise resp
 
-        outputs = [self._get_top_choice(resp) for resp in responses]
-        logprobs = [self._get_top_choice_logprobs(resp) for resp in responses] if all_kwargs.get("logprobs") else None
+        outputs = [self._get_top_choice(resp) for resp in all_responses]
+        logprobs = (
+            [self._get_top_choice_logprobs(resp) for resp in all_responses] if all_kwargs.get("logprobs") else None
+        )
 
-        for resp in responses:
+        for resp in all_responses:
             self._update_stats(resp)
 
         return LMOutput(outputs=outputs, logprobs=logprobs)
