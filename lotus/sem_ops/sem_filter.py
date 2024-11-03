@@ -8,7 +8,7 @@ import lotus
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
 
-from .cascade_utils import importance_sampling, learn_cascade_thresholds
+from .cascade_utils import calibrate_llm_logprobs, importance_sampling, learn_cascade_thresholds
 from .postprocessors import filter_postprocess
 
 
@@ -226,7 +226,7 @@ class SemFilterDataframe:
             formatted_helper_logprobs: LogprobsForFilterCascade = (
                 lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
             )
-            helper_true_probs = formatted_helper_logprobs.true_probs
+            helper_true_probs = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs)
 
             sample_indices, correction_factors = importance_sampling(
                 helper_true_probs, learn_cascade_threshold_sample_percentage

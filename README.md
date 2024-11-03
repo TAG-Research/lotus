@@ -16,8 +16,8 @@ Easily build knowledge-intensive LLM applications that reason over your data wit
 
 LOTUS (**L**LMs **O**ver **T**ables of **U**nstructured and **S**tructured Data) provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators**. 
 
-## Key Concept: Semantic Operators
-LOTUS' programming model is powered by semantic operators. We define semantic operators as declarative transformations on one or more datasets, parameterized by a natural language expression, that can be implemented by a variety of AI-based algorithms. Semantic operators seamlessly extend the relational model, operating over tables that may contain traditional structured data as well as unstructured fields, such as free-form text. These composable, modular language- based operators allow you to write AI-based pipelines with high-level logic, leaving the rest of the work to the query engine! Each operator can be implemented and optimized in multiple ways, opening a rich space for execution plans, similar to relational operators. To learn more about semantic operators, read the full [research paper](https://arxiv.org/abs/2407.11418).
+## Key Concept: The Semantic Operator Model
+LOTUS' implements is the semantic operator programming model. Semantic operators as declarative transformations on one or more datasets, parameterized by a natural language expression, that can be implemented by a variety of AI-based algorithms. Semantic operators seamlessly extend the relational model, operating over tables that may contain traditional structured data as well as unstructured fields, such as free-form text. These composable, modular language- based operators allow you to write AI-based pipelines with high-level logic, leaving the rest of the work to the query engine! Each operator can be implemented and optimized in multiple ways, opening a rich space for execution plans, similar to relational operators. To learn more about the semantic operator model, read the full [research paper](https://arxiv.org/abs/2407.11418).
 
 LOTUS offers a number of semantic operators in a Pandas-like API, some of which are described below. To learn more about semantic operators provided in LOTUS, check out the full [documentation](https://lotus-ai.readthedocs.io/en/latest/), run the [colab tutorial](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing), or you can also refer to these [examples](https://github.com/TAG-Research/lotus/tree/main/examples/op_examples).
 
@@ -41,7 +41,7 @@ pip install lotus-ai
 ```
 
 # Quickstart
-If you're already familiar with Pandas, getting started will be a breeze! Below we provide a simple example program using the semantic join operator. The join, like many semantic operators, are specified by **langex** (natural language expressions), which the programmer uses to specify the operation. Each langex is paramterized by one or more table columns, denoted in brackets. The join's langex serves as a predicate and is parameterized by a right and left join key.
+If you're already familiar with Pandas, getting started will be a breeze! Below we provide a simple example program using the semantic join operator. The join, like many semantic operators, are specified by **langex** (natural language expressions), which the programmer uses to specify the operation. Each langex is parameterized by one or more table columns, denoted in brackets. The join's langex serves as a predicate and is parameterized by a right and left join key.
 ```python
 import pandas as pd
 import lotus
