@@ -59,7 +59,6 @@ class LM:
         if kwargs.get("logprobs", False):
             kwargs["top_logprobs"] = kwargs.get("top_logprobs", 10)
 
-        request=ujson.dumps(dict(model=self.model, messages=messages, **kwargs))
         if cache:
             messages_tuple = self._messages_to_cache_key(messages)
             responses = self._cached_completion(messages_tuple, **kwargs_for_batch)

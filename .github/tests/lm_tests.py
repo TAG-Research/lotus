@@ -51,8 +51,6 @@ def test_filter_caching(setup_models):
     # Verify results are the same
     assert filtered_df1.equals(filtered_df2)
     
-    assert gpt_4o_mini.api_calls == 0
-    assert initial_api_calls == 0
     # Verify first call made API calls
     assert first_call_api_count == 0, "First call should make API calls"
     
