@@ -50,6 +50,9 @@ class LM:
         return LMOutput(outputs=outputs, logprobs=logprobs)
 
     def _update_stats(self, response: ModelResponse):
+        if not hasattr(response, "usage"):
+            return
+
         self.stats.total_usage.prompt_tokens += response.usage.prompt_tokens
         self.stats.total_usage.completion_tokens += response.usage.completion_tokens
         self.stats.total_usage.total_tokens += response.usage.total_tokens
