@@ -5,6 +5,7 @@ import numpy as np
 from litellm import batch_completion, completion_cost
 from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelResponse
 from litellm.utils import token_counter
+from openai import OpenAIError
 from tokenizers import Tokenizer
 
 import lotus
@@ -44,6 +45,11 @@ class LM:
             drop_params=True,
             **all_kwargs,  # type: ignore
         )
+
+        # throw errors, if any
+        for resp in responses:
+            if isinstance(resp, OpenAIError):
+                raise resp
 
         outputs = [self._get_top_choice(resp) for resp in responses]
         logprobs = [self._get_top_choice_logprobs(resp) for resp in responses] if all_kwargs.get("logprobs") else None
