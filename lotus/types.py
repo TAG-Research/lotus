@@ -69,3 +69,13 @@ class LogprobsForCascade(BaseModel):
 
 class LogprobsForFilterCascade(LogprobsForCascade):
     true_probs: list[float]
+
+
+class LMStats(BaseModel):
+    class TotalUsage(BaseModel):
+        prompt_tokens: int = 0
+        completion_tokens: int = 0
+        total_tokens: int = 0
+        total_cost: float = 0.0
+
+    total_usage: TotalUsage = TotalUsage()

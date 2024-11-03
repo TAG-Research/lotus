@@ -1,12 +1,12 @@
 from typing import Any
 
 import numpy as np
-from litellm import batch_completion
+from litellm import batch_completion, completion_cost
 from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelResponse
 from litellm.utils import token_counter
 from tokenizers import Tokenizer
 
-from lotus.types import LMOutput, LogprobsForCascade, LogprobsForFilterCascade
+from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
 
 
 class LM:
@@ -25,6 +25,8 @@ class LM:
         self.tokenizer = tokenizer
         self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
 
+        self.stats: LMStats = LMStats()
+
     def __call__(
         self, messages: list[dict[str, str]] | list[list[dict[str, str]]], **kwargs: dict[str, Any]
     ) -> LMOutput:
@@ -42,7 +44,16 @@ class LM:
             [self._get_top_choice_logprobs(resp) for resp in responses] if kwargs_for_batch.get("logprobs") else None
         )
 
+        for resp in responses:
+            self._update_stats(resp)
+
         return LMOutput(outputs=outputs, logprobs=logprobs)
+
+    def _update_stats(self, response: ModelResponse):
+        self.stats.total_usage.prompt_tokens += response.usage.prompt_tokens
+        self.stats.total_usage.completion_tokens += response.usage.completion_tokens
+        self.stats.total_usage.total_tokens += response.usage.total_tokens
+        self.stats.total_usage.total_cost += completion_cost(completion_response=response)
 
     def _format_batch_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         all_kwargs = {**self.kwargs, **kwargs}
@@ -120,4 +131,15 @@ class LM:
             custom_tokenizer=custom_tokenizer,
             model=self.model,
             messages=messages,
+        )
+
+    def print_total_usage(self):
+        print(f"Total cost: ${self.stats.total_usage.total_cost:.6f}")
+        print(f"Total prompt tokens: {self.stats.total_usage.prompt_tokens}")
+        print(f"Total completion tokens: {self.stats.total_usage.completion_tokens}")
+        print(f"Total tokens: {self.stats.total_usage.total_tokens}")
+
+    def reset_stats(self):
+        self.stats = LMStats(
+            total_usage=LMStats.TotalUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0, total_cost=0.0)
         )

@@ -9,12 +9,26 @@ from lotus.models import LM
 lotus.logger.setLevel("DEBUG")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def setup_gpt_models():
     # Setup GPT models
     gpt_4o_mini = LM(model="gpt-4o-mini")
     gpt_4o = LM(model="gpt-4o")
     return gpt_4o_mini, gpt_4o
+
+
+@pytest.fixture(autouse=True)
+def print_usage_after_each_test(setup_gpt_models):
+    yield  # this runs the test
+    gpt_4o_mini, gpt_4o = setup_gpt_models
+    print("\nUsage stats for gpt-4o-mini after test:")
+    gpt_4o_mini.print_total_usage()
+    print("\nUsage stats for gpt-4o after test:")
+    gpt_4o.print_total_usage()
+
+    # Reset stats
+    gpt_4o_mini.reset_stats()
+    gpt_4o.reset_stats()
 
 
 def test_filter_operation(setup_gpt_models):
