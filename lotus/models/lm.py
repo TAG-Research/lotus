@@ -1,11 +1,13 @@
 from typing import Any
 
 import numpy as np
+import litellm
 from litellm import batch_completion, completion_cost
 from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelResponse
 from litellm.utils import token_counter
 from tokenizers import Tokenizer
 
+import lotus
 from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
 
 
@@ -38,6 +40,7 @@ class LM:
             max_tokens=kwargs_for_batch.get("max_tokens"),
             top_logprobs=kwargs_for_batch.get("top_logprobs"),
             logprobs=kwargs_for_batch.get("logprobs"),
+            drop_params=True,
         )
         outputs = [self._get_top_choice(resp) for resp in responses]
         logprobs = (
@@ -56,7 +59,12 @@ class LM:
         self.stats.total_usage.prompt_tokens += response.usage.prompt_tokens
         self.stats.total_usage.completion_tokens += response.usage.completion_tokens
         self.stats.total_usage.total_tokens += response.usage.total_tokens
-        self.stats.total_usage.total_cost += completion_cost(completion_response=response)
+
+        try:
+            self.stats.total_usage.total_cost += completion_cost(completion_response=response)
+        except litellm.exceptions.NotFoundError as e:
+            # Sometimes the model's pricing information is not available
+            lotus.logger.debug(f"Error updating completion cost: {e}")
 
     def _format_batch_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         all_kwargs = {**self.kwargs, **kwargs}
@@ -129,7 +137,6 @@ class LM:
         if self.tokenizer:
             custom_tokenizer = dict(type="huggingface_tokenizer", tokenizer=self.tokenizer)
 
-        # Pass values directly rather than using kwargs dict to preserve typing
         return token_counter(
             custom_tokenizer=custom_tokenizer,
             model=self.model,
