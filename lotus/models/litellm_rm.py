@@ -1,6 +1,7 @@
 import numpy as np
 from litellm import embedding
 from numpy.typing import NDArray
+from litellm.types.utils import EmbeddingResponse
 
 from lotus.models.faiss_rm import FaissRM
 
@@ -11,7 +12,10 @@ class LiteLLMRM(FaissRM):
         self.model: str = model
 
     def _embed(self, docs: list[str]) -> NDArray[np.float64]:
-        return embedding(model=self.model, input=docs)
+        response: EmbeddingResponse = embedding(model=self.model, input=docs)
+        embeddings = np.array([d["embedding"] for d in response.data])
+        return embeddings
+
 
 
 if __name__ == "__main__":
