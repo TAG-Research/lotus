@@ -20,13 +20,15 @@ def importance_sampling(
 
     return sample_indices, correction_factors
 
+
 def calibrate_llm_logprobs(true_probs: list[float]) -> list[float]:
     """Transforms true probabilities to calibrate LLM proxies."""
     num_quantiles = lotus.settings.cascade_num_calibration_quantiles
     quantile_values = np.percentile(true_probs, np.linspace(0, 100, num_quantiles + 1))
-    true_probs = ((np.digitize(true_probs, quantile_values) - 1) / num_quantiles)
+    true_probs = (np.digitize(true_probs, quantile_values) - 1) / num_quantiles
     true_probs = list(np.clip(true_probs, 0, 1))
     return true_probs
+
 
 def learn_cascade_thresholds(
     proxy_scores: list[float],
