@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 class RM(ABC):
     """Abstract class for retriever models."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @abstractmethod
