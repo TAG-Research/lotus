@@ -44,12 +44,12 @@ class ColBERTv2Model(RM):
         with open(f"experiments/lotus/indexes/{index_dir}/index/docs", "rb") as fp:
             self.docs = pickle.load(fp)
 
-    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> NDArray[np.float_]:
+    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> NDArray[np.float64]:
         raise NotImplementedError("This method is not implemented for ColBERTv2Model")
 
     def __call__(
         self,
-        queries: str | list[str] | NDArray[np.float_],
+        queries: str | list[str] | NDArray[np.float64],
         k: int,
         **kwargs: dict[str, Any],
     ) -> tuple[list[list[float]], list[list[int]]]:

@@ -68,7 +68,7 @@ def learn_filter_cascade_thresholds(
     precision_target: float,
     delta: float,
     helper_true_probs: list[float],
-    sample_correction_factors: NDArray[np.float_],
+    sample_correction_factors: NDArray[np.float64],
     examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,

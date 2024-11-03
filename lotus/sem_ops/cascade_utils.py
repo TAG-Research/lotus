@@ -7,7 +7,7 @@ import lotus
 def importance_sampling(
     proxy_scores: list[float],
     sample_percentage: float,
-) -> tuple[NDArray[np.int_], NDArray[np.float_]]:
+) -> tuple[NDArray[np.int_], NDArray[np.float64]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
 
     w = np.sqrt(proxy_scores)
@@ -33,7 +33,7 @@ def calibrate_llm_logprobs(true_probs: list[float]) -> list[float]:
 def learn_cascade_thresholds(
     proxy_scores: list[float],
     oracle_outputs: list[bool],
-    sample_correction_factors: NDArray[np.float_],
+    sample_correction_factors: NDArray[np.float64],
     recall_target: float,
     precision_target: float,
     delta: float,

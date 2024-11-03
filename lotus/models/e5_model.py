@@ -26,7 +26,7 @@ class E5Model(RM):
         self.docs: list[str] | None = None
         self.kwargs: dict[str, Any] = {"normalize": True, "index_type": "Flat", **kwargs}
         self.batch_size: int = 100
-        self.vecs: NDArray[np.float_] | None = None
+        self.vecs: NDArray[np.float64] | None = None
 
         import faiss
 
@@ -46,7 +46,7 @@ class E5Model(RM):
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
-    def embed(self, docs: list[str], **kwargs: dict[str, Any]) -> NDArray[np.float_]:
+    def embed(self, docs: list[str], **kwargs: dict[str, Any]) -> NDArray[np.float64]:
         """Run the embedding model.
 
         Args:
@@ -112,15 +112,15 @@ class E5Model(RM):
             self.vecs = pickle.load(fp)
 
     @classmethod
-    def get_vectors_from_index(cls, index_dir: str, ids: list[int]) -> NDArray[np.float_]:
+    def get_vectors_from_index(cls, index_dir: str, ids: list[int]) -> NDArray[np.float64]:
         with open(f"{index_dir}/vecs", "rb") as fp:
-            vecs: NDArray[np.float_] = pickle.load(fp)
+            vecs: NDArray[np.float64] = pickle.load(fp)
 
         return vecs[ids]
 
     def __call__(
         self,
-        queries: str | list[str] | NDArray[np.float_],
+        queries: str | list[str] | NDArray[np.float64],
         k: int,
         **kwargs: dict[str, Any],
     ) -> tuple[list[list[float]], list[list[int]]]:

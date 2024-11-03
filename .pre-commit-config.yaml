@@ -11,3 +11,11 @@ repos:
     hooks:
       - id: mypy
         args: ["--config-file", "mypy.ini"]
+        additional_dependencies:
+          - types-setuptools
+          - litellm>=1.51.0
+          - numpy>=1.25.0
+          - pandas>=2.0.0
+          - sentence-transformers>=3.0.1
+          - tiktoken>=0.7.0
+          - tqdm>=4.66.4

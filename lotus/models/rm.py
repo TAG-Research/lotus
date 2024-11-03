@@ -31,7 +31,7 @@ class RM(ABC):
         pass
 
     @abstractmethod
-    def get_vectors_from_index(cls, index_dir: str, ids: list[int]) -> NDArray[np.float_]:
+    def get_vectors_from_index(cls, index_dir: str, ids: list[int]) -> NDArray[np.float64]:
         """Get the vectors from the index.
 
         Args:
@@ -39,7 +39,7 @@ class RM(ABC):
             ids (list[int]): The ids of the vectors to retrieve
 
         Returns:
-            NDArray[np.float_]: The vectors matching the specified ids.
+            NDArray[np.float64]: The vectors matching the specified ids.
         """
 
         pass
@@ -47,14 +47,14 @@ class RM(ABC):
     @abstractmethod
     def __call__(
         self,
-        queries: str | list[str] | NDArray[np.float_],
+        queries: str | list[str] | NDArray[np.float64],
         k: int,
         **kwargs: dict[str, Any],
     ) -> tuple[list[list[float]], list[list[int]]]:
         """Run top-k search on the index.
 
         Args:
-            queries (str | list[str] | NDArray[np.float_]): Either a query or a list of queries or a 2D FP32 array.
+            queries (str | list[str] | NDArray[np.float64]): Either a query or a list of queries or a 2D FP32 array.
             k (int): The k to use for top-k search.
             **kwargs (dict[str, Any]): Additional keyword arguments.
 
