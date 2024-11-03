@@ -25,7 +25,7 @@ def calibrate_llm_logprobs(true_probs: list[float]) -> list[float]:
     num_quantiles = lotus.settings.cascade_num_calibration_quantiles
     quantile_values = np.percentile(true_probs, np.linspace(0, 100, num_quantiles + 1))
     true_probs = ((np.digitize(true_probs, quantile_values) - 1) / num_quantiles)
-    true_probs = np.clip(true_probs, 0, 1)
+    true_probs = list(np.clip(true_probs, 0, 1))
     return true_probs
 
 def learn_cascade_thresholds(
