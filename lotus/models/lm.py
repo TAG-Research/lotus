@@ -2,8 +2,8 @@ from typing import Any
 
 import numpy as np
 from litellm import batch_completion
+from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelResponse
 from litellm.utils import token_counter
-from litellm.types.utils import ChatCompletionTokenLogprob, ModelResponse, Choices
 from tokenizers import Tokenizer
 
 from lotus.types import LMOutput, LogprobsForCascade, LogprobsForFilterCascade
@@ -35,10 +35,12 @@ class LM:
             temperature=kwargs_for_batch.get("temperature"),
             max_tokens=kwargs_for_batch.get("max_tokens"),
             top_logprobs=kwargs_for_batch.get("top_logprobs"),
-            logprobs=kwargs_for_batch.get("logprobs")
+            logprobs=kwargs_for_batch.get("logprobs"),
         )
         outputs = [self._get_top_choice(resp) for resp in responses]
-        logprobs = [self._get_top_choice_logprobs(resp) for resp in responses] if kwargs_for_batch.get("logprobs") else None
+        logprobs = (
+            [self._get_top_choice_logprobs(resp) for resp in responses] if kwargs_for_batch.get("logprobs") else None
+        )
 
         return LMOutput(outputs=outputs, logprobs=logprobs)
 
@@ -46,10 +48,7 @@ class LM:
         all_kwargs = {**self.kwargs, **kwargs}
         if all_kwargs.get("logprobs", False):
             all_kwargs["top_logprobs"] = all_kwargs.get("top_logprobs", 10)
-        return {
-            k: v for k, v in all_kwargs.items() 
-            if k in ["temperature", "max_tokens", "top_logprobs", "logprobs"]
-        }
+        return {k: v for k, v in all_kwargs.items() if k in ["temperature", "max_tokens", "top_logprobs", "logprobs"]}
 
     def _get_top_choice(self, response: ModelResponse) -> str:
         choice = response.choices[0]

@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any
-from numpy.typing import NDArray
+
 import numpy as np
+from numpy.typing import NDArray
+
+
 class RM(ABC):
     """Abstract class for retriever models."""
 

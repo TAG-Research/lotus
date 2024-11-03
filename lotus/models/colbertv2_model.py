@@ -1,9 +1,10 @@
 import pickle
 from typing import Any
 
-from lotus.models.rm import RM
-from numpy.typing import NDArray
 import numpy as np
+from numpy.typing import NDArray
+
+from lotus.models.rm import RM
 
 
 class ColBERTv2Model(RM):

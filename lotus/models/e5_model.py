@@ -3,9 +3,9 @@ import pickle
 from typing import Any
 
 import numpy as np
-from numpy.typing import NDArray
 import torch
 import torch.nn.functional as F
+from numpy.typing import NDArray
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 
