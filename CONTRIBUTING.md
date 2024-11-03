@@ -14,22 +14,20 @@ pip install -r requirements-dev.txt
 ## Dev Flow
 After making your changes, please make a PR to get your changes merged upstream.
 
-## Running vLLM Models
-To use vLLM for model serving, you just need to make an OpenAI compatible vLLM server. Then, the `OpenAIModel` class can be used to point to the server. See an example below.
+## Running Models
+To run a model, you can use the `LM` class in `lotus.models.LM`. We use the `litellm` library to interface with the model.
+This allows you to use any model provider that is supported by `litellm`.
 
-Create the server
+Here's an example of creating an `LM` object for `gpt-4o`
 ```
-python -m vllm.entrypoints.openai.api_server --model meta-llama/Meta-Llama-3.1-70B-Instruct --port 8000 --tensor-parallel-size 8
+from lotus.models import LM
+lm = LM(model="gpt-4o")
 ```
 
-In LOTUS, you should instantiate your model as follows
+Here's an example of creating an `LM` object to use `llama3.2` on Ollama
 ```
-from lotus.models import OpenAIModel
-lm = OpenAIModel(
-    model="meta-llama/Meta-Llama-3.1-70B-Instruct",
-    api_base="http://localhost:8000/v1",
-    provider="vllm",
-)
+from lotus.models import LM
+lm = LM(model="ollama/llama3.2")
 ```
 
 ## Helpful Examples
