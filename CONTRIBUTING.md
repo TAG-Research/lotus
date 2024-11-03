@@ -9,6 +9,7 @@ conda activate lotus
 git clone git@github.com:stanford-futuredata/lotus.git
 pip install -e .
 pip install -r requirements-dev.txt
+pre-commit install
 ```
 
 ## Dev Flow
@@ -28,6 +29,12 @@ Here's an example of creating an `LM` object to use `llama3.2` on Ollama
 ```
 from lotus.models import LM
 lm = LM(model="ollama/llama3.2")
+```
+
+Here's an example of creating an `LM` object to use `Meta-Llama-3-8B-Instruct` on vLLM
+```
+from lotus.models import LM
+lm = LM(model='hosted_vllm/meta-llama/Meta-Llama-3-8B-Instruct', api_base='http://localhost:8000/v1')
 ```
 
 ## Helpful Examples
