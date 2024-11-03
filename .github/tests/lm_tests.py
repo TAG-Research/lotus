@@ -30,6 +30,36 @@ def test_filter_operation(setup_models):
     assert filtered_df.equals(expected_df)
 
 
+def test_filter_caching(setup_models):
+    gpt_4o_mini, _ = setup_models
+    lotus.settings.configure(lm=gpt_4o_mini)
+
+    # Test filter operation on a dataframe
+    data = {"Text": ["I am really excited to go to class today!", "I am very sad"]}
+    df = pd.DataFrame(data)
+    user_instruction = "{Text} is a positive sentiment"
+    
+    # First call - should make API calls
+    initial_api_calls = gpt_4o_mini.api_calls
+    filtered_df1 = df.sem_filter(user_instruction)
+    first_call_api_count = gpt_4o_mini.api_calls - initial_api_calls
+    
+    # Second call - should use cache
+    filtered_df2 = df.sem_filter(user_instruction)
+    second_call_api_count = gpt_4o_mini.api_calls - (initial_api_calls + first_call_api_count)
+    
+    # Verify results are the same
+    assert filtered_df1.equals(filtered_df2)
+    
+    assert gpt_4o_mini.api_calls == 0
+    assert initial_api_calls == 0
+    # Verify first call made API calls
+    assert first_call_api_count == 0, "First call should make API calls"
+    
+    # Verify second call used cache (no new API calls)
+    assert second_call_api_count == 0, "Second call should use cache (no new API calls)"
+
+
 def test_filter_cascade(setup_models):
     gpt_4o_mini, gpt_4o = setup_models
     lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
