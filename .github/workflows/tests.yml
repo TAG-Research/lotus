@@ -149,5 +149,12 @@ jobs:
           pip install -e .
           pip install pytest
 
+      - name: Set OpenAI API Key
+        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+
       - name: Run RM tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ENABLE_OPENAI_TESTS: true
+          ENABLE_LOCAL_TESTS: true
         run: pytest .github/tests/rm_tests.py

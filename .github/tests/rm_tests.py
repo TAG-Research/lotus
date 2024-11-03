@@ -118,6 +118,10 @@ def test_sim_join(setup_models, model):
 
 
 # TODO: threshold is hardcoded for intfloat/e5-small-v2
+@pytest.mark.skipif(
+    "intfloat/e5-small-v2" not in ENABLED_MODEL_NAMES,
+    reason="Skipping test because intfloat/e5-small-v2 is not enabled",
+)
 def test_dedup(setup_models):
     rm = setup_models["intfloat/e5-small-v2"]
     lotus.settings.configure(rm=rm)
@@ -163,6 +167,7 @@ def test_search_reranker_only(setup_models, model):
 # Combined Tests
 ################################################################################
 # TODO: Figure out how to parameterize pairs of models
+@pytest.mark.skipif(not ENABLE_LOCAL_TESTS, reason="Skipping test because local tests are not enabled")
 def test_search(setup_models):
     models = setup_models
     rm = models["intfloat/e5-small-v2"]
