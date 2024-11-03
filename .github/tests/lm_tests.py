@@ -1,4 +1,5 @@
 import os
+
 import pandas as pd
 import pytest
 from tokenizers import Tokenizer
@@ -19,9 +20,10 @@ ENABLE_OLLAMA_TESTS = os.getenv("ENABLE_OLLAMA_TESTS", "false").lower() == "true
 MODEL_NAME_TO_ENABLED = {
     "gpt-4o-mini": ENABLE_OPENAI_TESTS,
     "gpt-4o": ENABLE_OPENAI_TESTS,
-    "ollama/llama3.2": ENABLE_OLLAMA_TESTS
+    "ollama/llama3.2": ENABLE_OLLAMA_TESTS,
 }
 ENABLED_MODEL_NAMES = set([model_name for model_name, is_enabled in MODEL_NAME_TO_ENABLED.items() if is_enabled])
+
 
 def get_enabled(*candidate_models: tuple) -> list[str]:
     return [model for model in candidate_models if model in ENABLED_MODEL_NAMES]
@@ -64,6 +66,7 @@ def test_filter_operation(setup_models, model):
     expected_df = pd.DataFrame({"Text": ["I am really excited to go to class today!"]})
     assert filtered_df.equals(expected_df)
 
+
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
 def test_top_k(setup_models, model):
     lm = setup_models[model]
@@ -105,6 +108,7 @@ def test_join(setup_models, model):
     expected_pairs = set([("UC Berkeley", "Public School"), ("Stanford", "Private School")])
     assert joined_pairs == expected_pairs
 
+
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.2"))
 def test_map_fewshot(setup_models, model):
     lm = setup_models[model]
@@ -134,6 +138,7 @@ def test_agg_then_map(setup_models, model):
     map_instruction = "{draft_output} is a draft answer to the question 'What is the most common name?'. Clean up the draft answer so that there is just a single name. Your answer MUST be on word"
     cleaned_df = agg_df.sem_map(map_instruction, suffix="final_output")
     assert cleaned_df["final_output"].values[0].lower().strip(".,!?\"'") == "john"
+
 
 ################################################################################
 # Cascade tests
@@ -207,6 +212,7 @@ def test_filter_cascade(setup_models):
     assert "I am very sad" not in filtered_df["Text"].values
     assert stats["filters_resolved_by_helper_model"] > 0, stats
 
+
 @pytest.mark.skipif(not ENABLE_OPENAI_TESTS, reason="Skipping test because OpenAI tests are not enabled")
 def test_join_cascade(setup_models):
     models = setup_models
@@ -233,6 +239,7 @@ def test_join_cascade(setup_models):
     assert joined_pairs == expected_pairs
     assert stats["filters_resolved_by_large_model"] == 4, stats
     assert stats["filters_resolved_by_helper_model"] == 0, stats
+
 
 ################################################################################
 # Token counting tests

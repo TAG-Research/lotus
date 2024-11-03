@@ -1,7 +1,7 @@
 from typing import Any
 
-import numpy as np
 import litellm
+import numpy as np
 from litellm import batch_completion, completion_cost
 from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelResponse
 from litellm.utils import token_counter
