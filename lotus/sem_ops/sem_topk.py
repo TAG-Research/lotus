@@ -59,14 +59,12 @@ def compare_batch_binary(
     pairs: list[tuple[str, str]], user_instruction: str, strategy: str | None = None
 ) -> tuple[list[bool], int]:
     match_prompts = []
-    results = []
     tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
-
-    results: LMOutput = lotus.settings.lm(match_prompts)
-    results = list(map(parse_ans_binary, results.outputs))
+    lm_results: LMOutput = lotus.settings.lm(match_prompts)
+    results: list[bool] = list(map(parse_ans_binary, lm_results.outputs))
     return results, tokens
 
 
@@ -109,8 +107,8 @@ def compare_batch_binary_cascade(
             large_match_prompts.append(match_prompts[i])
             large_tokens += lotus.settings.lm.count_tokens(large_match_prompts[-1])
 
-        results: LMOutput = lotus.settings.lm(large_match_prompts)
-        for idx, res in enumerate(results.outputs):
+        large_lm_results: LMOutput = lotus.settings.lm(large_match_prompts)
+        for idx, res in enumerate(large_lm_results.outputs):
             new_idx = low_conf_idxs[idx]
             parsed_res = parse_ans_binary(res)
             parsed_results[new_idx] = parsed_res

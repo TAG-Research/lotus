@@ -1,6 +1,9 @@
+from typing import Any
+
 import numpy as np
-from litellm import batch_completion, token_counter
-from litellm.types.utils import ChatCompletionTokenLogprob, ModelResponse
+from litellm import batch_completion
+from litellm.utils import token_counter
+from litellm.types.utils import ChatCompletionTokenLogprob, ModelResponse, Choices
 from tokenizers import Tokenizer
 
 from lotus.types import LMOutput, LogprobsForCascade, LogprobsForFilterCascade
@@ -13,32 +16,52 @@ class LM:
         temperature: float = 0.0,
         max_ctx_len: int = 128000,
         max_tokens: int = 512,
-        tokenizer: Tokenizer = None,
-        **kwargs,
+        tokenizer: Tokenizer | None = None,
+        **kwargs: dict[str, Any],
     ):
         self.model = model
         self.max_ctx_len = max_ctx_len
         self.max_tokens = max_tokens
         self.tokenizer = tokenizer
         self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
-        self.history = []
 
-    def __call__(self, messages=None, **kwargs) -> LMOutput:
-        kwargs = {**self.kwargs, **kwargs}
-        if kwargs.get("logprobs", False):
-            kwargs["top_logprobs"] = kwargs.get("top_logprobs", 10)
-
-        responses: list[ModelResponse] = batch_completion(model=self.model, messages=messages, **kwargs)
+    def __call__(
+        self, messages: list[dict[str, str]] | list[list[dict[str, str]]], **kwargs: dict[str, Any]
+    ) -> LMOutput:
+        kwargs_for_batch = self._format_batch_kwargs(kwargs)
+        responses: list[ModelResponse] = batch_completion(
+            self.model,
+            messages,
+            temperature=kwargs_for_batch.get("temperature"),
+            max_tokens=kwargs_for_batch.get("max_tokens"),
+            top_logprobs=kwargs_for_batch.get("top_logprobs"),
+            logprobs=kwargs_for_batch.get("logprobs")
+        )
         outputs = [self._get_top_choice(resp) for resp in responses]
-        logprobs = [self._get_top_choice_logprobs(resp) for resp in responses] if kwargs.get("logprobs") else None
+        logprobs = [self._get_top_choice_logprobs(resp) for resp in responses] if kwargs_for_batch.get("logprobs") else None
 
         return LMOutput(outputs=outputs, logprobs=logprobs)
 
+    def _format_batch_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        all_kwargs = {**self.kwargs, **kwargs}
+        if all_kwargs.get("logprobs", False):
+            all_kwargs["top_logprobs"] = all_kwargs.get("top_logprobs", 10)
+        return {
+            k: v for k, v in all_kwargs.items() 
+            if k in ["temperature", "max_tokens", "top_logprobs", "logprobs"]
+        }
+
     def _get_top_choice(self, response: ModelResponse) -> str:
-        return response.choices[0].message.content
+        choice = response.choices[0]
+        assert isinstance(choice, Choices)
+        if choice.message.content is None:
+            raise ValueError(f"No content in response: {response}")
+        return choice.message.content
 
     def _get_top_choice_logprobs(self, response: ModelResponse) -> list[ChatCompletionTokenLogprob]:
-        logprobs = response.choices[0].logprobs["content"]
+        choice = response.choices[0]
+        assert isinstance(choice, Choices)
+        logprobs = choice.logprobs["content"]
         return [ChatCompletionTokenLogprob(**logprob) for logprob in logprobs]
 
     def format_logprobs_for_cascade(self, logprobs: list[list[ChatCompletionTokenLogprob]]) -> LogprobsForCascade:
@@ -89,8 +112,13 @@ class LM:
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
 
-        kwargs = {"model": self.model, "messages": messages}
+        custom_tokenizer: dict[str, Any] | None = None
         if self.tokenizer:
-            kwargs["custom_tokenizer"] = {"type": "huggingface_tokenizer", "tokenizer": self.tokenizer}
+            custom_tokenizer = dict(type="huggingface_tokenizer", tokenizer=self.tokenizer)
 
-        return token_counter(**kwargs)
+        # Pass values directly rather than using kwargs dict to preserve typing
+        return token_counter(
+            custom_tokenizer=custom_tokenizer,
+            model=self.model,
+            messages=messages,
+        )

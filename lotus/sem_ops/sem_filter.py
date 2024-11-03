@@ -2,6 +2,9 @@ from typing import Any
 
 import pandas as pd
 
+import numpy as np
+from numpy.typing import NDArray
+
 import lotus
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
@@ -58,7 +61,7 @@ def sem_filter(
 
 
 def learn_filter_cascade_thresholds(
-    sample_df_txt: str,
+    sample_df_txt: list[str],
     lm: lotus.models.LM,
     formatted_usr_instr: str,
     default: bool,
@@ -66,10 +69,10 @@ def learn_filter_cascade_thresholds(
     precision_target: float,
     delta: float,
     helper_true_probs: list[float],
-    sample_correction_factors: list[float],
-    examples_df_txt: str | None = None,
-    examples_answers: str | None = None,
-    cot_reasoning: list | None = None,
+    sample_correction_factors: NDArray[np.float_],
+    examples_df_txt: list[str] | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
 ) -> tuple[float, float]:
     """Automatically learns the cascade thresholds for a cascade
@@ -102,7 +105,7 @@ def learn_filter_cascade_thresholds(
 
     except Exception as e:
         lotus.logger.error(f"Error while learning filter cascade thresholds: {e}")
-        return None
+        raise e
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_filter")

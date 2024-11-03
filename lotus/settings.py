@@ -1,3 +1,5 @@
+# type: ignore
+
 import copy
 import threading
 from contextlib import contextmanager

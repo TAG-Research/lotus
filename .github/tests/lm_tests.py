@@ -114,11 +114,14 @@ def test_top_k(setup_gpt_models):
     }
     df = pd.DataFrame(data)
     user_instruction = "Which {Text} is most related to basketball?"
-    sorted_df = df.sem_topk(user_instruction, K=2)
-
     top_2_expected = set(["Michael Jordan is a good basketball player", "Steph Curry is a good basketball player"])
-    top_2_actual = set(sorted_df["Text"].values)
-    assert top_2_expected == top_2_actual
+
+    strategies = ["quick", "heap", "naive"]
+    for strategy in strategies:
+        sorted_df = df.sem_topk(user_instruction, K=2, strategy=strategy)
+
+        top_2_actual = set(sorted_df["Text"].values)
+        assert top_2_expected == top_2_actual
 
 
 def test_join(setup_gpt_models):
@@ -181,8 +184,8 @@ def test_map_fewshot(setup_gpt_models):
 
 
 def test_agg_then_map(setup_gpt_models):
-    _, gpt_4o = setup_gpt_models
-    lotus.settings.configure(lm=gpt_4o)
+    gpt_4o_mini, _ = setup_gpt_models
+    lotus.settings.configure(lm=gpt_4o_mini)
 
     data = {"Text": ["My name is John", "My name is Jane", "My name is John"]}
     df = pd.DataFrame(data)

@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Any
-
-
+from numpy.typing import NDArray
+import numpy as np
 class RM(ABC):
     """Abstract class for retriever models."""
 
-    def _init__(self):
+    def __init__(self) -> None:
         pass
 
     @abstractmethod
@@ -28,7 +28,7 @@ class RM(ABC):
         pass
 
     @abstractmethod
-    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> list:
+    def get_vectors_from_index(cls, index_dir: str, ids: list[int]) -> NDArray[np.float_]:
         """Get the vectors from the index.
 
         Args:
@@ -36,7 +36,7 @@ class RM(ABC):
             ids (list[int]): The ids of the vectors to retrieve
 
         Returns:
-            list: The vectors matching the specified ids.
+            NDArray[np.float_]: The vectors matching the specified ids.
         """
 
         pass

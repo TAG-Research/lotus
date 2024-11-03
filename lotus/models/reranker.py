@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class Reranker(ABC):
     """Abstract class for reranker models."""
 
-    def _init__(self):
+    def __init__(self) -> None:
         pass
 
     @abstractmethod

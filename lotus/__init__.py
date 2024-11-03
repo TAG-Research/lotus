@@ -19,7 +19,8 @@ from lotus.sem_ops import (
     sem_dedup,
     sem_topk,
 )
-from lotus.settings import settings
+from lotus.settings import settings  # type: ignore[attr-defined]
+
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)

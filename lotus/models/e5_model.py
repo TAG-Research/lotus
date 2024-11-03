@@ -3,6 +3,7 @@ import pickle
 from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -25,7 +26,7 @@ class E5Model(RM):
         self.docs: list[str] | None = None
         self.kwargs: dict[str, Any] = {"normalize": True, "index_type": "Flat", **kwargs}
         self.batch_size: int = 100
-        self.vecs: np.ndarray[Any, np.dtype[np.float32]] | None = None
+        self.vecs: NDArray[np.float_] | None = None
 
         import faiss
 
@@ -45,7 +46,7 @@ class E5Model(RM):
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
-    def embed(self, docs: list[str], **kwargs: dict[str, Any]) -> np.ndarray[Any, np.dtype[np.float32]]:
+    def embed(self, docs: list[str], **kwargs: dict[str, Any]) -> NDArray[np.float_]:
         """Run the embedding model.
 
         Args:
@@ -111,9 +112,9 @@ class E5Model(RM):
             self.vecs = pickle.load(fp)
 
     @classmethod
-    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> list[np.ndarray[Any, np.dtype[np.float32]]]:
+    def get_vectors_from_index(cls, index_dir: str, ids: list[int]) -> NDArray[np.float_]:
         with open(f"{index_dir}/vecs", "rb") as fp:
-            vecs: np.ndarray[Any, np.dtype[np.float32]] = pickle.load(fp)
+            vecs: NDArray[np.float_] = pickle.load(fp)
 
         return vecs[ids]
 

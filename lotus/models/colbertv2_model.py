@@ -2,14 +2,16 @@ import pickle
 from typing import Any
 
 from lotus.models.rm import RM
+from numpy.typing import NDArray
+import numpy as np
 
 
 class ColBERTv2Model(RM):
     """ColBERTv2 Model"""
 
-    def __init__(self, **kwargs):
+    def __init__(self) -> None:
         self.docs: list[str] | None = None
-        self.kwargs: dict[str, Any] = {"doc_maxlen": 300, "nbits": 2, **kwargs}
+        self.kwargs: dict[str, Any] = {"doc_maxlen": 300, "nbits": 2}
         self.index_dir: str | None = None
 
         from colbert import Indexer, Searcher
@@ -41,7 +43,7 @@ class ColBERTv2Model(RM):
         with open(f"experiments/lotus/indexes/{index_dir}/index/docs", "rb") as fp:
             self.docs = pickle.load(fp)
 
-    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> list:
+    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> NDArray[np.float_]:
         raise NotImplementedError("This method is not implemented for ColBERTv2Model")
 
     def __call__(
@@ -57,8 +59,8 @@ class ColBERTv2Model(RM):
             searcher = self.Searcher(index=f"{self.index_dir}/index", collection=self.docs)
 
         # make queries a dict with keys as query ids
-        queries = {i: q for i, q in enumerate(queries)}
-        all_results = searcher.search_all(queries, k=k).todict()
+        queries_dict = {i: q for i, q in enumerate(queries)}
+        all_results = searcher.search_all(queries_dict, k=k).todict()
 
         indices = [[result[0] for result in all_results[qid]] for qid in all_results.keys()]
         distances = [[result[2] for result in all_results[qid]] for qid in all_results.keys()]
