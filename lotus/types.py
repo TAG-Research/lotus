@@ -79,3 +79,8 @@ class LMStats(BaseModel):
         total_cost: float = 0.0
 
     total_usage: TotalUsage = TotalUsage()
+
+
+class RMOutput(BaseModel):
+    distances: list[list[float]]
+    indices: list[list[int]]
