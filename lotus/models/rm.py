@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 class RM(ABC):
     """Abstract class for retriever models."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
     @abstractmethod
@@ -47,18 +47,18 @@ class RM(ABC):
     @abstractmethod
     def __call__(
         self,
-        queries: str | list[str] | list[list[float]],
+        queries: str | list[str] | NDArray[np.float_],
         k: int,
         **kwargs: dict[str, Any],
-    ) -> tuple[list[float], list[int]]:
+    ) -> tuple[list[list[float]], list[list[int]]]:
         """Run top-k search on the index.
 
         Args:
-            queries (str | list[str] | list[list[float]]): Either a query or a list of queries or a 2D FP32 array.
+            queries (str | list[str] | NDArray[np.float_]): Either a query or a list of queries or a 2D FP32 array.
             k (int): The k to use for top-k search.
             **kwargs (dict[str, Any]): Additional keyword arguments.
 
         Returns:
-            tuple[list[float], list[int]]: A tuple of (distances, indices) of the top-k vectors
+            tuple[list[list[float]], list[list[int]]]: A tuple of (distances, indices) of the top-k vectors
         """
         pass

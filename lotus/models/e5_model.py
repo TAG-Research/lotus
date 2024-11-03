@@ -118,35 +118,23 @@ class E5Model(RM):
 
         return vecs[ids]
 
-    def load_vecs(self, index_dir: str, ids: list[int]) -> list:
-        """loads vectors to the rm and returns them
-        Args:
-            index_dir (str): Directory of the index.
-            ids (list[int]): The ids of the vectors to retrieve
-
-        Returns:
-            The vectors matching the specified ids.
-        """
-
-        if self.vecs is None:
-            with open(f"{index_dir}/vecs", "rb") as fp:
-                self.vecs = pickle.load(fp)
-
-        return self.vecs[ids]
-
     def __call__(
         self,
-        queries: str | list[str] | list[list[float]],
+        queries: str | list[str] | NDArray[np.float_],
         k: int,
         **kwargs: dict[str, Any],
-    ) -> tuple[list[float], list[int]]:
+    ) -> tuple[list[list[float]], list[list[int]]]:
         if isinstance(queries, str):
             queries = [queries]
 
         if isinstance(queries[0], str):
-            embedded_queries = self.embed(queries, **kwargs)
+            str_queries: list[str] = [str(q) for q in queries]
+            embedded_queries = self.embed(str_queries, **kwargs)
         else:
-            embedded_queries = queries
+            embedded_queries = np.asarray(queries, dtype=np.float32)
+
+        if self.faiss_index is None:
+            raise ValueError("Index not loaded")
 
         distances, indicies = self.faiss_index.search(embedded_queries, k)
 

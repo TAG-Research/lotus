@@ -49,10 +49,10 @@ class ColBERTv2Model(RM):
 
     def __call__(
         self,
-        queries: str | list[str] | list[list[float]],
+        queries: str | list[str] | NDArray[np.float_],
         k: int,
         **kwargs: dict[str, Any],
-    ) -> tuple[list[float], list[int]]:
+    ) -> tuple[list[list[float]], list[list[int]]]:
         if isinstance(queries, str):
             queries = [queries]
 
