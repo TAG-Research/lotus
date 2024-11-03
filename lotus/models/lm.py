@@ -30,9 +30,7 @@ class LM:
 
         self.stats: LMStats = LMStats()
 
-    def __call__(
-        self, messages: list[dict[str, str]] | list[list[dict[str, str]]], **kwargs: dict[str, Any]
-    ) -> LMOutput:
+    def __call__(self, messages: list[list[dict[str, str]]], **kwargs: dict[str, Any]) -> LMOutput:
         all_kwargs = {**self.kwargs, **kwargs}
 
         # Set top_logprobs if logprobs requested
