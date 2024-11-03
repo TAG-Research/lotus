@@ -1,9 +1,9 @@
 import pandas as pd
 
 import lotus
-from lotus.models import CrossEncoderModel, E5Model, OpenAIModel
+from lotus.models import LM, CrossEncoderModel, E5Model
 
-lm = OpenAIModel()
+lm = LM()
 rm = E5Model()
 reranker = CrossEncoderModel()
 

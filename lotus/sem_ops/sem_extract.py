@@ -4,7 +4,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticExtractOutput, SemanticExtractPostprocessOutput
+from lotus.types import LMOutput, SemanticExtractOutput, SemanticExtractPostprocessOutput
 
 from .postprocessors import extract_postprocess
 
@@ -36,15 +36,11 @@ def sem_extract(
         inputs.append(prompt)
 
     # call model
-    raw_outputs = model(inputs)
-    if isinstance(raw_outputs, tuple):
-        raw_outputs, _ = raw_outputs
-    else:
-        assert isinstance(raw_outputs, list)
+    lm_output: LMOutput = model(inputs)
 
     # post process results
-    postprocess_output = postprocessor(raw_outputs)
-    lotus.logger.debug(f"raw_outputs: {raw_outputs}")
+    postprocess_output = postprocessor(lm_output.outputs)
+    lotus.logger.debug(f"raw_outputs: {lm_output.outputs}")
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
     lotus.logger.debug(f"quotes: {postprocess_output.quotes}")
 

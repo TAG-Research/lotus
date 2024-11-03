@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
 # Set logger level to DEBUG
 lotus.logger.setLevel("DEBUG")
@@ -11,8 +11,8 @@ lotus.logger.setLevel("DEBUG")
 @pytest.fixture
 def setup_models():
     # Setup GPT models
-    gpt_4o_mini = OpenAIModel(model="gpt-4o-mini")
-    gpt_4o = OpenAIModel(model="gpt-4o")
+    gpt_4o_mini = LM(model="gpt-4o-mini")
+    gpt_4o = LM(model="gpt-4o")
     return gpt_4o_mini, gpt_4o
 
 
@@ -28,6 +28,34 @@ def test_filter_operation(setup_models):
 
     expected_df = pd.DataFrame({"Text": ["I am really excited to go to class today!"]})
     assert filtered_df.equals(expected_df)
+
+
+def test_filter_caching(setup_models):
+    gpt_4o_mini, _ = setup_models
+    lotus.settings.configure(lm=gpt_4o_mini)
+
+    # Test filter operation on a dataframe
+    data = {"Text": ["I am really excited to go to class today!", "I am very sad"]}
+    df = pd.DataFrame(data)
+    user_instruction = "{Text} is a positive sentiment"
+    
+    # First call - should make API calls
+    initial_api_calls = gpt_4o_mini.api_calls
+    filtered_df1 = df.sem_filter(user_instruction)
+    first_call_api_count = gpt_4o_mini.api_calls - initial_api_calls
+    
+    # Second call - should use cache
+    filtered_df2 = df.sem_filter(user_instruction)
+    second_call_api_count = gpt_4o_mini.api_calls - (initial_api_calls + first_call_api_count)
+    
+    # Verify results are the same
+    assert filtered_df1.equals(filtered_df2)
+    
+    # Verify first call made API calls
+    assert first_call_api_count == 0, "First call should make API calls"
+    
+    # Verify second call used cache (no new API calls)
+    assert second_call_api_count == 0, "Second call should use cache (no new API calls)"
 
 
 def test_filter_cascade(setup_models):
@@ -57,7 +85,6 @@ def test_filter_cascade(setup_models):
             "Everything is going as planned, couldn't be happier.",
             "Feeling super motivated and ready to take on challenges!",
             "I appreciate all the small things that bring me joy.",
-
             # Negative examples
             "I am very sad.",
             "Today has been really tough; I feel exhausted.",

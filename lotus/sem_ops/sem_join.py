@@ -1,6 +1,5 @@
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 import lotus
@@ -136,24 +135,17 @@ def sem_join_cascade(
         assert helper_logprobs is not None
 
         high_conf_idxs = set()
-        for idx_i in range(len(helper_outputs)):
-            tokens: list[str]
-            confidences: np.ndarray[Any, np.dtype[np.float64]]
-            # Get the logprobs
-            if lotus.settings.helper_lm.provider == "vllm":
-                tokens = helper_logprobs[idx_i]["tokens"]
-                confidences = np.exp(helper_logprobs[idx_i]["token_logprobs"])
-            elif lotus.settings.helper_lm.provider == "openai":
-                content: list[dict[str, Any]] = helper_logprobs[idx_i]["content"]
-                tokens = [content[t_idx]["token"] for t_idx in range(len(content))]
-                confidences = np.exp([content[t_idx]["logprob"] for t_idx in range(len(content))])
+        # Get the logprobs in a standardized format
+        formatted_logprobs = lotus.settings.helper_lm.format_logprobs_for_cascade(helper_logprobs)
+        tokens, confidences = formatted_logprobs.tokens, formatted_logprobs.confidences
 
+        for doc_idx in range(len(helper_outputs)):
             # Find where true/false is said and look at confidence
-            for idx_j in range(len(tokens) - 1, -1, -1):
-                if tokens[idx_j].strip(" \n").lower() in ["true", "false"]:
-                    conf = confidences[idx_j]
-                    if conf >= cascade_threshold:
-                        high_conf_idxs.add(idx_i)
+            for token_idx in range(len(tokens[doc_idx]) - 1, -1, -1):
+                if tokens[doc_idx][token_idx].strip(" \n").lower() in ["true", "false"]:
+                    confidence = confidences[doc_idx][token_idx]
+                    if confidence >= cascade_threshold:
+                        high_conf_idxs.add(doc_idx)
 
         # Send low confidence samples to large LM
         low_conf_idxs = sorted([i for i in range(len(helper_outputs)) if i not in high_conf_idxs])

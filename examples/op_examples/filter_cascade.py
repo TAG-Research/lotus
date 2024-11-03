@@ -1,10 +1,10 @@
 import pandas as pd
 
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
-gpt_35_turbo = OpenAIModel("gpt-3.5-turbo")
-gpt_4o = OpenAIModel("gpt-4o")
+gpt_35_turbo = LM("gpt-3.5-turbo")
+gpt_4o = LM("gpt-4o")
 
 lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_35_turbo)
 data = {

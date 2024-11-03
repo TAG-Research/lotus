@@ -7,7 +7,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticTopKOutput
+from lotus.types import LMOutput, SemanticTopKOutput
 
 
 def get_match_prompt_binary(
@@ -65,8 +65,8 @@ def compare_batch_binary(
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
 
-    results = lotus.settings.lm(match_prompts)
-    results = list(map(parse_ans_binary, results))
+    results: LMOutput = lotus.settings.lm(match_prompts)
+    results = list(map(parse_ans_binary, results.outputs))
     return results, tokens
 
 
@@ -109,8 +109,8 @@ def compare_batch_binary_cascade(
             large_match_prompts.append(match_prompts[i])
             large_tokens += lotus.settings.lm.count_tokens(large_match_prompts[-1])
 
-        results = lotus.settings.lm(large_match_prompts)
-        for idx, res in enumerate(results):
+        results: LMOutput = lotus.settings.lm(large_match_prompts)
+        for idx, res in enumerate(results.outputs):
             new_idx = low_conf_idxs[idx]
             parsed_res = parse_ans_binary(res)
             parsed_results[new_idx] = parsed_res
@@ -268,8 +268,8 @@ class HeapDoc:
         prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, strategy=self.strategy)
         HeapDoc.num_calls += 1
         HeapDoc.total_tokens += lotus.settings.lm.count_tokens(prompt)
-        result = lotus.settings.lm(prompt)
-        return parse_ans_binary(result[0])
+        result: LMOutput = lotus.settings.lm([prompt])
+        return parse_ans_binary(result.outputs[0])
 
 
 def llm_heapsort(

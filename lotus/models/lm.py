@@ -1,62 +1,120 @@
-from abc import ABC, abstractmethod
+import numpy as np
+import ujson
+import os
 from typing import Any
+import litellm
+from litellm import batch_completion, token_counter
+from litellm.caching import Cache
+from litellm.types.utils import ChatCompletionTokenLogprob, ModelResponse
+import logging
+import functools
+from functools import lru_cache
+from lotus.types import LMOutput, LogprobsForCascade, LogprobsForFilterCascade
 
+litellm.cache = Cache(disk_cache_dir=".lotus_cache", type="disk")
 
-class LM(ABC):
-    """Abstract class for language models."""
+class LM:
+    def __init__(self, model="gpt-4o-mini", temperature=0.0, max_ctx_len=128000, cache=True, max_tokens=512, **kwargs):
+        self.model = model
+        self.max_ctx_len = max_ctx_len
+        self.max_tokens = max_tokens
+        self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
+        self.history = []
+        self.api_calls = 0
+        self.cache = cache
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
 
-    def _init__(self):
-        pass
+    def _messages_to_cache_key(self, messages):
+        if isinstance(messages[0], list):
+            return tuple(tuple(frozenset(m.items()) for m in msg) for msg in messages)
+        return tuple(frozenset(m.items()) for m in messages)
 
-    @abstractmethod
-    def count_tokens(self, prompt: str | list) -> int:
-        """
-        Counts the number of tokens in the given prompt.
+    def _cache_key_to_messages(self, messages_tuple):
+        if isinstance(messages_tuple[0], tuple):
+            return [[dict(m) for m in msg] for msg in messages_tuple]
+        return [dict(m) for m in messages_tuple]
 
-        Args:
-            prompt (str | list): The prompt to count tokens for. This can be a string or a list of messages.
+    @lru_cache(maxsize=128)
+    def _cached_completion(self, messages_tuple, **kwargs):
+        messages = self._cache_key_to_messages(messages_tuple)
+        return self._batch_complete(messages, **kwargs)
 
-        Returns:
-            int: The number of tokens in the prompt.
-        """
-        pass
+    def _batch_complete(self, messages, **kwargs):
+        """Execute batch completion with given parameters."""
+        return batch_completion(
+            model=self.model,
+            messages=messages,
+            temperature=kwargs.get("temperature"),
+            max_tokens=kwargs.get("max_tokens"),
+            top_logprobs=kwargs.get("top_logprobs"),
+            logprobs=kwargs.get("logprobs"),
+        )
+    
+    def __call__(self, messages: list[dict[str, str]] | list[list[dict[str, str]]], **kwargs: dict[str, Any]
+    ) -> LMOutput:
+        kwargs = {**self.kwargs, **kwargs}
+        kwargs_for_batch = self._format_batch_kwargs(kwargs)
+        cache = kwargs.pop("cache", self.cache)
+        if kwargs.get("logprobs", False):
+            kwargs["top_logprobs"] = kwargs.get("top_logprobs", 10)
 
-    def format_logprobs_for_cascade(self, logprobs: list) -> tuple[list[list[str]], list[list[float]]]:
-        """
-        Formats the logprobs for the cascade.
+        if cache:
+            messages_tuple = self._messages_to_cache_key(messages)
+            responses = self._cached_completion(messages_tuple, **kwargs_for_batch)
+        else:
+            responses = self._batch_complete(messages, **kwargs_for_batch)
+            self.api_calls += 1
+        self.logger.info(f"Making API call #{self.api_calls}")
+        outputs = [self._get_top_choice(resp) for resp in responses]
+        logprobs = [self._get_top_choice_logprobs(resp) for resp in responses] if kwargs.get("logprobs") else None
 
-        Args:
-            logprobs (list): The logprobs to format.
+        return LMOutput(outputs=outputs, logprobs=logprobs)
 
-        Returns:
-            tuple[list[list[str]], list[list[float]]]: A tuple containing the tokens and their corresponding confidences.
-        """
-        pass
+    def _get_top_choice(self, response: ModelResponse) -> str:
+        return response.choices[0].message.content
 
-    @abstractmethod
-    def __call__(
-        self, messages_batch: list | list[list], **kwargs: dict[str, Any]
-    ) -> list[str] | tuple[list[str], list[dict[str, Any]]]:
-        """Invoke the LLM.
+    def _get_top_choice_logprobs(self, response: ModelResponse) -> list[ChatCompletionTokenLogprob]:
+        logprobs = response.choices[0].logprobs["content"]
+        return [ChatCompletionTokenLogprob(**logprob) for logprob in logprobs]
 
-        Args:
-            messages_batch (list | list[list]): Either one prompt or a list of prompts in message format.
-            kwargs (dict[str, Any]): Additional keyword arguments. They can be used to specify inference parameters.
+    def format_logprobs_for_cascade(self, logprobs: list[list[ChatCompletionTokenLogprob]]) -> LogprobsForCascade:
+        all_tokens = []
+        all_confidences = []
+        for resp in range(len(logprobs)):
+            tokens = [logprob.token for logprob in logprobs[resp]]
+            confidences = [np.exp(logprob.logprob) for logprob in logprobs[resp]]
+            all_tokens.append(tokens)
+            all_confidences.append(confidences)
+        return LogprobsForCascade(tokens=all_tokens, confidences=all_confidences)
 
-        Returns:
-            list[str] | tuple[list[str], list[dict[str, Any]]]: A list of outputs for each prompt in the batch. If logprobs is specified in the keyword arguments,
-            then a list of logprobs is also returned.
-        """
-        pass
+    def format_logprobs_for_filter_cascade(
+        self, logprobs: list[list[ChatCompletionTokenLogprob]]
+    ) -> LogprobsForFilterCascade:
+        all_tokens = []
+        all_confidences = []
+        all_true_probs = []
 
-    @property
-    @abstractmethod
-    def max_ctx_len(self) -> int:
-        """The maximum context length of the LLM."""
-        pass
+        for resp in range(len(logprobs)):
+            all_tokens.append([logprob.token for logprob in logprobs[resp]])
+            all_confidences.append([np.exp(logprob.logprob) for logprob in logprobs[resp]])
+            top_logprobs = {x.token: np.exp(x.logprob) for x in logprobs[resp]}
+            true_prob, false_prob = 0, 0
+            if top_logprobs and "True" in top_logprobs and "False" in top_logprobs:
+                true_prob = np.exp(top_logprobs["True"])
+                false_prob = np.exp(top_logprobs["False"])
+                all_true_probs.append(true_prob / (true_prob + false_prob))
+            else:
+                all_true_probs.append(1 if "True" in top_logprobs else 0)
+        return LogprobsForFilterCascade(tokens=all_tokens, confidences=all_confidences, true_probs=all_true_probs)
 
-    @property
-    @abstractmethod
-    def max_tokens(self) -> int:
-        """The maximum number of tokens that can be generated by the LLM."""
-        pass
+    def count_tokens(self, messages: list[dict[str, str]] | str) -> int:
+        if isinstance(messages, str):
+            messages = [{"role": "user", "content": messages}]
+        return token_counter(model=self.model, messages=messages)
+    
+    def _format_batch_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        all_kwargs = {**self.kwargs, **kwargs}
+        if all_kwargs.get("logprobs", False):
+            all_kwargs["top_logprobs"] = all_kwargs.get("top_logprobs", 10)
+        return {k: v for k, v in all_kwargs.items() if k in ["temperature", "max_tokens", "top_logprobs", "logprobs"]}

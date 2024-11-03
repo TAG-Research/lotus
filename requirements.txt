@@ -1,7 +1,7 @@
 backoff==2.2.1
 faiss-cpu==1.8.0.post1
+litellm==1.51.0
 numpy==1.26.4
-openai==1.35.13
 pandas==2.2.2
 sentence-transformers==3.0.1
 tiktoken==0.7.0

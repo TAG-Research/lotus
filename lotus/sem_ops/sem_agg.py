@@ -2,9 +2,9 @@ from typing import Any
 
 import pandas as pd
 
-import lotus
+import lotus.models
 from lotus.templates import task_instructions
-from lotus.types import SemanticAggOutput
+from lotus.types import LMOutput, SemanticAggOutput
 
 
 def sem_agg(
@@ -108,13 +108,9 @@ def sem_agg(
             lotus.logger.debug(f"Prompt added to batch: {prompt}")
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
-        result = model(batch)
+        lm_output: LMOutput = model(batch)
 
-        # TODO: this is a weird hack for model typing
-        if isinstance(result, tuple):
-            summaries, _ = result
-        else:
-            summaries = result
+        summaries = lm_output.outputs
         partition_ids = new_partition_ids
         new_partition_ids = []
 
