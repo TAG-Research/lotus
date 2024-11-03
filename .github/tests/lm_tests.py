@@ -25,7 +25,7 @@ MODEL_NAME_TO_ENABLED = {
 ENABLED_MODEL_NAMES = set([model_name for model_name, is_enabled in MODEL_NAME_TO_ENABLED.items() if is_enabled])
 
 
-def get_enabled(*candidate_models: tuple) -> list[str]:
+def get_enabled(*candidate_models: str) -> list[str]:
     return [model for model in candidate_models if model in ENABLED_MODEL_NAMES]
 
 
