@@ -3,6 +3,7 @@ from typing import Any
 import pandas as pd
 
 import lotus
+from lotus.types import RerankerOutput, RMOutput
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_search")
@@ -55,9 +56,9 @@ class SemSearchDataframe:
 
             search_K = K
             while True:
-                scores, doc_idxs = rm(query, search_K)
-                doc_idxs = doc_idxs[0]
-                scores = scores[0]
+                rm_output: RMOutput = rm(query, search_K)
+                doc_idxs = rm_output.indices[0]
+                scores = rm_output.distances[0]
                 assert len(doc_idxs) == len(scores)
 
                 postfiltered_doc_idxs = []
@@ -83,7 +84,8 @@ class SemSearchDataframe:
 
         if n_rerank is not None:
             docs = new_df[col_name].tolist()
-            reranked_idxs = lotus.settings.reranker(query, docs, n_rerank)
+            reranked_output: RerankerOutput = lotus.settings.reranker(query, docs, n_rerank)
+            reranked_idxs = reranked_output.indices
             new_df = new_df.iloc[reranked_idxs]
 
         return new_df

@@ -3,6 +3,8 @@ from typing import Any
 import pandas as pd
 
 import lotus
+from lotus.models import RM
+from lotus.types import RMOutput
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_sim_join")
@@ -46,8 +48,11 @@ class SemSimJoinDataframe:
                 raise ValueError("Other Series must have a name")
             other = pd.DataFrame({other.name: other})
 
-        # get rmodel and index
         rm = lotus.settings.rm
+        if not isinstance(rm, RM):
+            raise ValueError(
+                "The retrieval model must be an instance of RM. Please configure a valid retrieval model using lotus.settings.configure()"
+            )
 
         # load query embeddings from index if they exist
         if left_on in self._obj.attrs.get("index_dirs", []):
@@ -71,7 +76,9 @@ class SemSimJoinDataframe:
             rm.load_index(col_index_dir)
         assert rm.index_dir == col_index_dir
 
-        distances, indices = rm(queries, K)
+        rm_output: RMOutput = rm(queries, K)
+        distances = rm_output.distances
+        indices = rm_output.indices
 
         other_index_set = set(other.index)
         join_results = []

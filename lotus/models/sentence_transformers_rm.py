@@ -1,4 +1,6 @@
+import faiss
 import numpy as np
+import torch
 from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
 
@@ -6,22 +8,29 @@ from lotus.models.faiss_rm import FaissRM
 
 
 class SentenceTransformersRM(FaissRM):
-    def __init__(self, model: str = "intfloat/e5-base-v2"):
-        super().__init__()
+    def __init__(
+        self,
+        model: str = "intfloat/e5-base-v2",
+        max_batch_size: int = 64,
+        normalize_embeddings: bool = True,
+        device: str | None = None,
+        factory_string: str = "Flat",
+        metric=faiss.METRIC_INNER_PRODUCT,
+    ):
+        super().__init__(factory_string, metric)
         self.model: str = model
-        self.transformer: SentenceTransformer = SentenceTransformer(model)
+        self.max_batch_size: int = max_batch_size
+        self.normalize_embeddings: bool = normalize_embeddings
+        self.transformer: SentenceTransformer = SentenceTransformer(model, device=device)
 
     def _embed(self, docs: list[str]) -> NDArray[np.float64]:
-        return self.transformer.encode(docs, convert_to_tensor=True).cpu().numpy()
-
-
-if __name__ == "__main__":
-    rm = SentenceTransformersRM()
-    docs = ["Machine Learning", "Quantum Physics"]
-    index_dir = "index_dir"
-    query = "Quantum Mechanics"
-    rm.index(docs, index_dir)
-    print(rm(query, 2))
-
-    queries = ["Artifical Intelligence", "Quantum Mechanics"]
-    print(rm(queries, 2))
+        all_embeddings = []
+        for i in range(0, len(docs), self.max_batch_size):
+            batch = docs[i : i + self.max_batch_size]
+            torch_embeddings = self.transformer.encode(
+                batch, convert_to_tensor=True, normalize_embeddings=self.normalize_embeddings
+            )
+            assert isinstance(torch_embeddings, torch.Tensor)
+            cpu_embeddings = torch_embeddings.cpu().numpy()
+            all_embeddings.append(cpu_embeddings)
+        return np.vstack(all_embeddings)

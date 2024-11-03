@@ -4,6 +4,9 @@ from litellm.types.utils import ChatCompletionTokenLogprob
 from pydantic import BaseModel
 
 
+################################################################################
+# Mixins
+################################################################################
 class StatsMixin(BaseModel):
     stats: dict[str, Any] | None = None
 
@@ -13,6 +16,35 @@ class LogprobsMixin(BaseModel):
     logprobs: list[list[ChatCompletionTokenLogprob]] | None = None
 
 
+################################################################################
+# LM related
+################################################################################
+class LMOutput(LogprobsMixin):
+    outputs: list[str]
+
+
+class LMStats(BaseModel):
+    class TotalUsage(BaseModel):
+        prompt_tokens: int = 0
+        completion_tokens: int = 0
+        total_tokens: int = 0
+        total_cost: float = 0.0
+
+    total_usage: TotalUsage = TotalUsage()
+
+
+class LogprobsForCascade(BaseModel):
+    tokens: list[list[str]]
+    confidences: list[list[float]]
+
+
+class LogprobsForFilterCascade(LogprobsForCascade):
+    true_probs: list[float]
+
+
+################################################################################
+# Semantic operation outputs
+################################################################################
 class SemanticMapPostprocessOutput(BaseModel):
     raw_outputs: list[str]
     outputs: list[str]
@@ -58,29 +90,16 @@ class SemanticTopKOutput(StatsMixin):
     indexes: list[int]
 
 
-class LMOutput(LogprobsMixin):
-    outputs: list[str]
-
-
-class LogprobsForCascade(BaseModel):
-    tokens: list[list[str]]
-    confidences: list[list[float]]
-
-
-class LogprobsForFilterCascade(LogprobsForCascade):
-    true_probs: list[float]
-
-
-class LMStats(BaseModel):
-    class TotalUsage(BaseModel):
-        prompt_tokens: int = 0
-        completion_tokens: int = 0
-        total_tokens: int = 0
-        total_cost: float = 0.0
-
-    total_usage: TotalUsage = TotalUsage()
-
-
+################################################################################
+# RM related
+################################################################################
 class RMOutput(BaseModel):
     distances: list[list[float]]
     indices: list[list[int]]
+
+
+################################################################################
+# Reranker related
+################################################################################
+class RerankerOutput(BaseModel):
+    indices: list[int]

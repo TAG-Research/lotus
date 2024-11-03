@@ -159,7 +159,7 @@ def llm_naive_sort(
 def llm_quicksort(
     docs: list[str],
     user_instruction: str,
-    k: int,
+    K: int,
     embedding: bool = False,
     strategy: str | None = None,
     cascade_threshold: float | None = None,
@@ -187,14 +187,14 @@ def llm_quicksort(
         stats["total_small_calls"] = 0
         stats["total_large_calls"] = 0
 
-    def partition(indexes: list[int], low: int, high: int, k: int) -> int:
+    def partition(indexes: list[int], low: int, high: int, K: int) -> int:
         nonlocal stats
         i = low - 1
 
         if embedding:
             # With embedding optimization
-            if k <= high - low:
-                pivot_value = heapq.nsmallest(k, indexes[low : high + 1])[-1]
+            if K <= high - low:
+                pivot_value = heapq.nsmallest(K, indexes[low : high + 1])[-1]
             else:
                 pivot_value = heapq.nsmallest(int((high - low + 1) / 2), indexes[low : high + 1])[-1]
             pivot_index = indexes.index(pivot_value)
@@ -231,21 +231,21 @@ def llm_quicksort(
         indexes[i + 1], indexes[high] = indexes[high], indexes[i + 1]
         return i + 1
 
-    def quicksort_recursive(indexes: list[int], low: int, high: int, k: int) -> None:
+    def quicksort_recursive(indexes: list[int], low: int, high: int, K: int) -> None:
         if high <= low:
             return
 
         if low < high:
-            pi = partition(indexes, low, high, k)
+            pi = partition(indexes, low, high, K)
             left_size = pi - low
-            if left_size + 1 >= k:
-                quicksort_recursive(indexes, low, pi - 1, k)
+            if left_size + 1 >= K:
+                quicksort_recursive(indexes, low, pi - 1, K)
             else:
                 quicksort_recursive(indexes, low, pi - 1, left_size)
-                quicksort_recursive(indexes, pi + 1, high, k - left_size - 1)
+                quicksort_recursive(indexes, pi + 1, high, K - left_size - 1)
 
     indexes = list(range(len(docs)))
-    quicksort_recursive(indexes, 0, len(indexes) - 1, k)
+    quicksort_recursive(indexes, 0, len(indexes) - 1, K)
 
     return SemanticTopKOutput(indexes=indexes, stats=stats)
 
@@ -273,7 +273,7 @@ class HeapDoc:
 def llm_heapsort(
     docs: list[str],
     user_instruction: str,
-    k: int,
+    K: int,
     strategy: str | None = None,
 ) -> SemanticTopKOutput:
     """
@@ -292,7 +292,7 @@ def llm_heapsort(
     HeapDoc.strategy = strategy
     N = len(docs)
     heap = [HeapDoc(docs[idx], user_instruction, idx) for idx in range(N)]
-    heap = heapq.nsmallest(k, heap)
+    heap = heapq.nsmallest(K, heap)
     indexes = [heapq.heappop(heap).idx for _ in range(len(heap))]
 
     stats = {"total_tokens": HeapDoc.total_tokens, "total_llm_calls": HeapDoc.num_calls}

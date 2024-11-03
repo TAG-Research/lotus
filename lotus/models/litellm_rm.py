@@ -1,30 +1,29 @@
+import faiss
 import numpy as np
 from litellm import embedding
-from numpy.typing import NDArray
 from litellm.types.utils import EmbeddingResponse
+from numpy.typing import NDArray
 
 from lotus.models.faiss_rm import FaissRM
 
 
 class LiteLLMRM(FaissRM):
-    def __init__(self, model: str = "text-embedding-3-small"):
-        super().__init__()
+    def __init__(
+        self,
+        model: str = "text-embedding-3-small",
+        max_batch_size: int = 64,
+        factory_string: str = "Flat",
+        metric=faiss.METRIC_INNER_PRODUCT,
+    ):
+        super().__init__(factory_string, metric)
         self.model: str = model
+        self.max_batch_size: int = max_batch_size
 
     def _embed(self, docs: list[str]) -> NDArray[np.float64]:
-        response: EmbeddingResponse = embedding(model=self.model, input=docs)
-        embeddings = np.array([d["embedding"] for d in response.data])
-        return embeddings
-
-
-
-if __name__ == "__main__":
-    rm = LiteLLMRM()
-    docs = ["Machine Learning", "Quantum Physics"]
-    index_dir = "index_dir"
-    query = "Quantum Mechanics"
-    rm.index(docs, index_dir)
-    print(rm(query, 2))
-
-    queries = ["Artifical Intelligence", "Quantum Mechanics"]
-    print(rm(queries, 2))
+        all_embeddings = []
+        for i in range(0, len(docs), self.max_batch_size):
+            batch = docs[i : i + self.max_batch_size]
+            response: EmbeddingResponse = embedding(model=self.model, input=batch)
+            embeddings = np.array([d["embedding"] for d in response.data])
+            all_embeddings.append(embeddings)
+        return np.vstack(all_embeddings)

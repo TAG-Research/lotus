@@ -11,7 +11,7 @@ class RM(ABC):
     """Abstract class for retriever models."""
 
     def __init__(self) -> None:
-        pass
+        self.index_dir: str | None = None
 
     @abstractmethod
     def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
