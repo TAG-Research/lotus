@@ -40,20 +40,10 @@ class LM:
         self.tokenizer = tokenizer
         self.cache = cache
         self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
-
-        self.stats: LMStats = LMStats()
-
-    def __call__(self, messages: list[list[dict[str, str]]], **kwargs: dict[str, Any]) -> LMOutput:
-        all_kwargs = {**self.kwargs, **kwargs}
-        cache = kwargs.pop("cache", self.cache)
-
-        # Set top_logprobs if logprobs requested
-        if all_kwargs.get("logprobs", False):
-            all_kwargs["top_logprobs"] = all_kwargs.get("top_logprobs", 10)
-        self.history = []
-        self.cache = cache
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+
+        self.stats: LMStats = LMStats()
 
     def _messages_to_cache_key(self, messages):
         if isinstance(messages[0], list):
@@ -66,7 +56,7 @@ class LM:
         return [dict(m) for m in messages_tuple]
 
     @lru_cache(maxsize=128)
-    def _cached_completion(self, messages_tuple, **kwargs):
+    def _cached_completion(self, messages_tuple, **all_kwargs):
         all_responses: list[ModelResponse] = []
         messages = self._cache_key_to_messages(messages_tuple)
         for i in range(0, len(messages), self.max_batch_size):
@@ -94,19 +84,20 @@ class LM:
     def __call__(self, messages: list[dict[str, str]] | list[list[dict[str, str]]], **kwargs: dict[str, Any]
     ) -> LMOutput:
         kwargs = {**self.kwargs, **kwargs}
-        kwargs_for_batch = self._format_batch_kwargs(kwargs)
         cache = kwargs.pop("cache", self.cache)
-        self.stats.total_usage.api_calls = 0
+        self.stats.TotalUsage.api_calls = 0
 
+        all_kwargs = {**self.kwargs, **kwargs}
 
-        if kwargs.get("logprobs", False):
-            kwargs["top_logprobs"] = kwargs.get("top_logprobs", 10)
+        # Set top_logprobs if logprobs requested
+        if all_kwargs.get("logprobs", False):
+            all_kwargs["top_logprobs"] = all_kwargs.get("top_logprobs", 10)
         
         all_responses: list[ModelResponse] = []
 
         if cache:
             messages_tuple = self._messages_to_cache_key(messages)
-            all_responses = self._cached_completion(messages_tuple, **kwargs_for_batch)
+            all_responses = self._cached_completion(messages_tuple, **all_kwargs)
         else:
             for i in range(0, len(messages), self.max_batch_size):
                 batch = messages[i : i + self.max_batch_size]
@@ -117,13 +108,13 @@ class LM:
                     **all_kwargs,  # type: ignore
                 )
                 all_responses.extend(responses)
-            self.stats.total_usage.api_calls += 1
+            self.stats.TotalUsage.api_calls += 1
 
-        self.logger.info(f"Making API call #{self.stats.total_usage.api_calls}")
-        outputs = [self._get_top_choice(resp) for resp in responses]
-        logprobs = [self._get_top_choice_logprobs(resp) for resp in responses] if kwargs.get("logprobs") else None
-        
-        
+        self.logger.info(f"Making API call #{self.stats.TotalUsage.api_calls}")
+        outputs = [self._get_top_choice(resp) for resp in all_responses]
+        logprobs = (
+            [self._get_top_choice_logprobs(resp) for resp in all_responses] if all_kwargs.get("logprobs") else None
+        )
 
         # throw errors, if any
         for resp in all_responses:
