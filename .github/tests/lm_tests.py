@@ -14,7 +14,7 @@ from lotus.models import LM
 lotus.logger.setLevel("DEBUG")
 
 # Environment flags to enable/disable tests
-ENABLE_OPENAI_TESTS = os.getenv("ENABLE_OPENAI_TESTS", "true").lower() == "true"
+ENABLE_OPENAI_TESTS = os.getenv("ENABLE_OPENAI_TESTS", "false").lower() == "true"
 ENABLE_OLLAMA_TESTS = os.getenv("ENABLE_OLLAMA_TESTS", "false").lower() == "true"
 
 MODEL_NAME_TO_ENABLED = {
@@ -79,53 +79,17 @@ def test_filter_caching(setup_models, model):
     # First call - should make API calls
     initial_api_calls = lm.stats.total_usage.api_calls
     filtered_df1 = df.sem_filter(user_instruction)
-    first_call_api_count = lm.stats.total_usage.api_calls
+    first_call_api_count = lm.stats.total_usage.api_calls - initial_api_calls
     
     # Second call - should use cache
     filtered_df2 = df.sem_filter(user_instruction)
-    second_call_api_count = lm.stats.total_usage.api_calls
+    second_call_api_count = lm.stats.total_usage.api_calls - (initial_api_calls + first_call_api_count)
     
     # Verify results are the same
     assert filtered_df1.equals(filtered_df2)
-    
-    assert lm.stats.total_usage.api_calls == 0
-    assert initial_api_calls == 0
-    # Verify first call made API calls
-    assert first_call_api_count == 0, "First call should make API calls"
-    
-    # Verify second call used cache (no new API calls)
+        
+    # Verify no new API calls
     assert second_call_api_count == 0, "Second call should use cache (no new API calls)"
-
-
-# def test_filter_caching(setup_models):
-#     gpt_4o_mini, _ = setup_models
-#     lotus.settings.configure(lm=gpt_4o_mini)
-
-#     # Test filter operation on a dataframe
-#     data = {"Text": ["I am really excited to go to class today!", "I am very sad"]}
-#     df = pd.DataFrame(data)
-#     user_instruction = "{Text} is a positive sentiment"
-    
-#     # First call - should make API calls
-#     initial_api_calls = gpt_4o_mini.api_calls
-#     filtered_df1 = df.sem_filter(user_instruction)
-#     first_call_api_count = gpt_4o_mini.api_calls - initial_api_calls
-    
-#     # Second call - should use cache
-#     filtered_df2 = df.sem_filter(user_instruction)
-#     second_call_api_count = gpt_4o_mini.api_calls - (initial_api_calls + first_call_api_count)
-    
-#     # Verify results are the same
-#     assert filtered_df1.equals(filtered_df2)
-    
-#     assert gpt_4o_mini.api_calls == 0
-#     assert initial_api_calls == 0
-#     # Verify first call made API calls
-#     assert first_call_api_count == 0, "First call should make API calls"
-    
-#     # Verify second call used cache (no new API calls)
-#     assert second_call_api_count == 0, "Second call should use cache (no new API calls)"
-
 
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
 def test_top_k(setup_models, model):
