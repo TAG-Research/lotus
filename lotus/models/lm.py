@@ -1,20 +1,19 @@
-import logging
-from functools import lru_cache
-from typing import Any
-
-import litellm
 import numpy as np
+from typing import Any
+import litellm
 from litellm import batch_completion, completion_cost
-from litellm.caching import Cache
+from litellm.caching import Cache, LiteLLMCacheType
 from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelResponse
 from litellm.utils import token_counter
 from openai import OpenAIError
 from tokenizers import Tokenizer
 
 import lotus
+import logging
+from functools import lru_cache
 from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
 
-litellm.cache = Cache(disk_cache_dir=".lotus_cache", type="disk")
+litellm.cache = Cache(disk_cache_dir=".lotus_cache", type=LiteLLMCacheType.DISK)
 
 class LM:
     def __init__(
