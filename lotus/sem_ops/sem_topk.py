@@ -7,7 +7,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticTopKOutput
+from lotus.types import LMOutput, SemanticTopKOutput
 
 
 def get_match_prompt_binary(
@@ -59,14 +59,12 @@ def compare_batch_binary(
     pairs: list[tuple[str, str]], user_instruction: str, strategy: str | None = None
 ) -> tuple[list[bool], int]:
     match_prompts = []
-    results = []
     tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
-
-    results = lotus.settings.lm(match_prompts)
-    results = list(map(parse_ans_binary, results))
+    lm_results: LMOutput = lotus.settings.lm(match_prompts)
+    results: list[bool] = list(map(parse_ans_binary, lm_results.outputs))
     return results, tokens
 
 
@@ -109,8 +107,8 @@ def compare_batch_binary_cascade(
             large_match_prompts.append(match_prompts[i])
             large_tokens += lotus.settings.lm.count_tokens(large_match_prompts[-1])
 
-        results = lotus.settings.lm(large_match_prompts)
-        for idx, res in enumerate(results):
+        large_lm_results: LMOutput = lotus.settings.lm(large_match_prompts)
+        for idx, res in enumerate(large_lm_results.outputs):
             new_idx = low_conf_idxs[idx]
             parsed_res = parse_ans_binary(res)
             parsed_results[new_idx] = parsed_res
@@ -161,7 +159,7 @@ def llm_naive_sort(
 def llm_quicksort(
     docs: list[str],
     user_instruction: str,
-    k: int,
+    K: int,
     embedding: bool = False,
     strategy: str | None = None,
     cascade_threshold: float | None = None,
@@ -172,7 +170,7 @@ def llm_quicksort(
     Args:
         docs (list[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
-        k (int): The number of documents to return.
+        K (int): The number of documents to return.
         embedding (bool): Whether to use embedding optimization.
         cascade_threshold (float | None): The confidence threshold for cascading to a larger model.
 
@@ -189,14 +187,14 @@ def llm_quicksort(
         stats["total_small_calls"] = 0
         stats["total_large_calls"] = 0
 
-    def partition(indexes: list[int], low: int, high: int, k: int) -> int:
+    def partition(indexes: list[int], low: int, high: int, K: int) -> int:
         nonlocal stats
         i = low - 1
 
         if embedding:
             # With embedding optimization
-            if k <= high - low:
-                pivot_value = heapq.nsmallest(k, indexes[low : high + 1])[-1]
+            if K <= high - low:
+                pivot_value = heapq.nsmallest(K, indexes[low : high + 1])[-1]
             else:
                 pivot_value = heapq.nsmallest(int((high - low + 1) / 2), indexes[low : high + 1])[-1]
             pivot_index = indexes.index(pivot_value)
@@ -233,21 +231,21 @@ def llm_quicksort(
         indexes[i + 1], indexes[high] = indexes[high], indexes[i + 1]
         return i + 1
 
-    def quicksort_recursive(indexes: list[int], low: int, high: int, k: int) -> None:
+    def quicksort_recursive(indexes: list[int], low: int, high: int, K: int) -> None:
         if high <= low:
             return
 
         if low < high:
-            pi = partition(indexes, low, high, k)
+            pi = partition(indexes, low, high, K)
             left_size = pi - low
-            if left_size + 1 >= k:
-                quicksort_recursive(indexes, low, pi - 1, k)
+            if left_size + 1 >= K:
+                quicksort_recursive(indexes, low, pi - 1, K)
             else:
                 quicksort_recursive(indexes, low, pi - 1, left_size)
-                quicksort_recursive(indexes, pi + 1, high, k - left_size - 1)
+                quicksort_recursive(indexes, pi + 1, high, K - left_size - 1)
 
     indexes = list(range(len(docs)))
-    quicksort_recursive(indexes, 0, len(indexes) - 1, k)
+    quicksort_recursive(indexes, 0, len(indexes) - 1, K)
 
     return SemanticTopKOutput(indexes=indexes, stats=stats)
 
@@ -268,14 +266,14 @@ class HeapDoc:
         prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, strategy=self.strategy)
         HeapDoc.num_calls += 1
         HeapDoc.total_tokens += lotus.settings.lm.count_tokens(prompt)
-        result = lotus.settings.lm(prompt)
-        return parse_ans_binary(result[0])
+        result: LMOutput = lotus.settings.lm([prompt])
+        return parse_ans_binary(result.outputs[0])
 
 
 def llm_heapsort(
     docs: list[str],
     user_instruction: str,
-    k: int,
+    K: int,
     strategy: str | None = None,
 ) -> SemanticTopKOutput:
     """
@@ -284,7 +282,7 @@ def llm_heapsort(
     Args:
         docs (list[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
-        k (int): The number of documents to return.
+        K (int): The number of documents to return.
 
     Returns:
         SemanticTopKOutput: The indexes of the top k documents and stats.
@@ -294,7 +292,7 @@ def llm_heapsort(
     HeapDoc.strategy = strategy
     N = len(docs)
     heap = [HeapDoc(docs[idx], user_instruction, idx) for idx in range(N)]
-    heap = heapq.nsmallest(k, heap)
+    heap = heapq.nsmallest(K, heap)
     indexes = [heapq.heappop(heap).idx for _ in range(len(heap))]
 
     stats = {"total_tokens": HeapDoc.total_tokens, "total_llm_calls": HeapDoc.num_calls}

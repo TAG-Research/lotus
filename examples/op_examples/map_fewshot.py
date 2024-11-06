@@ -1,9 +1,9 @@
 import pandas as pd
 
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
-lm = OpenAIModel()
+lm = LM(model="gpt-4o-mini")
 
 lotus.settings.configure(lm=lm)
 data = {

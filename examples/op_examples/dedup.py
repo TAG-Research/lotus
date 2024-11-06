@@ -1,9 +1,9 @@
 import pandas as pd
 
 import lotus
-from lotus.models import E5Model
+from lotus.models import SentenceTransformersRM
 
-rm = E5Model()
+rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 
 lotus.settings.configure(rm=rm)
 data = {

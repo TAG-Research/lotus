@@ -1,10 +1,11 @@
 import pandas as pd
 
 import lotus
-from lotus.models import E5Model, OpenAIModel
+from lotus.models import LM, LiteLLMRM
 
-lm = OpenAIModel()
-rm = E5Model()
+lm = LM(model="gpt-4o-mini")
+# rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
+rm = LiteLLMRM()
 
 lotus.settings.configure(lm=lm, rm=rm)
 data = {

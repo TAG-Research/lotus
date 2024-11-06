@@ -50,11 +50,11 @@ This can be achieved by applying a semantic filter followed by a semantic aggreg
     import pandas as pd
 
     import lotus
-    from lotus.models import E5Model, OpenAIModel
+    from lotus.models import SentenceTransformersRM, LM
 
     # Configure models for LOTUS
-    lm = OpenAIModel(max_tokens=512)
-    rm = E5Model()
+    lm = LM(model="gpt-4o-mini")
+    rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 
     lotus.settings.configure(lm=lm, rm=rm)
 
@@ -90,7 +90,7 @@ If we wanted the challenge of taking courses with a high workload, we can also u
 
 .. code-block:: python
 
-    top_2_hardest = df.sem_topk("What {Description} indicates the highest workload?", 2)
+    top_2_hardest = df.sem_topk("What {Description} indicates the highest workload?", K=2)
 
 LOTUS's semantic join operator can be used to join two dataframes based on a predicate.
 Suppose we had a second dataframe containing skills we wanted to get better at (SQL and Chip Design in our case).
@@ -113,7 +113,7 @@ Let's create a semantic index on the course description column and then search f
 
     # Create a semantic index on the description column and save it to the index_dir directory
     df = df.sem_index("Description", "index_dir")
-    top_conv_df = df.sem_search("Description", "Convolutional Neural Network", 1)
+    top_conv_df = df.sem_search("Description", "Convolutional Neural Network", K=1)
 
 Another useful operator is the semantic map operator. Let's see how it can be used to get some next topics to explore for each class.
 Additionally, let's provide some examples to the model that can be used for demonstrations.

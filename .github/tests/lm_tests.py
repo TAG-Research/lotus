@@ -1,24 +1,61 @@
+import os
+
 import pandas as pd
 import pytest
+from tokenizers import Tokenizer
 
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
+################################################################################
+# Setup
+################################################################################
 # Set logger level to DEBUG
 lotus.logger.setLevel("DEBUG")
 
+# Environment flags to enable/disable tests
+ENABLE_OPENAI_TESTS = os.getenv("ENABLE_OPENAI_TESTS", "false").lower() == "true"
+ENABLE_OLLAMA_TESTS = os.getenv("ENABLE_OLLAMA_TESTS", "false").lower() == "true"
 
-@pytest.fixture
+MODEL_NAME_TO_ENABLED = {
+    "gpt-4o-mini": ENABLE_OPENAI_TESTS,
+    "gpt-4o": ENABLE_OPENAI_TESTS,
+    "ollama/llama3.2": ENABLE_OLLAMA_TESTS,
+}
+ENABLED_MODEL_NAMES = set([model_name for model_name, is_enabled in MODEL_NAME_TO_ENABLED.items() if is_enabled])
+
+
+def get_enabled(*candidate_models: str) -> list[str]:
+    return [model for model in candidate_models if model in ENABLED_MODEL_NAMES]
+
+
+@pytest.fixture(scope="session")
 def setup_models():
-    # Setup GPT models
-    gpt_4o_mini = OpenAIModel(model="gpt-4o-mini")
-    gpt_4o = OpenAIModel(model="gpt-4o")
-    return gpt_4o_mini, gpt_4o
+    models = {}
+
+    for model_path in ENABLED_MODEL_NAMES:
+        models[model_path] = LM(model=model_path)
+
+    return models
 
 
-def test_filter_operation(setup_models):
-    gpt_4o_mini, _ = setup_models
-    lotus.settings.configure(lm=gpt_4o_mini)
+@pytest.fixture(autouse=True)
+def print_usage_after_each_test(setup_models):
+    yield  # this runs the test
+    models = setup_models
+    for model_name, model in models.items():
+        print(f"\nUsage stats for {model_name} after test:")
+        model.print_total_usage()
+        model.reset_stats()
+
+
+################################################################################
+# Standard tests
+################################################################################
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.2"))
+def test_filter_operation(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
 
     # Test filter operation on an easy dataframe
     data = {"Text": ["I am really excited to go to class today!", "I am very sad"]}
@@ -30,9 +67,86 @@ def test_filter_operation(setup_models):
     assert filtered_df.equals(expected_df)
 
 
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_top_k(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    data = {
+        "Text": [
+            "Lionel Messi is a good soccer player",
+            "Michael Jordan is a good basketball player",
+            "Steph Curry is a good basketball player",
+            "Tom Brady is a good football player",
+        ]
+    }
+    df = pd.DataFrame(data)
+    user_instruction = "Which {Text} is most related to basketball?"
+    top_2_expected = set(["Michael Jordan is a good basketball player", "Steph Curry is a good basketball player"])
+
+    strategies = ["quick", "heap", "naive"]
+    for strategy in strategies:
+        sorted_df = df.sem_topk(user_instruction, K=2, strategy=strategy)
+
+        top_2_actual = set(sorted_df["Text"].values)
+        assert top_2_expected == top_2_actual
+
+
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.2"))
+def test_join(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    data1 = {"School": ["UC Berkeley", "Stanford"]}
+    data2 = {"School Type": ["Public School", "Private School"]}
+
+    df1 = pd.DataFrame(data1)
+    df2 = pd.DataFrame(data2)
+    join_instruction = "{School} is a {School Type}"
+    joined_df = df1.sem_join(df2, join_instruction)
+    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
+    expected_pairs = set([("UC Berkeley", "Public School"), ("Stanford", "Private School")])
+    assert joined_pairs == expected_pairs
+
+
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.2"))
+def test_map_fewshot(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    data = {"School": ["UC Berkeley", "Carnegie Mellon"]}
+    df = pd.DataFrame(data)
+    examples = {"School": ["Stanford", "MIT"], "Answer": ["CA", "MA"]}
+    examples_df = pd.DataFrame(examples)
+    user_instruction = "What state is {School} in? Respond only with the two-letter abbreviation."
+    df = df.sem_map(user_instruction, examples=examples_df, suffix="State")
+
+    pairs = set(zip(df["School"], df["State"]))
+    expected_pairs = set([("UC Berkeley", "CA"), ("Carnegie Mellon", "PA")])
+    assert pairs == expected_pairs
+
+
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_agg_then_map(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    data = {"Text": ["My name is John", "My name is Jane", "My name is John"]}
+    df = pd.DataFrame(data)
+    agg_instruction = "What is the most common name in {Text}?"
+    agg_df = df.sem_agg(agg_instruction, suffix="draft_output")
+    map_instruction = "{draft_output} is a draft answer to the question 'What is the most common name?'. Clean up the draft answer so that there is just a single name. Your answer MUST be on word"
+    cleaned_df = agg_df.sem_map(map_instruction, suffix="final_output")
+    assert cleaned_df["final_output"].values[0].lower().strip(".,!?\"'") == "john"
+
+
+################################################################################
+# Cascade tests
+################################################################################
+@pytest.mark.skipif(not ENABLE_OPENAI_TESTS, reason="Skipping test because OpenAI tests are not enabled")
 def test_filter_cascade(setup_models):
-    gpt_4o_mini, gpt_4o = setup_models
-    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
+    models = setup_models
+    lotus.settings.configure(lm=models["gpt-4o"], helper_lm=models["gpt-4o-mini"])
 
     data = {
         "Text": [
@@ -57,7 +171,6 @@ def test_filter_cascade(setup_models):
             "Everything is going as planned, couldn't be happier.",
             "Feeling super motivated and ready to take on challenges!",
             "I appreciate all the small things that bring me joy.",
-
             # Negative examples
             "I am very sad.",
             "Today has been really tough; I feel exhausted.",
@@ -100,46 +213,10 @@ def test_filter_cascade(setup_models):
     assert stats["filters_resolved_by_helper_model"] > 0, stats
 
 
-def test_top_k(setup_models):
-    gpt_4o_mini, _ = setup_models
-    lotus.settings.configure(lm=gpt_4o_mini)
-
-    data = {
-        "Text": [
-            "Lionel Messi is a good soccer player",
-            "Michael Jordan is a good basketball player",
-            "Steph Curry is a good basketball player",
-            "Tom Brady is a good football player",
-        ]
-    }
-    df = pd.DataFrame(data)
-    user_instruction = "Which {Text} is most related to basketball?"
-    sorted_df = df.sem_topk(user_instruction, K=2)
-
-    top_2_expected = set(["Michael Jordan is a good basketball player", "Steph Curry is a good basketball player"])
-    top_2_actual = set(sorted_df["Text"].values)
-    assert top_2_expected == top_2_actual
-
-
-def test_join(setup_models):
-    gpt_4o_mini, _ = setup_models
-    lotus.settings.configure(lm=gpt_4o_mini)
-
-    data1 = {"School": ["UC Berkeley", "Stanford"]}
-    data2 = {"School Type": ["Public School", "Private School"]}
-
-    df1 = pd.DataFrame(data1)
-    df2 = pd.DataFrame(data2)
-    join_instruction = "{School} is a {School Type}"
-    joined_df = df1.sem_join(df2, join_instruction)
-    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
-    expected_pairs = set([("UC Berkeley", "Public School"), ("Stanford", "Private School")])
-    assert joined_pairs == expected_pairs
-
-
+@pytest.mark.skipif(not ENABLE_OPENAI_TESTS, reason="Skipping test because OpenAI tests are not enabled")
 def test_join_cascade(setup_models):
-    gpt_4o_mini, gpt_4o = setup_models
-    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
+    models = setup_models
+    lotus.settings.configure(lm=models["gpt-4o"], helper_lm=models["gpt-4o-mini"])
 
     data1 = {"School": ["UC Berkeley", "Stanford"]}
     data2 = {"School Type": ["Public School", "Private School"]}
@@ -164,17 +241,38 @@ def test_join_cascade(setup_models):
     assert stats["filters_resolved_by_helper_model"] == 0, stats
 
 
-def test_map_fewshot(setup_models):
-    gpt_4o_mini, _ = setup_models
-    lotus.settings.configure(lm=gpt_4o_mini)
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_format_logprobs_for_filter_cascade(setup_models, model):
+    lm = setup_models[model]
+    messages = [
+        [{"role": "user", "content": "True or False: The sky is blue?"}],
+    ]
+    response = lm(messages, logprobs=True)
+    formatted_logprobs = lm.format_logprobs_for_filter_cascade(response.logprobs)
+    true_probs = formatted_logprobs.true_probs
+    assert len(true_probs) == 1
 
-    data = {"School": ["UC Berkeley", "Carnegie Mellon"]}
-    df = pd.DataFrame(data)
-    examples = {"School": ["Stanford", "MIT"], "Answer": ["CA", "MA"]}
-    examples_df = pd.DataFrame(examples)
-    user_instruction = "What state is {School} in? Respond only with the two-letter abbreviation."
-    df = df.sem_map(user_instruction, examples=examples_df, suffix="State")
+    # Very safe (in practice its ~1)
+    assert true_probs[0] > 0.8
+    assert len(formatted_logprobs.tokens) == len(formatted_logprobs.confidences)
 
-    pairs = set(zip(df["School"], df["State"]))
-    expected_pairs = set([("UC Berkeley", "CA"), ("Carnegie Mellon", "PA")])
-    assert pairs == expected_pairs
+
+################################################################################
+# Token counting tests
+################################################################################
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.2"))
+def test_count_tokens(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    tokens = lm.count_tokens("Hello, world!")
+    assert lm.count_tokens([{"role": "user", "content": "Hello, world!"}]) == tokens
+    assert tokens < 100
+
+
+def test_custom_tokenizer():
+    custom_tokenizer = Tokenizer.from_pretrained("gpt2")
+    custom_lm = LM(model="doesn't matter", tokenizer=custom_tokenizer)
+    tokens = custom_lm.count_tokens("Hello, world!")
+    assert custom_lm.count_tokens([{"role": "user", "content": "Hello, world!"}]) == tokens
+    assert tokens < 100

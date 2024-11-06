@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+import numpy as np
+from numpy.typing import NDArray
+
+from lotus.types import RMOutput
+
 
 class RM(ABC):
     """Abstract class for retriever models."""
 
-    def _init__(self):
-        pass
+    def __init__(self) -> None:
+        self.index_dir: str | None = None
 
     @abstractmethod
     def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
@@ -28,7 +33,7 @@ class RM(ABC):
         pass
 
     @abstractmethod
-    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> list:
+    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> NDArray[np.float64]:
         """Get the vectors from the index.
 
         Args:
@@ -36,7 +41,7 @@ class RM(ABC):
             ids (list[int]): The ids of the vectors to retrieve
 
         Returns:
-            list: The vectors matching the specified ids.
+            NDArray[np.float64]: The vectors matching the specified ids.
         """
 
         pass
@@ -44,18 +49,18 @@ class RM(ABC):
     @abstractmethod
     def __call__(
         self,
-        queries: str | list[str] | list[list[float]],
-        k: int,
+        queries: str | list[str] | NDArray[np.float64],
+        K: int,
         **kwargs: dict[str, Any],
-    ) -> tuple[list[float], list[int]]:
+    ) -> RMOutput:
         """Run top-k search on the index.
 
         Args:
-            queries (str | list[str] | list[list[float]]): Either a query or a list of queries or a 2D FP32 array.
-            k (int): The k to use for top-k search.
+            queries (str | list[str] | NDArray[np.float64]): Either a query or a list of queries or a 2D FP32 array.
+            K (int): The k to use for top-k search.
             **kwargs (dict[str, Any]): Additional keyword arguments.
 
         Returns:
-            tuple[list[float], list[int]]: A tuple of (distances, indices) of the top-k vectors
+            RMOutput: An RMOutput object containing the distances and indices of the top-k vectors.
         """
         pass

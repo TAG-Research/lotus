@@ -45,10 +45,10 @@ If you're already familiar with Pandas, getting started will be a breeze! Below 
 ```python
 import pandas as pd
 import lotus
-from lotus.models import OpenAIModel
+from lotus.models import LM
 
 # configure the LM, and remember to export your API key
-lm = OpenAIModel()
+lm = LM(model="gpt-4o-mini")
 lotus.settings.configure(lm=lm)
 
 # create dataframes with course names and skills

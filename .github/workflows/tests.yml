@@ -26,13 +26,36 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff==0.5.2
+          pip install ruff==0.7.2
 
       - name: Run ruff
         run: ruff check .
 
-  test:
-    name: Python Tests
+  mypy:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mypy==1.13.0
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Run mypy
+        run: mypy lotus/
+
+  openai_lm_test:
+    name: OpenAI Language Model Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -55,9 +78,83 @@ jobs:
       - name: Set OpenAI API Key
         run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
 
-      - name: Run Python tests
+      - name: Run LM tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ENABLE_OPENAI_TESTS: true
+        run: pytest .github/tests/lm_tests.py
+
+  ollama_lm_test:
+    name: Ollama Language Model Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
         run: |
-          pytest .github/tests/lm_tests.py
-          pytest .github/tests/rm_tests.py
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pytest
+
+      - name: Start Ollama container
+        run: |
+          docker pull ollama/ollama:latest
+          docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+          # Wait for Ollama server to be ready
+          timeout=30
+          while ! curl -s http://localhost:11434/ >/dev/null; do
+            if [ $timeout -le 0 ]; then
+              echo "Timed out waiting for Ollama server"
+              exit 1
+            fi
+            echo "Waiting for Ollama server to be ready..."
+            sleep 1
+            timeout=$((timeout - 1))
+          done
+          docker exec $(docker ps -q) ollama run llama3.2
+
+      - name: Run LM tests
+        env:
+          ENABLE_OLLAMA_TESTS: true
+        run: pytest .github/tests/lm_tests.py
+
+
+  rm_test:
+    name: Retrieval Model Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pytest
+
+      - name: Set OpenAI API Key
+        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Run RM tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ENABLE_OPENAI_TESTS: true
+          ENABLE_LOCAL_TESTS: true
+        run: pytest .github/tests/rm_tests.py

@@ -1,10 +1,12 @@
 from typing import Any
 
+import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticFilterOutput
+from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
 
 from .cascade_utils import calibrate_llm_logprobs, importance_sampling, learn_cascade_thresholds
 from .postprocessors import filter_postprocess
@@ -45,23 +47,20 @@ def sem_filter(
         lotus.logger.debug(f"input to model: {prompt}")
         inputs.append(prompt)
     kwargs: dict[str, Any] = {"logprobs": logprobs}
-    res = model(inputs, **kwargs)
-    if logprobs:
-        assert isinstance(res, tuple)
-        raw_outputs, raw_logprobs = res
-    else:
-        assert isinstance(res, list)
-        raw_outputs = res
+    lm_output: LMOutput = model(inputs, **kwargs)
 
-    postprocess_output = filter_postprocess(raw_outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"])
+    postprocess_output = filter_postprocess(
+        lm_output.outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"]
+    )
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
     lotus.logger.debug(f"raw_outputs: {postprocess_output.raw_outputs}")
     lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
 
-    return SemanticFilterOutput(**postprocess_output.model_dump(), logprobs=raw_logprobs if logprobs else None)
+    return SemanticFilterOutput(**postprocess_output.model_dump(), logprobs=lm_output.logprobs if logprobs else None)
+
 
 def learn_filter_cascade_thresholds(
-    sample_df_txt: str,
+    sample_df_txt: list[str],
     lm: lotus.models.LM,
     formatted_usr_instr: str,
     default: bool,
@@ -69,14 +68,14 @@ def learn_filter_cascade_thresholds(
     precision_target: float,
     delta: float,
     helper_true_probs: list[float],
-    sample_correction_factors: list[float],
-    examples_df_txt: str | None = None,
-    examples_answers: str | None = None,
-    cot_reasoning: list | None = None,
+    sample_correction_factors: NDArray[np.float64],
+    examples_df_txt: list[str] | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
 ) -> tuple[float, float]:
-    """Automatically learns the cascade thresholds for a cascade 
-    filter given a sample of data and doing a search across threshold 
+    """Automatically learns the cascade thresholds for a cascade
+    filter given a sample of data and doing a search across threshold
     to see what threshold gives the best accuracy."""
 
     try:
@@ -97,7 +96,7 @@ def learn_filter_cascade_thresholds(
             sample_correction_factors=sample_correction_factors,
             recall_target=recall_target,
             precision_target=precision_target,
-            delta=delta
+            delta=delta,
         )
 
         lotus.logger.info(f"Learned cascade thresholds: {best_combination}")
@@ -105,7 +104,8 @@ def learn_filter_cascade_thresholds(
 
     except Exception as e:
         lotus.logger.error(f"Error while learning filter cascade thresholds: {e}")
-        return None
+        raise e
+
 
 @pd.api.extensions.register_dataframe_accessor("sem_filter")
 class SemFilterDataframe:
@@ -198,14 +198,16 @@ class SemFilterDataframe:
 
                 if helper_strategy == "cot":
                     helper_cot_reasoning = examples["Reasoning"].tolist()
-            
+
         if learn_cascade_threshold_sample_percentage and lotus.settings.helper_lm:
             if helper_strategy == "cot":
                 lotus.logger.error("CoT not supported for helper models in cascades.")
                 raise Exception
 
             if recall_target is None or precision_target is None or failure_probability is None:
-                lotus.logger.error("Recall target, precision target, and confidence need to be specified for learned thresholds.")
+                lotus.logger.error(
+                    "Recall target, precision target, and confidence need to be specified for learned thresholds."
+                )
                 raise Exception
 
             # Run small LM and get logits
@@ -221,11 +223,14 @@ class SemFilterDataframe:
                 strategy=helper_strategy,
             )
             helper_outputs, helper_logprobs = helper_output.outputs, helper_output.logprobs
-            _, _, helper_true_probs = lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
+            formatted_helper_logprobs: LogprobsForFilterCascade = (
+                lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
+            )
+            helper_true_probs = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs)
 
-            helper_true_probs = calibrate_llm_logprobs(helper_true_probs)
-
-            sample_indices, correction_factors = importance_sampling(helper_true_probs, learn_cascade_threshold_sample_percentage)
+            sample_indices, correction_factors = importance_sampling(
+                helper_true_probs, learn_cascade_threshold_sample_percentage
+            )
             sample_df = self._obj.loc[sample_indices]
             sample_df_txt = task_instructions.df2text(sample_df, col_li)
             sample_helper_true_probs = [helper_true_probs[i] for i in sample_indices]
@@ -238,7 +243,7 @@ class SemFilterDataframe:
                 default=default,
                 recall_target=recall_target,
                 precision_target=precision_target,
-                delta=failure_probability/2,
+                delta=failure_probability / 2,
                 helper_true_probs=sample_helper_true_probs,
                 sample_correction_factors=sample_correction_factors,
                 examples_df_txt=examples_df_txt,
@@ -261,7 +266,13 @@ class SemFilterDataframe:
                 true_prob = helper_true_probs[idx_i]
                 if true_prob >= pos_cascade_threshold or true_prob <= neg_cascade_threshold:
                     high_conf_idxs.add(idx_i)
-                    helper_outputs[idx_i] = True if true_prob >= pos_cascade_threshold else False if true_prob <= neg_cascade_threshold else helper_outputs[idx_i]
+                    helper_outputs[idx_i] = (
+                        True
+                        if true_prob >= pos_cascade_threshold
+                        else False
+                        if true_prob <= neg_cascade_threshold
+                        else helper_outputs[idx_i]
+                    )
 
             lotus.logger.info(f"Num routed to smaller model: {len(high_conf_idxs)}")
             stats["num_routed_to_helper_model"] = len(high_conf_idxs)
