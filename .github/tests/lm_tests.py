@@ -241,6 +241,22 @@ def test_join_cascade(setup_models):
     assert stats["filters_resolved_by_helper_model"] == 0, stats
 
 
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_format_logprobs_for_filter_cascade(setup_models, model):
+    lm = setup_models[model]
+    messages = [
+        [{"role": "user", "content": "True or False: The sky is blue?"}],
+    ]
+    response = lm(messages, logprobs=True)
+    formatted_logprobs = lm.format_logprobs_for_filter_cascade(response.logprobs)
+    true_probs = formatted_logprobs.true_probs
+    assert len(true_probs) == 1
+
+    # Very safe (in practice its ~1)
+    assert true_probs[0] > 0.8
+    assert len(formatted_logprobs.tokens) == len(formatted_logprobs.confidences)
+
+
 ################################################################################
 # Token counting tests
 ################################################################################
