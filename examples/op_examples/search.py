@@ -3,9 +3,9 @@ import pandas as pd
 import lotus
 from lotus.models import LM, CrossEncoderReranker, SentenceTransformersRM
 
-lm = LM()
-rm = SentenceTransformersRM()
-reranker = CrossEncoderReranker()
+lm = LM(model="gpt-4o-mini")
+rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
+reranker = CrossEncoderReranker(model="mixedbread-ai/mxbai-rerank-large-v1")
 
 lotus.settings.configure(lm=lm, rm=rm, reranker=reranker)
 data = {

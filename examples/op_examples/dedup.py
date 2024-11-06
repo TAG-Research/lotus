@@ -3,7 +3,7 @@ import pandas as pd
 import lotus
 from lotus.models import SentenceTransformersRM
 
-rm = SentenceTransformersRM()
+rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 
 lotus.settings.configure(rm=rm)
 data = {

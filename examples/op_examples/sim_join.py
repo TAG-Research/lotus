@@ -3,8 +3,8 @@ import pandas as pd
 import lotus
 from lotus.models import LM, LiteLLMRM
 
-lm = LM()
-# rm = SentenceTransformersRM()
+lm = LM(model="gpt-4o-mini")
+# rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 rm = LiteLLMRM()
 
 lotus.settings.configure(lm=lm, rm=rm)

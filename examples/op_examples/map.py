@@ -3,7 +3,7 @@ import pandas as pd
 import lotus
 from lotus.models import LM
 
-lm = LM()
+lm = LM(model="gpt-4o-mini")
 
 lotus.settings.configure(lm=lm)
 data = {

@@ -53,8 +53,8 @@ This can be achieved by applying a semantic filter followed by a semantic aggreg
     from lotus.models import SentenceTransformersRM, LM
 
     # Configure models for LOTUS
-    lm = LM()
-    rm = SentenceTransformersRM()
+    lm = LM(model="gpt-4o-mini")
+    rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 
     lotus.settings.configure(lm=lm, rm=rm)
 
