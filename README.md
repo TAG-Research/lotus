@@ -71,6 +71,15 @@ res = courses_df.sem_join(skills_df, "Taking {Course Name} will help me learn {S
 print(res)
 ```
 
+# Supported Models
+There are 3 main model classes in LOTUS:
+- `LM`: The language model class.
+    - The `LM` class is built on top of the `LiteLLM` library, and supports any model that is supported by `LiteLLM`. See [this page](CONTRIBUTING.md) for examples of using models on `OpenAI`, `Ollama`, and `vLLM`. Any provider supported by `LiteLLM` should work. Check out [litellm's documentation](https://litellm.vercel.app) for more information.
+- `RM`: The retrieval model class.
+    - Any model from `SentenceTransformers` can be used with the `SentenceTransformersRM` class, by passing the model name to the `model` parameter (see [an example here](examples/op_examples/dedup.py)). Additionally, `LiteLLMRM` can be used with any model supported by `LiteLLM` (see [an example here](examples/op_examples/sim_join.py)).
+- `Reranker`: The reranker model class.
+    - Any `CrossEncoder` from `SentenceTransformers` can be used with the `CrossEncoderReranker` class, by passing the model name to the `model` parameter (see [an example here](examples/op_examples/search.py)).
+
 # Citation
 If you use LOTUS or semantic operators in a research paper, please cite this work as follows:
 ```bibtex

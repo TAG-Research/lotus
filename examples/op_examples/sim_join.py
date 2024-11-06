@@ -4,8 +4,7 @@ import lotus
 from lotus.models import LM, LiteLLMRM
 
 lm = LM(model="gpt-4o-mini")
-# rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
-rm = LiteLLMRM()
+rm = LiteLLMRM(model="text-embedding-3-small")
 
 lotus.settings.configure(lm=lm, rm=rm)
 data = {
