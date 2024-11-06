@@ -170,7 +170,7 @@ def llm_quicksort(
     Args:
         docs (list[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
-        k (int): The number of documents to return.
+        K (int): The number of documents to return.
         embedding (bool): Whether to use embedding optimization.
         cascade_threshold (float | None): The confidence threshold for cascading to a larger model.
 
@@ -282,7 +282,7 @@ def llm_heapsort(
     Args:
         docs (list[str]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
-        k (int): The number of documents to return.
+        K (int): The number of documents to return.
 
     Returns:
         SemanticTopKOutput: The indexes of the top k documents and stats.

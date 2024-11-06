@@ -22,7 +22,7 @@ class CrossEncoderReranker(Reranker):
         self.max_batch_size: int = max_batch_size
         self.model = CrossEncoder(model, device=device)  # type: ignore # CrossEncoder has wrong type stubs
 
-    def __call__(self, query: str, docs: list[str], k: int) -> RerankerOutput:
-        results = self.model.rank(query, docs, top_k=k, batch_size=self.max_batch_size)
+    def __call__(self, query: str, docs: list[str], K: int) -> RerankerOutput:
+        results = self.model.rank(query, docs, top_k=K, batch_size=self.max_batch_size)
         indices = [int(result["corpus_id"]) for result in results]
         return RerankerOutput(indices=indices)
