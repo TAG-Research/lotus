@@ -1,11 +1,11 @@
 import pandas as pd
 
 import lotus
-from lotus.models import LM, CrossEncoderModel, E5Model
+from lotus.models import LM, CrossEncoderReranker, SentenceTransformersRM
 
 lm = LM()
-rm = E5Model()
-reranker = CrossEncoderModel()
+rm = SentenceTransformersRM()
+reranker = CrossEncoderReranker()
 
 lotus.settings.configure(lm=lm, rm=rm, reranker=reranker)
 data = {

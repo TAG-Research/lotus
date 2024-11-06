@@ -50,11 +50,11 @@ This can be achieved by applying a semantic filter followed by a semantic aggreg
     import pandas as pd
 
     import lotus
-    from lotus.models import E5Model, LM
+    from lotus.models import SentenceTransformersRM, LM
 
     # Configure models for LOTUS
     lm = LM()
-    rm = E5Model()
+    rm = SentenceTransformersRM()
 
     lotus.settings.configure(lm=lm, rm=rm)
 

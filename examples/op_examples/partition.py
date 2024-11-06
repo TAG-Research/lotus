@@ -1,10 +1,10 @@
 import pandas as pd
 
 import lotus
-from lotus.models import LM, E5Model
+from lotus.models import LM, SentenceTransformersRM
 
 lm = LM(max_tokens=2048)
-rm = E5Model()
+rm = SentenceTransformersRM()
 
 lotus.settings.configure(lm=lm, rm=rm)
 data = {
