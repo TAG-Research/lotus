@@ -4,11 +4,11 @@ import torch
 from tqdm import tqdm
 from transformers import Qwen2VLForConditionalGeneration, Qwen2VLProcessor
 from lotus.models.faiss_rm import FaissRM
-from qwen_vl_utils import fetch_image
 import torch.nn.functional as F
 from PIL import Image
 from numpy.typing import NDArray
 from lotus.types import RMOutput
+from lotus.utils import fetch_image
 import faiss
 
 class Qwen2Model(FaissRM):
@@ -40,7 +40,7 @@ class Qwen2Model(FaissRM):
         images = []
         for data in input_data:
             try:
-                image = fetch_image({"image": data})
+                image = fetch_image(data)
                 texts.append("<|image_pad|>")
                 images.append(image)
             except Exception as e:
@@ -92,7 +92,7 @@ class Qwen2Model(FaissRM):
         torch.cuda.empty_cache()
         return all_embeddings.numpy(force=True)
 
-    def __call__(self, queries: str | list[str] | NDArray[np.float64], K: int, **kwargs: dict[str, Any]) -> RMOutput:
+    def __call__(self, queries: str | Image.Image | list[str | Image.Image] | NDArray[np.float64], K: int, **kwargs: dict[str, Any]) -> RMOutput:
         """Run top-k search on the index."""
         if self.faiss_index is None:
             raise ValueError("Index not loaded. Call load_index first.")

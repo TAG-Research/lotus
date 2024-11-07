@@ -5,6 +5,7 @@ from lotus.models.rm import RM
 from lotus.models.litellm_rm import LiteLLMRM
 from lotus.models.sentence_transformers_rm import SentenceTransformersRM
 from lotus.models.colbertv2_rm import ColBERTv2RM
+from lotus.models.qwen2_model import Qwen2Model
 
 __all__ = [
     "CrossEncoderReranker",
@@ -14,4 +15,5 @@ __all__ = [
     "LiteLLMRM",
     "SentenceTransformersRM",
     "ColBERTv2RM",
+    "Qwen2Model",
 ]

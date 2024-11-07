@@ -1,8 +1,11 @@
 from typing import Callable
 
 import pandas as pd
-
+from PIL import Image
 import lotus
+import qwen_vl_utils
+import base64
+from io import BytesIO
 
 
 def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:
@@ -53,3 +56,26 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         return list(map(int, indices.flatten().tolist()))
 
     return ret
+
+def fetch_image(image: str | Image.Image, size_factor: int = 28, image_type: str = "Image") -> Image.Image:
+    """
+    Fetches an image from the internet or loads it from a file.
+
+    Args:
+        ele (str | Image.Image): The image URL or path.
+        size_factor (int | None): The size factor to resize the image.
+        image_type (str): The type of the element. Supported: Image or base64
+
+    Returns:
+        Image.Image: The image.
+    """
+    assert image_type in ["Image", "base64"], f"image_type must be Image or base64, got {image_type}"
+
+    image = qwen_vl_utils.fetch_image({"image": image}, size_factor)
+    if image_type == "base64":
+        buffered = BytesIO()
+        image.save(buffered, format="PNG")
+        return "data:image/png;base64," + base64.b64encode(buffered.getvalue()).decode()
+    
+    return image
+
