@@ -32,6 +32,7 @@ jobs:
           source activate base
           conda activate lotus
           pip install ruff==0.7.2
+          echo $(pip freeze)
 
       - name: Run ruff
         run: |
