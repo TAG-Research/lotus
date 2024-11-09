@@ -39,7 +39,7 @@ jobs:
       - name: Create and activate Conda environment
         run: |
           conda env create -f environment.yml || conda env update -f environment.yml
-          source activate lotus
+          conda activate lotus
           python -m pip install ruff==0.7.2
 
       - name: Run ruff
@@ -57,7 +57,7 @@ jobs:
       - name: Create and activate Conda environment
         run: |
           conda env create -f environment.yml || conda env update -f environment.yml
-          source activate lotus
+          conda activate lotus
           python -m pip install mypy==1.13.0
           pip install -r requirements.txt
           pip install -e .
@@ -78,7 +78,7 @@ jobs:
       - name: Create and activate Conda environment
         run: |
           conda env create -f environment.yml || conda env update -f environment.yml
-          source activate lotus
+          conda activate lotus
           python -m pip install -r requirements.txt
           pip install -e .
           pip install pytest
@@ -105,7 +105,7 @@ jobs:
       - name: Create and activate Conda environment
         run: |
           conda env create -f environment.yml || conda env update -f environment.yml
-          source activate lotus
+          conda activate lotus
           python -m pip install -r requirements.txt
           pip install -e .
           pip install pytest
@@ -144,7 +144,7 @@ jobs:
       - name: Create and activate Conda environment
         run: |
           conda env create -f environment.yml || conda env update -f environment.yml
-          source activate lotus
+          conda activate lotus
           python -m pip install -r requirements.txt
           pip install -e .
           pip install pytest
