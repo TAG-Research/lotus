@@ -35,7 +35,7 @@ LOTUS offers a number of semantic operators in a Pandas-like API, some of which 
 
 # Installation
 ```
-conda create -n lotus python=3.10 -y
+conda env create -f environment.yml
 conda activate lotus
 pip install lotus-ai
 ```
