@@ -55,6 +55,7 @@ jobs:
       - name: Create and activate Conda environment
         run: |
           conda env create -f environment.yml || conda env update -f environment.yml
+          source activate base
           conda activate lotus
           python -m pip install mypy==1.13.0
           pip install -r requirements.txt
