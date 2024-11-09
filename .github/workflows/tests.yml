@@ -10,12 +10,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  ruff_lint:
-    name: Ruff Lint
+  install_miniconda:
+    name: Install Miniconda
     runs-on: ubuntu-latest
-
+    outputs:
+      miniconda-path: ${{ steps.miniconda-output.outputs.PATH }}
     steps:
       - name: Install Miniconda
+        id: miniconda-output
         run: |
           wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
           bash miniconda.sh -b -p $HOME/miniconda
@@ -23,6 +25,12 @@ jobs:
           source $HOME/miniconda/bin/activate
           conda init bash
 
+  ruff_lint:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+    needs: install_miniconda
+
+    steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -37,20 +45,12 @@ jobs:
           source activate base && conda activate lotus
           ruff check .
 
-
   mypy:
     name: Type Check
     runs-on: ubuntu-latest
+    needs: install_miniconda
 
     steps:
-      - name: Install Miniconda
-        run: |
-          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-          bash miniconda.sh -b -p $HOME/miniconda
-          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
-          source $HOME/miniconda/bin/activate
-          conda init bash
-
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -63,22 +63,17 @@ jobs:
           pip install -e .
 
       - name: Run mypy
-        run: mypy lotus/
+        run: |
+          source activate base && conda activate lotus
+          mypy lotus/
 
   openai_lm_test:
     name: OpenAI Language Model Tests
     runs-on: ubuntu-latest
+    needs: install_miniconda
     timeout-minutes: 5
 
     steps:
-      - name: Install Miniconda
-        run: |
-          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-          bash miniconda.sh -b -p $HOME/miniconda
-          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
-          source $HOME/miniconda/bin/activate
-          conda init bash
-
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -104,17 +99,10 @@ jobs:
   ollama_lm_test:
     name: Ollama Language Model Tests
     runs-on: ubuntu-latest
+    needs: install_miniconda
     timeout-minutes: 10
 
     steps:
-      - name: Install Miniconda
-        run: |
-          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-          bash miniconda.sh -b -p $HOME/miniconda
-          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
-          source $HOME/miniconda/bin/activate
-          conda init bash
-
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -152,17 +140,10 @@ jobs:
   rm_test:
     name: Retrieval Model Tests
     runs-on: ubuntu-latest
+    needs: install_miniconda
     timeout-minutes: 5
 
     steps:
-      - name: Install Miniconda
-        run: |
-          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-          bash miniconda.sh -b -p $HOME/miniconda
-          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
-          source $HOME/miniconda/bin/activate
-          conda init bash
-
       - name: Checkout code
         uses: actions/checkout@v3
 
