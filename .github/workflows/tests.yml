@@ -36,6 +36,7 @@ jobs:
 
       - name: Run ruff
         run: |
+          source activate base && conda activate lotus
           echo $(pip freeze)
           ruff check .
 
