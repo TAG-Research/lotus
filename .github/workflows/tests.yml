@@ -19,13 +19,6 @@ jobs:
           bash miniconda.sh -b -p $HOME/miniconda
           echo "$HOME/miniconda/bin" >> $GITHUB_PATH
           source $HOME/miniconda/bin/activate
-          conda init bash
-      - name: Cache Conda Environment
-        uses: actions/cache@v3
-        with:
-          path: ~/.conda/envs/lotus
-          key: conda-lotus-${{ hashFiles('environment.yml') }}
-          restore-keys: conda-lotus-
 
   ruff_lint:
     name: Ruff Lint
@@ -38,6 +31,7 @@ jobs:
 
       - name: Create and activate Conda environment
         run: |
+          conda init bash
           conda env create -f environment.yml || conda env update -f environment.yml
           conda activate lotus
           python -m pip install ruff==0.7.2
