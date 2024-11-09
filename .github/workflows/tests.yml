@@ -34,8 +34,9 @@ jobs:
           pip install ruff==0.7.2
 
       - name: Run ruff
-        echo "$(pip freeze)"
-        run: ruff check .
+        run: |
+          echo $(pip freeze)
+          ruff check .
 
 
   mypy:
