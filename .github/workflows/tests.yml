@@ -31,9 +31,10 @@ jobs:
           conda env create -f environment.yml || conda env update -f environment.yml
           source activate base
           conda activate lotus
-          python -m pip install ruff==0.7.2
+          pip install ruff==0.7.2
 
       - name: Run ruff
+        echo "$(pip freeze)"
         run: ruff check .
 
 
