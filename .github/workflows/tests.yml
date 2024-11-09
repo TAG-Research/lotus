@@ -35,7 +35,6 @@ jobs:
       - name: Run ruff
         run: |
           source activate base && conda activate lotus
-          echo $(pip freeze)
           ruff check .
 
 
@@ -59,7 +58,7 @@ jobs:
         run: |
           conda env create -f environment.yml
           source activate base && conda activate lotus
-          python -m pip install mypy==1.13.0
+          pip install mypy==1.13.0
           pip install -r requirements.txt
           pip install -e .
 
@@ -87,7 +86,7 @@ jobs:
         run: |
           conda env create -f environment.yml
           source activate base && conda activate lotus
-          python -m pip install -r requirements.txt
+          pip install -r requirements.txt
           pip install -e .
           pip install pytest
 
@@ -123,7 +122,7 @@ jobs:
         run: |
           conda env create -f environment.yml
           source activate base && conda activate lotus
-          python -m pip install -r requirements.txt
+          pip install -r requirements.txt
           pip install -e .
           pip install pytest
 
@@ -171,7 +170,7 @@ jobs:
         run: |
           conda env create -f environment.yml
           source activate base && conda activate lotus
-          python -m pip install -r requirements.txt
+          pip install -r requirements.txt
           pip install -e .
           pip install pytest
 
