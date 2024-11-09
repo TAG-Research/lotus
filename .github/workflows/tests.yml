@@ -28,11 +28,9 @@ jobs:
 
       - name: Create and activate Conda environment
         run: |
-          conda env create -f environment.yml || conda env update -f environment.yml
-          source activate base
-          conda activate lotus
+          conda env create -f environment.yml
+          source activate base && conda activate lotus
           pip install ruff==0.7.2
-          echo $(pip freeze)
 
       - name: Run ruff
         run: |
@@ -59,9 +57,8 @@ jobs:
 
       - name: Create and activate Conda environment
         run: |
-          conda env create -f environment.yml || conda env update -f environment.yml
-          source activate base
-          conda activate lotus
+          conda env create -f environment.yml
+          source activate base && conda activate lotus
           python -m pip install mypy==1.13.0
           pip install -r requirements.txt
           pip install -e .
@@ -88,9 +85,8 @@ jobs:
 
       - name: Create and activate Conda environment
         run: |
-          conda env create -f environment.yml || conda env update -f environment.yml
-          source activate base
-          conda activate lotus
+          conda env create -f environment.yml
+          source activate base && conda activate lotus
           python -m pip install -r requirements.txt
           pip install -e .
           pip install pytest
@@ -102,7 +98,9 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ENABLE_OPENAI_TESTS: true
-        run: pytest .github/tests/lm_tests.py
+        run: |
+          source activate base && conda activate lotus
+          pytest .github/tests/lm_tests.py
 
   ollama_lm_test:
     name: Ollama Language Model Tests
@@ -123,9 +121,8 @@ jobs:
 
       - name: Create and activate Conda environment
         run: |
-          conda env create -f environment.yml || conda env update -f environment.yml
-          source activate base
-          conda activate lotus
+          conda env create -f environment.yml
+          source activate base && conda activate lotus
           python -m pip install -r requirements.txt
           pip install -e .
           pip install pytest
@@ -149,7 +146,9 @@ jobs:
       - name: Run LM tests
         env:
           ENABLE_OLLAMA_TESTS: true
-        run: pytest .github/tests/lm_tests.py
+        run: |
+          source activate base && conda activate lotus
+          pytest .github/tests/lm_tests.py
 
   rm_test:
     name: Retrieval Model Tests
@@ -170,9 +169,8 @@ jobs:
 
       - name: Create and activate Conda environment
         run: |
-          conda env create -f environment.yml || conda env update -f environment.yml
-          source activate base
-          conda activate lotus
+          conda env create -f environment.yml
+          source activate base && conda activate lotus
           python -m pip install -r requirements.txt
           pip install -e .
           pip install pytest
@@ -185,4 +183,6 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ENABLE_OPENAI_TESTS: true
           ENABLE_LOCAL_TESTS: true
-        run: pytest .github/tests/rm_tests.py
+        run: |
+          source activate base && conda activate lotus
+          pytest .github/tests/rm_tests.py
