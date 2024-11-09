@@ -10,8 +10,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup_conda:
+  ruff_lint:
+    name: Ruff Lint
     runs-on: ubuntu-latest
+
     steps:
       - name: Install Miniconda
         run: |
@@ -19,31 +21,34 @@ jobs:
           bash miniconda.sh -b -p $HOME/miniconda
           echo "$HOME/miniconda/bin" >> $GITHUB_PATH
           source $HOME/miniconda/bin/activate
+          conda init bash
 
-  ruff_lint:
-    name: Ruff Lint
-    runs-on: ubuntu-latest
-    needs: setup_conda
-
-    steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Create and activate Conda environment
         run: |
           conda env create -f environment.yml || conda env update -f environment.yml
-          source $HOME/miniconda/bin/activate
+          conda activate lotus
           python -m pip install ruff==0.7.2
 
       - name: Run ruff
         run: ruff check .
 
+
   mypy:
     name: Type Check
     runs-on: ubuntu-latest
-    needs: setup_conda
 
     steps:
+      - name: Install Miniconda
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
+          source $HOME/miniconda/bin/activate
+          conda init bash
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -62,9 +67,16 @@ jobs:
     name: OpenAI Language Model Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: setup_conda
 
     steps:
+      - name: Install Miniconda
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
+          source $HOME/miniconda/bin/activate
+          conda init bash
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -89,9 +101,16 @@ jobs:
     name: Ollama Language Model Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: setup_conda
 
     steps:
+      - name: Install Miniconda
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
+          source $HOME/miniconda/bin/activate
+          conda init bash
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -128,9 +147,16 @@ jobs:
     name: Retrieval Model Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: setup_conda
 
     steps:
+      - name: Install Miniconda
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
+          source $HOME/miniconda/bin/activate
+          conda init bash
+
       - name: Checkout code
         uses: actions/checkout@v3
 
