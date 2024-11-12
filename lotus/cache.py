@@ -8,7 +8,6 @@ class Cache:
     def __init__(self, max_size: int):
         self.max_size = max_size
         self.cache: OrderedDict[str, Any] = OrderedDict()
-        self.enabled = True
 
     def get(self, key: str) -> Any | None:
         if not lotus.settings.enable_cache:
