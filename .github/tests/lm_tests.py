@@ -293,14 +293,15 @@ def test_cache(setup_models, model):
         [{"role": "user", "content": "What is the capital of France?"}],
     ]
 
-    lm(first_batch)
+    first_responses = lm(first_batch).outputs
     assert lm.stats.total_usage.cache_hits == 0
 
     second_batch = [
         [{"role": "user", "content": "What is the capital of France?"}],
         [{"role": "user", "content": "What is the capital of Germany?"}],
     ]
-    lm(second_batch)
+    second_responses = lm(second_batch).outputs
+    assert second_responses[0] == first_responses[1]
     assert lm.stats.total_usage.cache_hits == 1
 
     # Test clearing cache
@@ -326,10 +327,11 @@ def test_disable_cache(setup_models, model):
 
     # Now enable cache. Note that the first batch is not cached.
     lotus.settings.configure(enable_cache=True)
-    lm(batch)
+    first_responses = lm(batch).outputs
     assert lm.stats.total_usage.cache_hits == 0
-    lm(batch)
+    second_responses = lm(batch).outputs
     assert lm.stats.total_usage.cache_hits == 2
+    assert first_responses == second_responses
 
 
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
