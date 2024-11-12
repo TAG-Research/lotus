@@ -1,7 +1,20 @@
 from collections import OrderedDict
-from typing import Any
+from functools import wraps
+from typing import Any, Callable
 
 import lotus
+
+
+def require_cache_enabled(func: Callable) -> Callable:
+    """Decorator to check if caching is enabled before calling the function."""
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not lotus.settings.enable_cache:
+            return None
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Cache:
@@ -9,19 +22,15 @@ class Cache:
         self.max_size = max_size
         self.cache: OrderedDict[str, Any] = OrderedDict()
 
+    @require_cache_enabled
     def get(self, key: str) -> Any | None:
-        if not lotus.settings.enable_cache:
-            return None
-
         if key in self.cache:
             lotus.logger.debug(f"Cache hit for {key}")
 
         return self.cache.get(key)
 
+    @require_cache_enabled
     def insert(self, key: str, value: Any):
-        if not lotus.settings.enable_cache:
-            return
-
         self.cache[key] = value
 
         # LRU eviction
