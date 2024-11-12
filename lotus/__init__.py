@@ -1,5 +1,5 @@
 import logging
-
+import lotus.dtype_extensions
 import lotus.models
 import lotus.nl_expression
 import lotus.templates
@@ -45,4 +45,5 @@ __all__ = [
     "logger",
     "models",
     "utils",
+    "dtype_extensions",
 ]
