@@ -11,7 +11,7 @@ class Cache:
         self.enabled = True
 
     def get(self, key: str) -> Any | None:
-        if not self.enabled:
+        if not lotus.settings.enable_cache:
             return None
 
         if key in self.cache:
@@ -20,7 +20,7 @@ class Cache:
         return self.cache.get(key)
 
     def insert(self, key: str, value: Any):
-        if not self.enabled:
+        if not lotus.settings.enable_cache:
             return
 
         self.cache[key] = value
@@ -33,10 +33,3 @@ class Cache:
         self.cache.clear()
         if max_size is not None:
             self.max_size = max_size
-        self.enabled = True
-
-    def disable(self):
-        self.enabled = False
-
-    def enable(self):
-        self.enabled = True

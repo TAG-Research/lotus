@@ -285,7 +285,7 @@ def test_custom_tokenizer():
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
 def test_cache(setup_models, model):
     lm = setup_models[model]
-    lotus.settings.configure(lm=lm)
+    lotus.settings.configure(lm=lm, enable_cache=True)
 
     # Check that "What is the capital of France?" becomes cached
     first_batch = [
@@ -313,8 +313,7 @@ def test_cache(setup_models, model):
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
 def test_disable_cache(setup_models, model):
     lm = setup_models[model]
-    lm.disable_cache()
-    lotus.settings.configure(lm=lm)
+    lotus.settings.configure(lm=lm, enable_cache=False)
 
     batch = [
         [{"role": "user", "content": "Hello, world!"}],
@@ -326,7 +325,7 @@ def test_disable_cache(setup_models, model):
     assert lm.stats.total_usage.cache_hits == 0
 
     # Now enable cache. Note that the first batch is not cached.
-    lm.enable_cache()
+    lotus.settings.configure(enable_cache=True)
     lm(batch)
     assert lm.stats.total_usage.cache_hits == 0
     lm(batch)
@@ -336,8 +335,7 @@ def test_disable_cache(setup_models, model):
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
 def test_reset_cache(setup_models, model):
     lm = setup_models[model]
-    lm.reset_cache()
-    lotus.settings.configure(lm=lm)
+    lotus.settings.configure(lm=lm, enable_cache=True)
 
     batch = [
         [{"role": "user", "content": "Hello, world!"}],
