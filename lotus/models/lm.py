@@ -1,3 +1,4 @@
+import hashlib
 from typing import Any
 
 import litellm
@@ -9,6 +10,7 @@ from openai import OpenAIError
 from tokenizers import Tokenizer
 
 import lotus
+from lotus.cache import Cache
 from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
 
 
@@ -21,6 +23,7 @@ class LM:
         max_tokens: int = 512,
         max_batch_size: int = 64,
         tokenizer: Tokenizer | None = None,
+        max_cache_size: int = 1024,
         **kwargs: dict[str, Any],
     ):
         self.model = model
@@ -31,39 +34,65 @@ class LM:
         self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
 
         self.stats: LMStats = LMStats()
+        self.cache = Cache(max_cache_size)
 
     def __call__(self, messages: list[list[dict[str, str]]], **kwargs: dict[str, Any]) -> LMOutput:
         all_kwargs = {**self.kwargs, **kwargs}
 
         # Set top_logprobs if logprobs requested
         if all_kwargs.get("logprobs", False):
-            all_kwargs["top_logprobs"] = all_kwargs.get("top_logprobs", 10)
+            all_kwargs.setdefault("top_logprobs", 10)
 
-        all_responses: list[ModelResponse] = []
-        for i in range(0, len(messages), self.max_batch_size):
-            batch = messages[i : i + self.max_batch_size]
-            responses: list[ModelResponse] = batch_completion(
-                self.model,
-                batch,
-                drop_params=True,
-                **all_kwargs,  # type: ignore
-            )
-            all_responses.extend(responses)
+        # Check cache and separate cached and uncached messages
+        hashed_messages = [self._hash_messages(msg, all_kwargs) for msg in messages]
+        cached_responses = [self.cache.get(hash) for hash in hashed_messages]
+        uncached_data = [
+            (msg, hash) for msg, hash, resp in zip(messages, hashed_messages, cached_responses) if resp is None
+        ]
+        self.stats.total_usage.cache_hits += len(messages) - len(uncached_data)
 
-        # throw errors, if any
-        for resp in all_responses:
-            if isinstance(resp, OpenAIError):
-                raise resp
+        # Process uncached messages in batches
+        uncached_responses = self._process_uncached_messages(uncached_data, all_kwargs)
 
+        # Add new responses to cache
+        for resp, (_, hash) in zip(uncached_responses, uncached_data):
+            self._cache_response(resp, hash)
+
+        # Merge all responses in original order and extract outputs
+        all_responses = self._merge_responses(cached_responses, uncached_responses)
         outputs = [self._get_top_choice(resp) for resp in all_responses]
         logprobs = (
             [self._get_top_choice_logprobs(resp) for resp in all_responses] if all_kwargs.get("logprobs") else None
         )
 
-        for resp in all_responses:
-            self._update_stats(resp)
-
         return LMOutput(outputs=outputs, logprobs=logprobs)
+
+    def _process_uncached_messages(self, uncached_data, all_kwargs):
+        """Processes uncached messages in batches and returns responses."""
+        uncached_responses = []
+        for i in range(0, len(uncached_data), self.max_batch_size):
+            batch = [msg for msg, _ in uncached_data[i : i + self.max_batch_size]]
+            uncached_responses.extend(batch_completion(self.model, batch, drop_params=True, **all_kwargs))
+        return uncached_responses
+
+    def _cache_response(self, response, hash):
+        """Caches a response and updates stats if successful."""
+        if isinstance(response, OpenAIError):
+            raise response
+        self._update_stats(response)
+        self.cache.insert(hash, response)
+
+    def _hash_messages(self, messages: list[dict[str, str]], kwargs: dict[str, Any]) -> str:
+        """Hash messages and kwargs to create a unique key for the cache"""
+        to_hash = str(self.model) + str(messages) + str(kwargs)
+        return hashlib.sha256(to_hash.encode()).hexdigest()
+
+    def _merge_responses(
+        self, cached_responses: list[ModelResponse | None], uncached_responses: list[ModelResponse]
+    ) -> list[ModelResponse]:
+        """Merge cached and uncached responses, maintaining order"""
+        uncached_iter = iter(uncached_responses)
+        return [resp if resp is not None else next(uncached_iter) for resp in cached_responses]
 
     def _update_stats(self, response: ModelResponse):
         if not hasattr(response, "usage"):
@@ -155,8 +184,12 @@ class LM:
         print(f"Total prompt tokens: {self.stats.total_usage.prompt_tokens}")
         print(f"Total completion tokens: {self.stats.total_usage.completion_tokens}")
         print(f"Total tokens: {self.stats.total_usage.total_tokens}")
+        print(f"Total cache hits: {self.stats.total_usage.cache_hits}")
 
     def reset_stats(self):
         self.stats = LMStats(
             total_usage=LMStats.TotalUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0, total_cost=0.0)
         )
+
+    def reset_cache(self, max_size: int | None = None):
+        self.cache.reset(max_size)
