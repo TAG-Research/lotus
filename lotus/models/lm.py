@@ -191,8 +191,11 @@ class LM:
             total_usage=LMStats.TotalUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0, total_cost=0.0)
         )
 
-    def clear_cache(self):
-        self.cache.clear()
+    def reset_cache(self, max_size: int | None = None):
+        self.cache.reset(max_size)
 
     def disable_cache(self):
         self.cache.disable()
+
+    def enable_cache(self):
+        self.cache.enable()
