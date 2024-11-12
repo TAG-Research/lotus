@@ -193,9 +193,3 @@ class LM:
 
     def reset_cache(self, max_size: int | None = None):
         self.cache.reset(max_size)
-
-    def disable_cache(self):
-        self.cache.disable()
-
-    def enable_cache(self):
-        self.cache.enable()
