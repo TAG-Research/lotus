@@ -47,6 +47,7 @@ def print_usage_after_each_test(setup_models):
         print(f"\nUsage stats for {model_name} after test:")
         model.print_total_usage()
         model.reset_stats()
+        model.reset_cache()
 
 
 ################################################################################
@@ -315,20 +316,20 @@ def test_disable_cache(setup_models, model):
     lm.disable_cache()
     lotus.settings.configure(lm=lm)
 
-    first_batch = [
+    batch = [
         [{"role": "user", "content": "Hello, world!"}],
         [{"role": "user", "content": "What is the capital of France?"}],
     ]
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 0
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 0
 
     # Now enable cache. Note that the first batch is not cached.
     lm.enable_cache()
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 0
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 2
 
 
@@ -338,23 +339,23 @@ def test_reset_cache(setup_models, model):
     lm.reset_cache()
     lotus.settings.configure(lm=lm)
 
-    first_batch = [
+    batch = [
         [{"role": "user", "content": "Hello, world!"}],
         [{"role": "user", "content": "What is the capital of France?"}],
     ]
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 0
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 2
 
     lm.reset_cache(max_size=1)
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 2
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 3
 
     lm.reset_cache(max_size=0)
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 3
-    lm(first_batch)
+    lm(batch)
     assert lm.stats.total_usage.cache_hits == 3
