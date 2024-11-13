@@ -136,9 +136,33 @@ def test_agg_then_map(setup_models, model):
     df = pd.DataFrame(data)
     agg_instruction = "What is the most common name in {Text}?"
     agg_df = df.sem_agg(agg_instruction, suffix="draft_output")
+    assert len(agg_df) == 1
+
     map_instruction = "{draft_output} is a draft answer to the question 'What is the most common name?'. Clean up the draft answer so that there is just a single name. Your answer MUST be on word"
     cleaned_df = agg_df.sem_map(map_instruction, suffix="final_output")
     assert cleaned_df["final_output"].values[0].lower().strip(".,!?\"'") == "john"
+
+
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_group_by_with_agg(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    data = {
+        "Names": ["Michael", "Anakin", "Luke", "Dwight"],
+        "Show": ["The Office", "Star Wars", "Star Wars", "The Office"],
+    }
+    df = pd.DataFrame(data)
+    agg_instruction = "Summarize {Names}"
+    agg_df = df.sem_agg(agg_instruction, suffix="draft_output", group_by=["Show"])
+    assert len(agg_df) == 2
+
+    # Map post-processing
+    map_instruction = "{draft_output} is a draft answer to the question 'Summarize the names'. Clean up the draft answer is just a comma separated list of names."
+    cleaned_df = agg_df.sem_map(map_instruction, suffix="final_output")
+
+    assert set(cleaned_df["final_output"].values[0].lower().strip(".,!?\"'").split(", ")) == {"anakin", "luke"}
+    assert set(cleaned_df["final_output"].values[1].lower().strip(".,!?\"'").split(", ")) == {"michael", "dwight"}
 
 
 ################################################################################
