@@ -1,9 +1,6 @@
 from typing import Optional
-
 import pandas as pd
-
 import lotus
-
 
 @pd.api.extensions.register_dataframe_accessor("sem_search")
 class SemSearchDataframe:
@@ -26,6 +23,7 @@ class SemSearchDataframe:
         n_rerank: Optional[int] = None,
         return_scores: bool = False,
         suffix: str = "_sim_score",
+        chunk_size: int = -1  # New parameter for setting chunk size
     ) -> pd.DataFrame:
         """
         Perform semantic search on the DataFrame.
@@ -37,11 +35,13 @@ class SemSearchDataframe:
             n_rerank (Optional[int]): The number of documents to rerank.
             return_scores (bool): Whether to return the similarity scores.
             suffix (str): The suffix to append to the new column containing the similarity scores.
+            chunk_size (int): The size of chunks for memory optimization (-1 to disable).
 
         Returns:
             pd.DataFrame: The DataFrame with the search results.
         """
         assert not (K is None and n_rerank is None), "K or n_rerank must be provided"
+
         if K is not None:
             # get retriever model and index
             rm = lotus.settings.rm
@@ -55,9 +55,19 @@ class SemSearchDataframe:
 
             search_K = K
             while True:
-                scores, doc_idxs = rm(query, search_K)
-                doc_idxs = doc_idxs[0]
-                scores = scores[0]
+                if chunk_size > 0:
+                    # Process in specified chunk sizes to reduce memory usage
+                    scores, doc_idxs = [], []
+                    for start in range(0, search_K, chunk_size):
+                        end = min(start + chunk_size, search_K)
+                        chunk_scores, chunk_doc_idxs = rm(query, end - start)
+                        scores.extend(chunk_scores[0])
+                        doc_idxs.extend(chunk_doc_idxs[0])
+                else:
+                    scores, doc_idxs = rm(query, search_K)
+                    doc_idxs = doc_idxs[0]
+                    scores = scores[0]
+
                 assert len(doc_idxs) == len(scores)
 
                 postfiltered_doc_idxs = []

@@ -27,12 +27,24 @@ def get_match_prompt_binary(doc1, doc2, user_instruction, strategy=None):
             'You must pick a number and cannot say things like "None" or "Neither"'
         )
 
+    
     prompt = f"Question: {user_instruction}\n\n"
     for idx, doc in enumerate([doc1, doc2]):
-        prompt = f"{prompt}\nDocument {idx+1}:\n{doc}\n"
+        prompt = f"{prompt}\nDocument {idx+1}:\n{doc}\n"        
+        
+    image_data_list, prompt_without_images = task_instructions.extract_image_data(prompt)
 
     messages = [{"role": "system", "content": sys_prompt}]
-    messages.append({"role": "user", "content": prompt})
+    
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": prompt_without_images})
+    #messages.append({"role": "user", "content": prompt})
+    
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+        
     return messages
 
 
@@ -58,7 +70,8 @@ def compare_batch_binary(pairs, user_instruction, strategy=None):
     tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
-        tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
+       # tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
+       # tokens += lotus.settings.lm.count_tokens(get_match_prompt_binary(doc1, doc2, task_instructions.extract_image_data(user_instruction)[1], strategy=strategy))
 
     results = lotus.settings.lm(match_prompts)
     results = list(map(parse_ans_binary, results))

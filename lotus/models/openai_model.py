@@ -1,4 +1,5 @@
 import threading
+import signal
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import backoff
@@ -7,6 +8,8 @@ import openai
 import tiktoken
 from openai import OpenAI
 from transformers import AutoTokenizer
+
+from lotus.templates import task_instructions
 
 import lotus
 from lotus.models.lm import LM
@@ -20,6 +23,8 @@ DBRX_NAME_TO_MODEL = {
 
 ERRORS = (openai.RateLimitError, openai.APIError)
 
+# Global variable to track termination request
+terminate_requested = False
 
 def backoff_hdlr(details):
     """Handler from https://pypi.org/project/backoff/"""
@@ -28,6 +33,11 @@ def backoff_hdlr(details):
         "calling function {target} with kwargs "
         "{kwargs}".format(**details),
     )
+    
+def signal_handler(signum, frame):
+    global terminate_requested
+    terminate_requested = True
+    print("Termination requested...")
 
 
 class OpenAIModel(LM):
@@ -158,6 +168,10 @@ class OpenAIModel(LM):
             A list of text outputs for each prompt in the batch (just one in this case).
             If logprobs is specified in the keyword arguments, hen a list of logprobs is also returned (also of size one).
         """
+        
+        if terminate_requested:
+            raise KeyboardInterrupt("Terminated by user")
+        
         if self.use_chat:
             return self.handle_chat_request(messages, **kwargs)
         else:
@@ -229,15 +243,27 @@ class OpenAIModel(LM):
 
     def count_tokens(self, prompt: Union[str, list]) -> int:
         if isinstance(prompt, str):
+            _, prompt_without_images = task_instructions.extract_image_data(prompt)
             if self.provider != "openai":
-                return len(self.tokenizer(prompt)["input_ids"])
+                return len(self.tokenizer(prompt_without_images)["input_ids"])
 
-            return len(self.tokenizer.encode(prompt))
+            return len(self.tokenizer.encode(prompt_without_images))
         else:
             if self.provider != "openai":
-                return len(self.tokenizer.apply_chat_template(prompt, tokenize=True, add_generation_prompt=True))
+                return len(self.tokenizer.apply_chat_template([task_instructions.extract_image_data(p)[1] for p in prompt], tokenize=True, add_generation_prompt=True))
 
-            return sum(len(self.tokenizer.encode(message["content"])) for message in prompt)
+
+            # return sum(
+            #     len(self.tokenizer.encode(content)) 
+            #     for message in [task_instructions.extract_image_data(p)[1] for p in prompt]
+            #     for content in (message["content"] if isinstance(message["content"], list) else [message["content"]])
+            # )
+            
+            return sum(
+                len(self.tokenizer.encode(task_instructions.extract_image_data(content)[1]))
+                for message in prompt
+                for content in (message["content"] if isinstance(message["content"], list) else [message["content"]])
+            )
 
     def format_logprobs_for_cascade(self, logprobs: List) -> Tuple[List[List[str]], List[List[float]]]:
         all_tokens = []
@@ -282,3 +308,7 @@ class OpenAIModel(LM):
     @property
     def max_tokens(self) -> int:
         return self.kwargs["max_tokens"]
+
+# Register the signal handler for SIGINT and SIGTERM
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)

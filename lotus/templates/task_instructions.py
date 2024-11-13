@@ -44,8 +44,10 @@ def filter_formatter_cot(
         )
 
     image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
-    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {user_instruction}"})
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {usr_instruct_noimg}"})
 
     messages.append({
         "role": "user",
@@ -69,8 +71,10 @@ def filter_formatter_zs_cot(
     ]
 
     image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
-    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {user_instruction}"})
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {usr_instruct_noimg}"})
 
     messages.append({
         "role": "user",
@@ -115,8 +119,10 @@ def filter_formatter(
             )
 
     image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
-    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {user_instruction}"})
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {usr_instruct_noimg}"})
 
     messages.append({
         "role": "user",
@@ -159,9 +165,12 @@ def map_formatter_cot(
             ]
         )
 
+
     image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
-    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {user_instruction}"})
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
 
     messages.append({
         "role": "user",
@@ -185,8 +194,10 @@ def map_formatter_zs_cot(
     ]
 
     image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
-    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {user_instruction}"})
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
 
     messages.append({
         "role": "user",
@@ -230,8 +241,10 @@ def map_formatter(
             )
 
     image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
-    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {user_instruction}"})
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
 
     messages.append({
         "role": "user",
@@ -254,8 +267,10 @@ def extract_formatter(df_text: str, user_instruction: str) -> List[str]:
     ]
 
     image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
-    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {user_instruction}"})
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
 
     messages.append({
         "role": "user",

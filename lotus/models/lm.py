@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Tuple, Union
 
+from lotus.templates import task_instructions
+
 
 class LM(ABC):
     """Abstract class for language models."""
@@ -11,7 +13,7 @@ class LM(ABC):
     @abstractmethod
     def count_tokens(self, prompt: Union[str, list]) -> int:
         """
-        Counts the number of tokens in the given prompt.
+        Counts the number of tokens in the given prompt after processing.
 
         Args:
             prompt (Union[str, list]): The prompt to count tokens for. This can be a string or a list of messages.
@@ -19,7 +21,29 @@ class LM(ABC):
         Returns:
             int: The number of tokens in the prompt.
         """
-        pass
+        # Process the prompt to remove image data
+        processed_prompt = self._remove_image_data(prompt)
+
+        # Call the implementation-specific token counting method
+        return self._count_tokens_impl(processed_prompt)
+
+    def _remove_image_data(self, prompt: Union[str, list]) -> Union[str, list]:
+        """
+        Removes image data from the prompt.
+
+        Args:
+            prompt (Union[str, list]): The original prompt.
+
+        Returns:
+            Union[str, list]: The prompt without image data.
+        """
+        if isinstance(prompt, str):
+            _, prompt_without_images = task_instructions.extract_image_data(prompt)
+            return prompt_without_images
+        elif isinstance(prompt, list):
+            return [task_instructions.extract_image_data(p)[1] for p in prompt]
+        else:
+            raise ValueError("Prompt must be either a string or a list of strings.")
 
     def format_logprobs_for_cascade(self, logprobs: List) -> Tuple[List[List[str]], List[List[float]]]:
         """

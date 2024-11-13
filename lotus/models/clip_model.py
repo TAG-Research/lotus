@@ -17,7 +17,7 @@ from lotus.models.rm import RM
 class CLIPModelRetriever(RM):
     """CLIP retriever model with multimodal (text & image) embedding support"""
 
-    def __init__(self, model: str = "openai/clip-vit-base-patch32", device: Optional[str] = None, **kwargs):
+    def __init__(self, model: str = "openai/clip-vit-base-patch32", device: Optional[str] = None, batch_size: Optional[int] = 5000, **kwargs):
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
@@ -27,7 +27,7 @@ class CLIPModelRetriever(RM):
         self.index_dir = None
         self.docs = None
         self.kwargs = {"normalize": True, "index_type": "Flat", **kwargs}
-        self.batch_size = 5000
+        self.batch_size = batch_size  # Allow overriding the batch size
         self.vecs = None
 
         import faiss
