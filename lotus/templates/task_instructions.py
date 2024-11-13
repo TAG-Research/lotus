@@ -1,6 +1,9 @@
-import pandas as pd
-from lotus.utils import fetch_image
 from typing import Any
+
+import pandas as pd
+
+from lotus.utils import fetch_image
+
 
 def filter_user_message_formatter(
     multimodal_data: dict[str, Any] | str,

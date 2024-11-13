@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 
 import lotus
-from lotus.models import LM
 from lotus.dtype_extensions import ImageArray
+from lotus.models import LM
 
 ################################################################################
 # Setup

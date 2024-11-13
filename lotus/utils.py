@@ -1,11 +1,12 @@
+import base64
+from io import BytesIO
 from typing import Callable
 
 import pandas as pd
-from PIL import Image
-import lotus
 import qwen_vl_utils
-import base64
-from io import BytesIO
+from PIL import Image
+
+import lotus
 
 
 def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:

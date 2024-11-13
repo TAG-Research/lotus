@@ -11,8 +11,6 @@ from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
 from .cascade_utils import calibrate_llm_logprobs, importance_sampling, learn_cascade_thresholds
 from .postprocessors import filter_postprocess
 
-from PIL import Image
-
 
 def sem_filter(
     docs: list[tuple[str, dict[str, str]]] | list[str],

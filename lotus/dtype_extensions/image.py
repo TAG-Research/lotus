@@ -1,12 +1,12 @@
-import io
 import sys
-from typing import List, Optional, Union, Sequence
+from typing import Optional, Sequence, Union
+
 import numpy as np
 from pandas.api.extensions import ExtensionArray, ExtensionDtype
 from PIL import Image
-import numpy as np
 
 from lotus.utils import fetch_image
+
 
 class ImageDtype(ExtensionDtype):
     name = 'image'

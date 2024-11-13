@@ -1,8 +1,9 @@
 import pandas as pd
 from torchvision import datasets
+
 import lotus
-from lotus.models import LM
 from lotus.dtype_extensions import ImageArray
+from lotus.models import LM
 
 lm = LM(model="gpt-4o-mini")
 lotus.settings.configure(lm=lm)

@@ -1,15 +1,18 @@
 from typing import Any, Union
+
+import faiss
 import numpy as np
 import torch
+import torch.nn.functional as F
+from numpy.typing import NDArray
+from PIL import Image
 from tqdm import tqdm
 from transformers import Qwen2VLForConditionalGeneration, Qwen2VLProcessor
+
 from lotus.models.faiss_rm import FaissRM
-import torch.nn.functional as F
-from PIL import Image
-from numpy.typing import NDArray
 from lotus.types import RMOutput
 from lotus.utils import fetch_image
-import faiss
+
 
 class Qwen2Model(FaissRM):
     """Qwen2 retriever model with vision-language capabilities"""
