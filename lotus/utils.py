@@ -85,4 +85,4 @@ def fetch_image(
         pil_image.save(buffered, format="PNG")
         return "data:image/png;base64," + base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-    return image
+    return pil_image

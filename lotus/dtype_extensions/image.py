@@ -1,5 +1,5 @@
 import sys
-from typing import Sequence
+from typing import Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -24,12 +24,14 @@ class ImageArray(ExtensionArray):
         self._data = np.asarray(values, dtype=object)
         self._dtype = ImageDtype()
 
-    def __getitem__(self, item: int | slice | Sequence[int]) -> Image.Image | "ImageArray" | None:
+    def __getitem__(self, item: int | slice | Sequence[int]) -> Union[Image.Image, None, "ImageArray"]:
         result = self._data[item]
         if isinstance(item, (int, np.integer)):
             assert result is None or isinstance(result, (Image.Image, str))
             image_result = fetch_image(result)
-            assert isinstance(image_result, Image.Image) or image_result is None
+            assert (
+                isinstance(image_result, Image.Image) or image_result is None
+            ), f"Expected Image.Image or None, got {type(image_result)}"
             return image_result
         return ImageArray(result)
 
