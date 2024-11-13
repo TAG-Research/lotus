@@ -138,6 +138,7 @@ class SemAggDataframe:
         user_instruction: str,
         all_cols: bool = False,
         suffix: str = "_output",
+        group_by: list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Applies semantic aggregation over a dataframe.
@@ -146,7 +147,7 @@ class SemAggDataframe:
             user_instruction (str): The user instruction for aggregation.
             all_cols (bool): Whether to use all columns in the dataframe. Defaults to False.
             suffix (str): The suffix for the new column. Defaults to "_output".
-
+            group_by (list[str] | None): The columns to group by before aggregation. Each group will be aggregated separately.
         Returns:
             pd.DataFrame: The dataframe with the aggregated answer.
         """
@@ -162,6 +163,14 @@ class SemAggDataframe:
         for column in col_li:
             if column not in self._obj.columns:
                 raise ValueError(f"column {column} not found in DataFrame. Given usr instruction: {user_instruction}")
+
+        if group_by:
+            grouped = self._obj.groupby(group_by)
+            new_df = pd.DataFrame()
+            for name, group in grouped:
+                res = group.sem_agg(user_instruction, all_cols, suffix, None)
+                new_df = pd.concat([new_df, res])
+            return new_df
 
         # Sort df by partition_id if it exists
         if "_lotus_partition_id" in self._obj.columns:
