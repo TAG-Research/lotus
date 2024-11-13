@@ -29,18 +29,19 @@ class Qwen2Model(FaissRM):
         super().__init__(factory_string, metric)
         self.model = model
         self.device = device if device is not None else "cuda" if torch.cuda.is_available() else "cpu"
-        self.max_batch_size: int = max_batch_size  
+        self.max_batch_size: int = max_batch_size
         self.normalize_embeddings: bool = normalize_embeddings
         self.transformer = Qwen2VLForConditionalGeneration.from_pretrained(self.model).to(self.device).eval()
         self.processor = Qwen2VLProcessor.from_pretrained(self.model)
 
         import faiss
+
         self.faiss = faiss
 
     def _process_input(self, input_data: list[Union[str, Image.Image]]) -> dict:
         """Process different types of input data for the model."""
         texts = []
-        images = []
+        images: list[Image.Image | str | None] = []
         for data in input_data:
             try:
                 image = fetch_image(data)
@@ -48,12 +49,20 @@ class Qwen2Model(FaissRM):
                 images.append(image)
             except Exception as e:
                 print(e)
+                assert isinstance(data, str)
                 texts.append(data)
         if len(images) == 0:
-            images = None
-        processed_input = self.processor(text=texts, images=images, return_tensors="pt", padding=True, truncation=True).to(self.device)
+            processed_input = self.processor(text=texts, return_tensors="pt", padding=True, truncation=True).to(
+                self.device
+            )
+        else:
+            processed_input = self.processor(
+                text=texts, images=images, return_tensors="pt", padding=True, truncation=True
+            ).to(self.device)
         cache_position = torch.arange(0, len(texts))
-        return self.transformer.prepare_inputs_for_generation(**processed_input, cache_position=cache_position, use_cache=False)
+        return self.transformer.prepare_inputs_for_generation(
+            **processed_input, cache_position=cache_position, use_cache=False
+        )
 
     def average_pool(self, last_hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         """Perform average pooling over the last hidden state.
@@ -69,8 +78,7 @@ class Qwen2Model(FaissRM):
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
-
-    def _embed(self, docs: list[Union[str, Image.Image]]) ->  NDArray[np.float64]:
+    def _embed(self, docs: list[Union[str, Image.Image]]) -> NDArray[np.float64]:  # type: ignore
         """Run the embedding model.
 
         Args:
@@ -89,13 +97,18 @@ class Qwen2Model(FaissRM):
                 assert isinstance(batch_embeddings, torch.Tensor)
                 cpu_embeddings = batch_embeddings.cpu()
                 all_embeddings.append(cpu_embeddings)
-        all_embeddings = torch.stack(all_embeddings)
+        stacked_embeddings = torch.stack(all_embeddings)
         if self.normalize_embeddings:
-            all_embeddings = F.normalize(all_embeddings, p=2, dim=1)
+            stacked_embeddings = F.normalize(stacked_embeddings, p=2, dim=1)
         torch.cuda.empty_cache()
-        return all_embeddings.numpy(force=True)
+        return stacked_embeddings.numpy(force=True)
 
-    def __call__(self, queries: str | Image.Image | list[str | Image.Image] | NDArray[np.float64], K: int, **kwargs: dict[str, Any]) -> RMOutput:
+    def __call__(  # type: ignore
+        self,
+        queries: str | Image.Image | list[str | Image.Image] | NDArray[np.float64],
+        K: int,
+        **kwargs: dict[str, Any],
+    ) -> RMOutput:
         """Run top-k search on the index."""
         if self.faiss_index is None:
             raise ValueError("Index not loaded. Call load_index first.")
@@ -104,7 +117,7 @@ class Qwen2Model(FaissRM):
             queries = [queries]
 
         if isinstance(queries[0], (str, Image.Image)):
-            embedded_queries = self._embed(queries, **kwargs)
+            embedded_queries = self._embed([q for q in queries], **kwargs)
         else:
             embedded_queries = np.array(queries, dtype=np.float32)
 

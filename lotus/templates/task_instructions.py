@@ -11,41 +11,42 @@ def filter_user_message_formatter(
 ):
     if isinstance(multimodal_data, str):
         text = multimodal_data
-        image_inputs = []
+        image_inputs: list[dict[str, str]] = []
 
     if isinstance(multimodal_data, dict):
-        _image_inputs = [
-            [{
-                "type": "text",
-                "text": f"[{key.capitalize()}]: \n",
-            },
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url":  base64_image
+        image_data: dict[str, str] = multimodal_data.get("image", {})
+        _image_inputs: list[tuple[dict, dict]] = [
+            (
+                {
+                    "type": "text",
+                    "text": f"[{key.capitalize()}]: \n",
                 },
-            }]
-            for key, base64_image in multimodal_data["image"].items()
+                {
+                    "type": "image_url",
+                    "image_url": {"url": base64_image},
+                },
+            )
+            for key, base64_image in image_data.items()
         ]
         image_inputs = [m for image_input in _image_inputs for m in image_input]
         text = multimodal_data["text"] or ""
 
     return {
-        "role": "user", 
+        "role": "user",
         "content": [
             {
-            "type": "text",
-            "text": f"Claim: {user_instruction}\n\nContext:\n{text}",
+                "type": "text",
+                "text": f"Claim: {user_instruction}\n\nContext:\n{text}",
             },
-        ] + image_inputs
+        ]
+        + image_inputs,
     }
-    
-    
+
 
 def filter_formatter_cot(
-    multimodal_data: tuple[str, dict[str, str]] | str,
+    multimodal_data: dict[str, Any] | str,
     user_instruction: str,
-    examples_multimodal_data: list[str],
+    examples_multimodal_data: list[dict[str, Any]] | list[str],
     examples_answer: list[bool],
     cot_reasoning: list[str],
 ) -> list[dict[str, str]]:
@@ -77,7 +78,7 @@ def filter_formatter_cot(
 
 
 def filter_formatter_zs_cot(
-    multimodal_data: tuple[str, dict[str, str]] | str,
+    multimodal_data: dict[str, Any] | str,
     user_instruction: str,
 ) -> list[dict[str, str]]:
     sys_instruction = (
@@ -94,16 +95,18 @@ def filter_formatter_zs_cot(
 
 
 def filter_formatter(
-    multimodal_data: tuple[str, dict[str, str]] | str,
+    multimodal_data: dict[str, Any] | str,
     user_instruction: str,
-    examples_df_text: list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | list[str] | None = None,
     examples_answer: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
 ) -> list[dict[str, str]]:
     if cot_reasoning:
-        assert examples_df_text is not None and examples_answer is not None
-        return filter_formatter_cot(multimodal_data, user_instruction, examples_df_text, examples_answer, cot_reasoning)
+        assert examples_multimodal_data is not None and examples_answer is not None
+        return filter_formatter_cot(
+            multimodal_data, user_instruction, examples_multimodal_data, examples_answer, cot_reasoning
+        )
     elif strategy == "zs-cot":
         return filter_formatter_zs_cot(multimodal_data, user_instruction)
 
@@ -116,12 +119,15 @@ def filter_formatter(
         {"role": "system", "content": sys_instruction},
     ]
 
-    if examples_df_text:
+    if examples_multimodal_data:
         assert examples_answer is not None
-        for ex_df_txt, ex_ans in zip(examples_df_text, examples_answer):
+        assert isinstance(examples_multimodal_data, list) and isinstance(examples_answer, list)
+        for i in range(len(examples_multimodal_data)):
+            ex_multimodal_data = examples_multimodal_data[i]
+            ex_ans = examples_answer[i]
             messages.extend(
                 [
-                    filter_user_message_formatter(ex_df_txt, user_instruction),
+                    filter_user_message_formatter(ex_multimodal_data, user_instruction),
                     {"role": "assistant", "content": str(ex_ans)},
                 ]
             )
@@ -265,14 +271,15 @@ def df2text(df: pd.DataFrame, cols: list[str]) -> list[str]:
     # take cols that are in df
     cols = [col for col in cols if col in df.columns]
     if len(cols) == 0:
-        return [""]*len(df)
+        return [""] * len(df)
     formatted_rows: list[str] = df.apply(lambda x: format_row(x, cols), axis=1).tolist()
     return formatted_rows
 
+
 def df2multimodal_info(df: pd.DataFrame, cols: list[str]) -> list[dict[str, Any]]:
     """
-        Formats the given DataFrame into a string containing info from cols. 
-        Return a list of dictionaries, each containing text and image data.
+    Formats the given DataFrame into a string containing info from cols.
+    Return a list of dictionaries, each containing text and image data.
     """
     image_cols = [col for col in cols if df[col].dtype == "image"]
     text_cols = [col for col in cols if col not in image_cols]
@@ -280,11 +287,12 @@ def df2multimodal_info(df: pd.DataFrame, cols: list[str]) -> list[dict[str, Any]
     multimodal_data = [
         {
             "text": text_rows[i],
-            "image": {col.capitalize(): fetch_image(df[col].iloc[i], image_type="base64") for col in image_cols} 
+            "image": {col.capitalize(): fetch_image(df[col].iloc[i], image_type="base64") for col in image_cols},
         }
         for i in range(len(df))
     ]
     return multimodal_data
+
 
 def li2text(li: list[str], name: str) -> str:
     return "".join([f"[{name}] {li[i]}\n" for i in range(len(li))])

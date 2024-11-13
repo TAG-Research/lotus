@@ -58,7 +58,10 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
 
     return ret
 
-def fetch_image(image: str | Image.Image | None, size_factor: int = 28, image_type: str = "Image") -> Image.Image | None:
+
+def fetch_image(
+    image: str | Image.Image | None, size_factor: int = 28, image_type: str = "Image"
+) -> Image.Image | str | None:
     """
     Fetches an image from the internet or loads it from a file.
 
@@ -70,17 +73,16 @@ def fetch_image(image: str | Image.Image | None, size_factor: int = 28, image_ty
     Returns:
         Image.Image: The image.
     """
-    
+
     if image is None:
         return None
-    
+
     assert image_type in ["Image", "base64"], f"image_type must be Image or base64, got {image_type}"
-    
-    image = qwen_vl_utils.fetch_image({"image": image}, size_factor)
+
+    pil_image = qwen_vl_utils.fetch_image({"image": image}, size_factor)
     if image_type == "base64":
         buffered = BytesIO()
-        image.save(buffered, format="PNG")
+        pil_image.save(buffered, format="PNG")
         return "data:image/png;base64," + base64.b64encode(buffered.getvalue()).decode("utf-8")
-    
-    return image
 
+    return image
