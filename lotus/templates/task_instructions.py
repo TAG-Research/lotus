@@ -10,7 +10,7 @@ def filter_user_message_formatter(
         text = multimodal_data
         image_inputs = []
 
-    if isinstance(multimodal_data, list):
+    if isinstance(multimodal_data, dict):
         _image_inputs = [
             [{
                 "type": "text",
@@ -19,13 +19,13 @@ def filter_user_message_formatter(
             {
                 "type": "image_url",
                 "image_url": {
-                    "url":  f"data:image/jpeg;base64,{base64_image}"
+                    "url":  base64_image
                 },
             }]
             for key, base64_image in multimodal_data["image"].items()
         ]
         image_inputs = [m for image_input in _image_inputs for m in image_input]
-        text = multimodal_data["text"]
+        text = multimodal_data["text"] or ""
 
     return {
         "role": "user", 
@@ -261,6 +261,8 @@ def df2text(df: pd.DataFrame, cols: list[str]) -> list[str]:
 
     # take cols that are in df
     cols = [col for col in cols if col in df.columns]
+    if len(cols) == 0:
+        return [""]*len(df)
     formatted_rows: list[str] = df.apply(lambda x: format_row(x, cols), axis=1).tolist()
     return formatted_rows
 
