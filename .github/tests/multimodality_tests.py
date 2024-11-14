@@ -61,10 +61,16 @@ def test_filter_operation(setup_models, model):
         "https://thumbs.dreamstime.com/b/comida-r%C3%A1pida-nachos-con-el-sause-del-tomate-ejemplo-exhausto-de-la-acuarela-mano-aislado-en-blanco-150936354.jpg",
         "https://i1.wp.com/www.alloverthemap.net/wp-content/uploads/2014/02/2012-09-25-12.46.15.jpg?resize=400%2C284&amp;ssl=1",
         "https://i.pinimg.com/236x/a4/3a/65/a43a65683a0314f29b66402cebdcf46d.jpg",
-        "https://pravme.ru/wp-content/uploads/2018/01/sobor-Bogord-1.jpg"
+        "https://pravme.ru/wp-content/uploads/2018/01/sobor-Bogord-1.jpg",
     ]
     df = pd.DataFrame({"image": ImageArray(image_url)})
     user_instruction = "{image} represents food"
     filtered_df = df.sem_filter(user_instruction)
 
-    assert image_url[1] in filtered_df["image"].values
+    expected_image_url = ImageArray(
+        [
+            "https://thumbs.dreamstime.com/b/comida-r%C3%A1pida-nachos-con-el-sause-del-tomate-ejemplo-exhausto-de-la-acuarela-mano-aislado-en-blanco-150936354.jpg",
+        ]
+    )
+
+    assert expected_image_url == filtered_df["image"]

@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import Callable
 
 import pandas as pd
-import qwen_vl_utils
+import requests  # type: ignore
 from PIL import Image
 
 import lotus
@@ -59,30 +59,30 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
     return ret
 
 
-def fetch_image(
-    image: str | Image.Image | None, size_factor: int = 28, image_type: str = "Image"
-) -> Image.Image | str | None:
-    """
-    Fetches an image from the internet or loads it from a file.
-
-    Args:
-        ele (str | Image.Image): The image URL or path.
-        size_factor (int | None): The size factor to resize the image.
-        image_type (str): The type of the element. Supported: Image or base64
-
-    Returns:
-        Image.Image: The image.
-    """
-
+def fetch_image(image: str | Image.Image | None, image_type: str = "Image") -> Image.Image | str | None:
     if image is None:
         return None
 
-    assert image_type in ["Image", "base64"], f"image_type must be Image or base64, got {image_type}"
-
-    pil_image = qwen_vl_utils.fetch_image({"image": image}, size_factor)
+    image_obj = None
+    if isinstance(image, Image.Image):
+        image_obj = image
+    elif image.startswith("http://") or image.startswith("https://"):
+        image_obj = Image.open(requests.get(image, stream=True).raw)
+    elif image.startswith("file://"):
+        image_obj = Image.open(image[7:])
+    elif image.startswith("data:image"):
+        if "base64," in image:
+            _, base64_data = image.split("base64,", 1)
+            data = base64.b64decode(base64_data)
+            image_obj = Image.open(BytesIO(data))
+    else:
+        image_obj = Image.open(image)
+    if image_obj is None:
+        raise ValueError(f"Unrecognized image input, support local path, http url, base64 and PIL.Image, got {image}")
+    image_obj = image_obj.convert("RGB")
     if image_type == "base64":
         buffered = BytesIO()
-        pil_image.save(buffered, format="PNG")
+        image_obj.save(buffered, format="PNG")
         return "data:image/png;base64," + base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-    return pil_image
+    return image_obj
