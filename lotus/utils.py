@@ -2,6 +2,7 @@ import base64
 from io import BytesIO
 from typing import Callable
 
+import numpy as np
 import pandas as pd
 import requests  # type: ignore
 from PIL import Image
@@ -59,13 +60,15 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
     return ret
 
 
-def fetch_image(image: str | Image.Image | None, image_type: str = "Image") -> Image.Image | str | None:
+def fetch_image(image: str | np.ndarray | Image.Image | None, image_type: str = "Image") -> Image.Image | str | None:
     if image is None:
         return None
 
     image_obj = None
     if isinstance(image, Image.Image):
         image_obj = image
+    elif isinstance(image, np.ndarray):
+        image_obj = Image.fromarray(image.astype("uint8"))
     elif image.startswith("http://") or image.startswith("https://"):
         image_obj = Image.open(requests.get(image, stream=True).raw)
     elif image.startswith("file://"):

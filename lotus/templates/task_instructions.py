@@ -3,7 +3,6 @@ from typing import Any
 import pandas as pd
 
 from lotus.dtype_extensions import ImageDtype
-from lotus.utils import fetch_image
 
 
 def filter_user_message_formatter(
@@ -288,7 +287,7 @@ def df2multimodal_info(df: pd.DataFrame, cols: list[str]) -> list[dict[str, Any]
     multimodal_data = [
         {
             "text": text_rows[i],
-            "image": {col.capitalize(): fetch_image(df[col].iloc[i], image_type="base64") for col in image_cols},
+            "image": {col.capitalize(): df[col].array.get_image(i, "base64") for col in image_cols},
         }
         for i in range(len(df))
     ]

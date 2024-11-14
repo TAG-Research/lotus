@@ -23,17 +23,48 @@ class ImageArray(ExtensionArray):
     def __init__(self, values: np.ndarray):
         self._data = np.asarray(values, dtype=object)
         self._dtype = ImageDtype()
+        self._cached_images: dict[int, str | Image.Image | None] = {}  # Cache for loaded images
 
-    def __getitem__(self, item: int | slice | Sequence[int]) -> Union[Image.Image, None, "ImageArray"]:
+    def __getitem__(self, item: int | slice | Sequence[int]) -> np.ndarray:
         result = self._data[item]
+
         if isinstance(item, (int, np.integer)):
-            assert result is None or isinstance(result, (Image.Image, str))
-            image_result = fetch_image(result)
-            assert (
-                isinstance(image_result, Image.Image) or image_result is None
-            ), f"Expected Image.Image or None, got {type(image_result)}"
-            return image_result
+            # Return the raw value for display purposes
+            return result
+
         return ImageArray(result)
+
+    def __setitem__(self, key, value) -> None:
+        """Set one or more values inplace, with cache invalidation."""
+        if isinstance(key, np.ndarray):
+            if key.dtype == bool:
+                key = np.where(key)[0]
+            key = key.tolist()
+        if isinstance(key, (int, np.integer)):
+            key = [key]
+        if isinstance(key, slice):
+            key = range(*key.indices(len(self)))
+        if hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
+            for idx, val in zip(key, value):
+                self._data[idx] = val
+                self._invalidate_cache(idx)
+        else:
+            for idx in key:
+                self._data[idx] = value
+                self._invalidate_cache(idx)
+
+    def _invalidate_cache(self, idx: int) -> None:
+        """Remove an item from the cache."""
+        if idx in self._cached_images:
+            del self._cached_images[idx]
+
+    def get_image(self, idx: int, image_type: str = "Image") -> Union[Image.Image, str, None]:
+        """Explicit method to fetch and return the actual image"""
+        if idx not in self._cached_images:
+            image_result = fetch_image(self._data[idx], image_type)
+            assert image_result is None or isinstance(image_result, (Image.Image, str))
+            self._cached_images[idx] = image_result
+        return self._cached_images[idx]
 
     def isna(self) -> np.ndarray:
         return pd.isna(self._data)
@@ -45,19 +76,20 @@ class ImageArray(ExtensionArray):
         return ImageArray(result)
 
     def copy(self) -> "ImageArray":
-        return ImageArray(self._data.copy())
+        new_array = ImageArray(self._data.copy())
+        new_array._cached_images = self._cached_images.copy()
+        return new_array
 
     @classmethod
     def _from_sequence(cls, scalars, dtype=None, copy=False):
         if copy:
             scalars = np.array(scalars, dtype=object, copy=True)
-        return cls(scalars, lambda x: x)  # Default identity transform
+        return cls(scalars)
 
     def __len__(self) -> int:
         return len(self._data)
 
     def __eq__(self, other) -> np.ndarray:  # type: ignore
-        # check if other is iterable
         if isinstance(other, ImageArray):
             return np.array([_compare_images(img1, img2) for img1, img2 in zip(self._data, other._data)], dtype=bool)
 
@@ -76,15 +108,17 @@ class ImageArray(ExtensionArray):
         return sum(sys.getsizeof(img) for img in self._data if img)
 
     def __repr__(self) -> str:
-        return f"ImageArray([{', '.join(['<Image>' if img is not None else 'None' for img in self._data[:5]])}, ...])"
+        return f"ImageArray([{', '.join([f'<Image: {type(img)}>' if img is not None else 'None' for img in self._data[:5]])}, ...])"
 
     def _formatter(self, boxed: bool = False):
-        return lambda x: "<Image>" if x is not None else "None"
+        return lambda x: f"<Image: {type(x)}>" if x is not None else "None"
 
 
 def _compare_images(img1, img2) -> bool:
     if img1 is None or img2 is None:
         return img1 is img2
+
+    # Only fetch images when actually comparing
     if isinstance(img1, Image.Image) or isinstance(img2, Image.Image):
         img1 = fetch_image(img1)
         img2 = fetch_image(img2)
