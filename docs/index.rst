@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-LOTUS: Querying with LLMs Over Tables of Unstructured and Structured Data
+LOTUS Makes LLM-Powerd Data Processing Fast and Easy
 =================================================================================
 
-Lotus is a programming model and optimized query engine for serving reasoning-based query pipelines over your data with LLMs.
+LOTUS implements the semantic operator programming model and provides an optimized query engine for serving AI-based query pipelines over your data.
 
 .. toctree::
    :hidden:
