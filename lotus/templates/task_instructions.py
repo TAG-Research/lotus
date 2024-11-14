@@ -2,13 +2,14 @@ from typing import Any
 
 import pandas as pd
 
+from lotus.dtype_extensions import ImageDtype
 from lotus.utils import fetch_image
 
 
 def filter_user_message_formatter(
     multimodal_data: dict[str, Any] | str,
     user_instruction: str,
-):
+) -> dict[str, Any]:
     if isinstance(multimodal_data, str):
         text = multimodal_data
         image_inputs: list[dict[str, str]] = []
@@ -281,7 +282,7 @@ def df2multimodal_info(df: pd.DataFrame, cols: list[str]) -> list[dict[str, Any]
     Formats the given DataFrame into a string containing info from cols.
     Return a list of dictionaries, each containing text and image data.
     """
-    image_cols = [col for col in cols if df[col].dtype == "image"]
+    image_cols = [col for col in cols if isinstance(df[col].dtype, ImageDtype)]
     text_cols = [col for col in cols if col not in image_cols]
     text_rows = df2text(df, text_cols)
     multimodal_data = [
