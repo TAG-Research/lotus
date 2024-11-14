@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -7,16 +9,28 @@ import lotus
 def importance_sampling(
     proxy_scores: list[float],
     sample_percentage: float,
+    sampling_range: Optional[tuple[int, int]] = None,
+    random_seed: Optional[int] = 42,
 ) -> tuple[NDArray[np.int64], NDArray[np.float64]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
+    np.random.seed(random_seed)
 
     w = np.sqrt(proxy_scores)
     is_weight = lotus.settings.cascade_is_weight
     w = is_weight * w / np.sum(w) + (1 - is_weight) * np.ones((len(proxy_scores))) / len(proxy_scores)
-    indices = np.arange(len(proxy_scores))
-    sample_size = (int)(sample_percentage * len(proxy_scores))
-    sample_indices = np.random.choice(indices, sample_size, p=w)
-    correction_factors = (1 / len(proxy_scores)) / w
+
+    if sampling_range is not None:
+        sample_w = w[sampling_range[0]:sampling_range[1]]
+        sample_w = sample_w / np.sum(sample_w)
+        indices = np.arange(sampling_range[0], sampling_range[1])
+    else:
+        sample_w = w
+        indices = np.arange(len(proxy_scores))
+
+    sample_size = (int) (sample_percentage * len(proxy_scores))
+    sample_indices = np.random.choice(indices, sample_size, p=sample_w)
+
+    correction_factors = (1/len(proxy_scores)) / w
 
     return sample_indices, correction_factors
 
@@ -52,6 +66,8 @@ def learn_cascade_thresholds(
         helper_accepted = [x for x in sorted_pairs if x[0] >= pos_threshold or x[0] <= neg_threshold]
         sent_to_oracle = [x for x in sorted_pairs if x[0] < pos_threshold and x[0] > neg_threshold]
         total_correct = sum(pair[1] * pair[2] for pair in sorted_pairs)
+        if total_correct == 0:
+            return 0
         recall = (
             sum(1 for x in helper_accepted if x[0] >= pos_threshold and x[1]) + sum(x[1] * x[2] for x in sent_to_oracle)
         ) / total_correct
@@ -75,7 +91,8 @@ def learn_cascade_thresholds(
 
     # Find tau_negative based on recall
     tau_neg_0 = max(
-        x[0] for x in sorted_pairs[::-1] if recall(best_combination[0], x[0], sorted_pairs) >= recall_target
+        (x[0] for x in sorted_pairs[::-1] if recall(best_combination[0], x[0], sorted_pairs) >= recall_target),
+        default=0
     )
     best_combination = (best_combination[0], tau_neg_0)
 
@@ -93,7 +110,8 @@ def learn_cascade_thresholds(
     )
     corrected_recall_target = min(1, corrected_recall_target)
     tau_neg_prime = max(
-        x[0] for x in sorted_pairs[::-1] if recall(best_combination[0], x[0], sorted_pairs) >= corrected_recall_target
+        (x[0] for x in sorted_pairs[::-1] if recall(best_combination[0], x[0], sorted_pairs) >= corrected_recall_target),
+        default=0
     )
     best_combination = (best_combination[0], tau_neg_prime)
 
@@ -116,3 +134,7 @@ def learn_cascade_thresholds(
     lotus.logger.info(f"Sample precision: {precision(best_combination[0], best_combination[1], sorted_pairs)}")
 
     return best_combination, oracle_calls
+
+def calibrate_sem_sim_join(true_score: list[float]) -> list[float]:
+    true_score = list(np.clip(true_score, 0, 1))
+    return true_score
