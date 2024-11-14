@@ -34,7 +34,10 @@ lm = LM(model="ollama/llama3.2")
 Here's an example of creating an `LM` object to use `Meta-Llama-3-8B-Instruct` on vLLM
 ```
 from lotus.models import LM
-lm = LM(model='hosted_vllm/meta-llama/Meta-Llama-3-8B-Instruct', api_base='http://localhost:8000/v1')
+lm = LM(model='hosted_vllm/meta-llama/Meta-Llama-3-8B-Instruct',
+        api_base='http://localhost:8000/v1',
+        max_ctx_len=8000,
+        max_tokens=1000)
 ```
 
 ## Helpful Examples
