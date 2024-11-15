@@ -251,8 +251,6 @@ def run_sem_sim_join(
         right_on=col2_label, 
         K=K, 
         keep_index=True)
-    
-    out['_scores'].to_csv("raw_helper_join.csv")
 
     # Correct helper scores
     out['_scores'] = calibrate_sem_sim_join(out['_scores'].tolist())
