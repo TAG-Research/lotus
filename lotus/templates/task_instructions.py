@@ -35,7 +35,7 @@ def filter_user_message_formatter(
     if not image_inputs or len(image_inputs) == 0:
         return {
             "role": "user",
-            "content": f"Claim: {user_instruction}\n\nContext:\n{text}",
+            "content": f"Context:\n{text}\n\nClaim: {user_instruction}",
         }
     return {
         "role": "user",
