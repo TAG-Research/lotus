@@ -469,7 +469,7 @@ def learn_join_cascade_threshold(
     sample_df_txt = task_instructions.df2text(sample_df, col_li)
 
     try:
-        large_outputs, _, _ = sem_filter(
+        output = sem_filter(
             sample_df_txt,
             lotus.settings.lm,
             user_instruction,
@@ -482,7 +482,7 @@ def learn_join_cascade_threshold(
 
         (pos_threshold, neg_threshold), large_calls = learn_cascade_thresholds(
             proxy_scores=sample_scores,
-            oracle_outputs=large_outputs,
+            oracle_outputs=output.outputs,
             sample_correction_factors=sample_correction_factors,
             recall_target=recall_target,
             precision_target=precision_target,
