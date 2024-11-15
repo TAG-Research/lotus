@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -104,14 +104,14 @@ def sem_join_cascade(
     precision_target: float,
     sampling_percentage: float = 0.1,
     failure_probability: float = 0.2,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[list[bool]] = None,
-    map_instruction: Optional[str] = None,
-    map_examples: Optional[pd.DataFrame] = None,
-    cot_reasoning: Optional[list[str]] = None,
+    examples_df_txt: str | None = None,
+    examples_answers: list[bool] | None = None,
+    map_instruction: str | None = None,
+    map_examples: pd.DataFrame | None = None,
+    cot_reasoning: list[str] | None = None,
     default: bool = True,
-    strategy: Optional[str] = None,
-    sampling_range: Optional[tuple[int, int]] = None,
+    strategy: str | None = None,
+    sampling_range: tuple[int, int] | None = None,
 ) -> SemanticJoinOutput:
     """
     Joins two series using a cascade helper model and a large model.
@@ -321,14 +321,14 @@ def join_optimizer(
     user_instruction: str,
     sampling_percentage: float = 0.1,
     failure_probability: float = 0.2,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[list[bool]] = None,
-    map_instruction: Optional[str] = None,
-    map_examples: Optional[pd.DataFrame] = None,
-    cot_reasoning: Optional[list[str]] = None,
+    examples_df_txt: str | None = None,
+    examples_answers: list[bool] | None = None,
+    map_instruction: str | None = None,
+    map_examples: pd.DataFrame | None = None,
+    cot_reasoning: list[str] | None = None,
     default: bool = True,
-    strategy: Optional[str] = None,
-    sampling_range: Optional[tuple[int, int]] = None,
+    strategy: str | None = None,
+    sampling_range: tuple[int, int] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Find most cost-effective join plan between Search-Filter and Map-Search-Filter 
@@ -430,12 +430,12 @@ def learn_join_cascade_threshold(
     user_instruction: str,
     sampling_percentage: float = 0.1,
     delta: float = 0.2,
-    examples_df_txt: Optional[str] = None,
-    examples_answers: Optional[list[bool]] = None,
-    cot_reasoning: Optional[list[str]] = None,
+    examples_df_txt: str | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
     default: bool = True,
-    strategy: Optional[str] = None,
-    sampling_range: Optional[tuple[int, int]] = None,
+    strategy: str | None = None,
+    sampling_range: tuple[int, int] | None = None,
 ) -> tuple[float, float, int]:
     """
     Extract a small sample of the data and find the optimal threshold pair that satisfies the recall and 
@@ -522,13 +522,13 @@ class SemJoinDataframe:
         examples: pd.DataFrame | None = None,
         strategy: str | None = None,
         default: bool = True,
-        recall_target: Optional[float] = None,
-        precision_target: Optional[float] = None,
-        sampling_percentage: Optional[float] = 0.1,
-        failure_probability: Optional[float] = 0.2,
-        map_instruction: Optional[str] = None,
-        map_examples: Optional[pd.DataFrame] = None,
-        sampling_range: Optional[tuple[int, int]] = None,
+        recall_target: float | None = None,
+        precision_target: float | None = None,
+        sampling_percentage: float | None = 0.1,
+        failure_probability: float | None = 0.2,
+        map_instruction: str | None = None,
+        map_examples: pd.DataFrame | None = None,
+        sampling_range: tuple[int, int] | None = None,
     ) -> pd.DataFrame:
         """
         Applies semantic join over a dataframe.
