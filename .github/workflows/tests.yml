@@ -120,7 +120,7 @@ jobs:
             sleep 1
             timeout=$((timeout - 1))
           done
-          docker exec $(docker ps -q) ollama run llama3.2
+          docker exec $(docker ps -q) ollama run llama3.1
 
       - name: Run LM tests
         env:
