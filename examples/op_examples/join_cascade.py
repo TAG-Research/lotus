@@ -1,11 +1,11 @@
 import pandas as pd
 
 import lotus
-from lotus.models import LM, LiteLLMRM
+from lotus.models import LM, SentenceTransformersRM
 
 
 lm = LM(model="gpt-4o-mini")
-rm = LiteLLMRM(model="text-embedding-3-small")
+rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 
 lotus.settings.configure(lm=lm, rm=rm)
 data = {
