@@ -3,11 +3,11 @@ from typing import Any
 import pandas as pd
 
 import lotus
-from lotus.types import SemanticJoinOutput
 from lotus.templates import task_instructions
+from lotus.types import SemanticJoinOutput
 
+from .cascade_utils import calibrate_sem_sim_join, importance_sampling, learn_cascade_thresholds
 from .sem_filter import sem_filter
-from .cascade_utils import importance_sampling, learn_cascade_thresholds, calibrate_sem_sim_join
 
 
 def sem_join(
@@ -440,7 +440,7 @@ def learn_join_cascade_threshold(
     default: bool = True,
     strategy: str | None = None,
     sampling_range: tuple[int, int] | None = None,
-) -> tuple[float, float, int]:
+) -> tuple[float, float, float]:
     """
     Extract a small sample of the data and find the optimal threshold pair that satisfies the recall and 
     precision target.
@@ -528,8 +528,8 @@ class SemJoinDataframe:
         default: bool = True,
         recall_target: float | None = None,
         precision_target: float | None = None,
-        sampling_percentage: float | None = 0.1,
-        failure_probability: float | None = 0.2,
+        sampling_percentage: float = 0.1,
+        failure_probability: float = 0.2,
         map_instruction: str | None = None,
         map_examples: pd.DataFrame | None = None,
         sampling_range: tuple[int, int] | None = None,
@@ -633,8 +633,8 @@ class SemJoinDataframe:
                 join_instruction,
                 recall_target,
                 precision_target,
-                sampling_percentage,
-                failure_probability,
+                sampling_percentage=sampling_percentage,
+                failure_probability=failure_probability,
                 examples_df_txt=examples_df_txt,
                 examples_answers=examples_answers,
                 map_instruction=map_instruction,
