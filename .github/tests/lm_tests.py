@@ -5,7 +5,7 @@ import pytest
 from tokenizers import Tokenizer
 
 import lotus
-from lotus.models import LM
+from lotus.models import LM, SentenceTransformersRM
 
 ################################################################################
 # Setup
@@ -241,29 +241,73 @@ def test_filter_cascade(setup_models):
 @pytest.mark.skipif(not ENABLE_OPENAI_TESTS, reason="Skipping test because OpenAI tests are not enabled")
 def test_join_cascade(setup_models):
     models = setup_models
-    lotus.settings.configure(lm=models["gpt-4o"], helper_lm=models["gpt-4o-mini"])
+    rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
+    lotus.settings.configure(lm=models["gpt-4o"], rm=rm)
 
-    data1 = {"School": ["UC Berkeley", "Stanford"]}
+    data1 = {
+        "School": [
+            "UC Berkeley", "Stanford", "Carnegie Mellon", "Harvard University", "MIT",
+            "Princeton University", "Yale University", "Columbia University", "University of Toronto",
+            "University of Chicago", "University of Pennsylvania", "California Institute of Technology",
+            "Duke University", "Johns Hopkins University", "Northwestern University", "University of Michigan",
+            "University of California, Los Angeles (UCLA)", "University of Southern California (USC)",
+            "Cornell University", "University of Virginia", "University of North Carolina at Chapel Hill",
+            "Georgia Institute of Technology", "University of Texas at Austin", "University of Wisconsin-Madison",
+            "University of Florida", "Washington University in St. Louis", "Brown University",
+            "University of Washington", "University of Illinois Urbana-Champaign", "New York University (NYU)",
+            "University of Notre Dame", "Vanderbilt University", "Rice University",
+            "University of Minnesota", "University of Maryland", "Purdue University",
+            "University of California, San Diego (UCSD)", "Boston University", "University of California, Davis",
+            "University of California, Irvine", "Emory University", "University of Rochester",
+            "University of Colorado Boulder", "Pennsylvania State University", "University of Arizona",
+            "University of Miami", "Michigan State University", "University of Massachusetts Amherst",
+            "Indiana University Bloomington", "University of Pittsburgh", "University of Utah",
+            "University of Iowa", "Ohio State University", "University of Oregon",
+            "University of Connecticut", "University of Tennessee", "University of Alabama",
+            "University of South Carolina", "University of Kentucky", "University of Kansas",
+            "University of Oklahoma", "University of Missouri", "Auburn University",
+            "Clemson University", "University of Nebraska-Lincoln", "Arizona State University",
+            "University of Arkansas", "Texas A&M University", "Oregon State University",
+            "Virginia Tech", "Rutgers University", "University of Delaware",
+            "University of Vermont", "Colorado State University", "University of Houston",
+            "George Washington University", "American University", "Northeastern University",
+            "Brandeis University", "Tufts University", "Wake Forest University",
+            "Southern Methodist University", "Case Western Reserve University", "University of Tulsa",
+            "Baylor University", "University of New Hampshire", "University of Central Florida",
+            "Florida State University", "University of Mississippi", "University of Nevada, Las Vegas",
+            "University of Wyoming", "San Diego State University", "San Francisco State University",
+            "California State University, Long Beach", "California Polytechnic State University (Cal Poly)",
+            "University of Hawaii", "University of Alaska", "University of Puerto Rico",
+            "University of Montana", "Boise State University", "University of Rhode Island",
+            "University of New Mexico", "Western Washington University"]}
     data2 = {"School Type": ["Public School", "Private School"]}
 
     df1 = pd.DataFrame(data1)
     df2 = pd.DataFrame(data2)
     join_instruction = "{School} is a {School Type}"
-    expected_pairs = set([("UC Berkeley", "Public School"), ("Stanford", "Private School")])
+    expected_pairs = [("UC Berkeley", "Public School"), ("Stanford", "Private School")]
 
-    # All joins resolved by the helper model
-    joined_df, stats = df1.sem_join(df2, join_instruction, cascade_threshold=0, return_stats=True)
-    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
-    assert joined_pairs == expected_pairs
-    assert stats["filters_resolved_by_large_model"] == 0, stats
-    assert stats["filters_resolved_by_helper_model"] == 4, stats
+    # Cascade join
+    joined_df, stats = df1.sem_join(
+        df2, join_instruction,
+        recall_target=0.9, precision_target=0.9,
+        return_stats=True)
+
+    for pair in expected_pairs:
+        school, school_type = pair
+        exists = ((joined_df['School'] == school) & (joined_df['School Type'] == school_type)).any()
+        assert exists, f"Expected pair {pair} does not exist in the dataframe!"
 
     # All joins resolved by the large model
-    joined_df, stats = df1.sem_join(df2, join_instruction, cascade_threshold=1.01, return_stats=True)
-    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
-    assert joined_pairs == expected_pairs
-    assert stats["filters_resolved_by_large_model"] == 4, stats
-    assert stats["filters_resolved_by_helper_model"] == 0, stats
+    joined_df, stats = df1.sem_join(
+        df2, join_instruction,
+        recall_target=1.01, precision_target=1.01,
+        return_stats=True)
+
+    for pair in expected_pairs:
+        school, school_type = pair
+        exists = ((joined_df['School'] == school) & (joined_df['School Type'] == school_type)).any()
+        assert exists, f"Expected pair {pair} does not exist in the dataframe!"
 
 
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))

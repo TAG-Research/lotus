@@ -104,7 +104,7 @@ def sem_join_cascade(
     precision_target: float,
     sampling_percentage: float = 0.1,
     failure_probability: float = 0.2,
-    examples_df_txt: str | None = None,
+    examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
     map_instruction: str | None = None,
     map_examples: pd.DataFrame | None = None,
@@ -128,14 +128,14 @@ def sem_join_cascade(
         precision_target (float): The target precision.
         sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
         failure_probability (float): The failure probability. Defaults to 0.2.
-        examples_df_txt (Optional[str]): The examples dataframe text. Defaults to None.
-        examples_answers (Optional[list[bool]]): The answers for examples. Defaults to None.
-        map_instruction (Optional[str]): The map instruction. Defaults to None.
-        map_examples (Optional[pd.DataFrame]): The map examples. Defaults to None.
-        cot_reasoning (Optional[list[str]]): The reasoning for CoT. Defaults to None.
+        examples_df_txt list[str] | None): The examples dataframe text. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        map_instruction (str | None): The map instruction. Defaults to None.
+        map_examples (pd.DataFrame | None): The map examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
-        strategy (Optional[str]): The reasoning strategy. Defaults to None.
-        sampling_range (Optional[tuple[int, int]]): The sampling range. Defaults to None.
+        strategy (str | None): The reasoning strategy. Defaults to None.
+        sampling_range (tuple[int, int] | None): The sampling range. Defaults to None.
         
     Returns:
         SemanticJoinOutput: The join results, filter outputs, all raw outputs, and all explanations.
@@ -152,7 +152,7 @@ def sem_join_cascade(
     num_large = 0
 
     # Determine the join plan
-    helper_high_conf, helper_low_conf = join_optimizer(
+    helper_high_conf, helper_low_conf, num_helper_high_conf_neg = join_optimizer(
         recall_target,
         precision_target,
         l1,
@@ -172,11 +172,10 @@ def sem_join_cascade(
         sampling_range=sampling_range,
         )
 
-    num_helper = len(helper_high_conf)
+    num_helper = len(helper_high_conf) + num_helper_high_conf_neg
     num_large = len(helper_low_conf)
     
     # Accept helper results with high confidence
-    print(f"helper_high_conf = {helper_high_conf}")
     join_results = [(row['_left_id'], row['_right_id'], None) for _, row in helper_high_conf.iterrows()]
 
     # Send low confidence rows to large LM
@@ -264,8 +263,8 @@ def map_l1_to_l2(
     l1: pd.Series,
     col1_label: str,
     col2_label: str,
-    map_instruction: str = None,
-    map_examples: pd.DataFrame = None
+    map_instruction: str | None = None,
+    map_examples: pd.DataFrame | None = None
 ) -> tuple[pd.DataFrame, str]:
     """
     Wrapper function to run sem_map in sem_join.
@@ -321,7 +320,7 @@ def join_optimizer(
     user_instruction: str,
     sampling_percentage: float = 0.1,
     failure_probability: float = 0.2,
-    examples_df_txt: str | None = None,
+    examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
     map_instruction: str | None = None,
     map_examples: pd.DataFrame | None = None,
@@ -329,7 +328,7 @@ def join_optimizer(
     default: bool = True,
     strategy: str | None = None,
     sampling_range: tuple[int, int] | None = None,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, int]:
     """
     Find most cost-effective join plan between Search-Filter and Map-Search-Filter 
     while satisfying the recall and precision target.
@@ -344,17 +343,18 @@ def join_optimizer(
         user_instruction (str): The user instruction for join.
         sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
         failure_probability (float): The failure probability. Defaults to 0.2.
-        examples_df_txt (Optional[str]): The examples dataframe text. Defaults to None.
-        examples_answers (Optional[list[bool]]): The answers for examples. Defaults to None.
-        map_instruction (Optional[str]): The map instruction. Defaults to None.
-        map_examples (Optional[pd.DataFrame]): The map examples. Defaults to None.
-        cot_reasoning (Optional[list[str]]): The reasoning for CoT. Defaults to None.
+        examples_df_txt (list[str] | None): The examples dataframe text. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        map_instruction (str | None): The map instruction. Defaults to None.
+        map_examples (pd.DataFrame | None): The map examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
-        strategy (Optional[str]): The reasoning strategy. Defaults to None.
-        sampling_range (Optional[tuple[int, int]]): The sampling range. Defaults to None.
+        strategy (str | None): The reasoning strategy. Defaults to None.
+        sampling_range (tuple[int, int] | None): The sampling range. Defaults to None.
     
     returns:
         tuple[pd.DataFrame, pd.DataFrame]: The high confidence and low confidence join results.
+        int: The number of high confidence negative results.
     """
     
     # Helper is currently default to similiarity join
@@ -379,6 +379,7 @@ def join_optimizer(
         strategy=strategy,
         sampling_range=sampling_range)
     sf_high_conf = sf_helper_join[sf_helper_join['_scores'] >= sf_t_pos]
+    sf_high_conf_neg = len(sf_helper_join[sf_helper_join['_scores'] <= sf_t_neg])
     sf_low_conf = sf_helper_join[(sf_helper_join['_scores'] < sf_t_pos) & (sf_helper_join['_scores'] > sf_t_neg)]
     sf_cost = len(sf_low_conf)
 
@@ -401,24 +402,27 @@ def join_optimizer(
         strategy=strategy,
         sampling_range=sampling_range)
     msf_high_conf = msf_helper_join[msf_helper_join['_scores'] >= msf_t_pos]
+    msf_high_conf_neg = len(msf_helper_join[msf_helper_join['_scores'] <= msf_t_neg])
     msf_low_conf = msf_helper_join[(msf_helper_join['_scores'] < msf_t_pos) & (msf_helper_join['_scores'] > msf_t_neg)]
     msf_cost = len(msf_low_conf)
 
     # Select the cheaper join plan
-    lotus.logger.info(f"Join Optimizer: plan cost analysis:")
-    lotus.logger.info(f"    Search-Filter: {sf_cost} LLM calls, {len(sf_high_conf)} helper results.")
-    lotus.logger.info(f"    Map-Search-Filter: {msf_cost} LLM calls, {len(msf_high_conf)} helper results.")
+    lotus.logger.info("Join Optimizer: plan cost analysis:")
+    lotus.logger.info(f"    Search-Filter: {sf_cost} LLM calls.")
+    lotus.logger.info(f"    Search-Filter: accept {len(sf_high_conf)} helper positive results, {sf_high_conf_neg} helper negative results.")
+    lotus.logger.info(f"    Map-Search-Filter: {msf_cost} LLM calls.")
+    lotus.logger.info(f"    Map-Search-Filter: accept {len(msf_high_conf)} helper positive results, {msf_high_conf_neg} helper negative results.")
 
     if sf_cost < msf_cost:
         lotus.logger.info("Proceeding with Search-Filter")
         sf_high_conf = sf_high_conf.sort_values(by='_scores', ascending=False)
         sf_low_conf = sf_low_conf.sort_values(by='_scores', ascending=False)
-        return sf_high_conf, sf_low_conf
+        return sf_high_conf, sf_low_conf, sf_high_conf_neg
     else:
         lotus.logger.info("Proceeding with Map-Search-Filter")
         msf_high_conf = msf_high_conf.sort_values(by='_scores', ascending=False)
         msf_low_conf = msf_low_conf.sort_values(by='_scores', ascending=False)
-        return msf_high_conf, msf_low_conf
+        return msf_high_conf, msf_low_conf, msf_high_conf_neg
 
 
 def learn_join_cascade_threshold(
@@ -430,7 +434,7 @@ def learn_join_cascade_threshold(
     user_instruction: str,
     sampling_percentage: float = 0.1,
     delta: float = 0.2,
-    examples_df_txt: str | None = None,
+    examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     default: bool = True,
@@ -493,8 +497,8 @@ def learn_join_cascade_threshold(
 
     except Exception as e:
         lotus.logger.error(f"Error while learning filter cascade thresholds: {e}")
-        lotus.logger.error(f"Default to full join.")
-        return 1, 0, float('inf')
+        lotus.logger.error("Default to full join.")
+        return 1.0, 0.0, float('inf')
     
     return pos_threshold, neg_threshold, large_calls
 
@@ -529,6 +533,7 @@ class SemJoinDataframe:
         map_instruction: str | None = None,
         map_examples: pd.DataFrame | None = None,
         sampling_range: tuple[int, int] | None = None,
+        return_stats: bool = False,
     ) -> pd.DataFrame:
         """
         Applies semantic join over a dataframe.
@@ -551,6 +556,7 @@ class SemJoinDataframe:
             map_instruction (str): The map instruction. Defaults to None.
             map_examples (pd.DataFrame): The map examples. Defaults to None.
             sampling_range (tuple[int, int]): The sampling range. Defaults to None.
+            return_stats (bool): Whether to return stats. Defaults to False.
 
         Returns:
             pd.DataFrame: The dataframe with the new joined columns.
@@ -681,7 +687,7 @@ class SemJoinDataframe:
             .drop(columns=["_left_id", "_right_id"])
         )
 
-        if output.stats:
+        if output.stats and return_stats:
             return joined_df, output.stats
 
         return joined_df
