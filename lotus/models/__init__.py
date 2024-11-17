@@ -14,5 +14,4 @@ __all__ = [
     "LiteLLMRM",
     "SentenceTransformersRM",
     "ColBERTv2RM",
-    "Qwen2Model",
 ]

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Any, Callable
 
 import pandas as pd
 
@@ -10,11 +10,11 @@ from .postprocessors import map_postprocess
 
 
 def sem_map(
-    docs: list[str],
+    docs: list[dict[str, Any]],
     model: lotus.models.LM,
     user_instruction: str,
     postprocessor: Callable[[list[str], bool], SemanticMapPostprocessOutput] = map_postprocess,
-    examples_df_txt: list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[str] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
@@ -23,11 +23,11 @@ def sem_map(
     Maps a list of documents to a list of outputs using a model.
 
     Args:
-        docs (list[str]): The list of documents to map.
+        docs (list[dict[str, Any]]): The list of documents to map.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for map.
         postprocessor (Callable): The postprocessor for the model outputs. Defaults to map_postprocess.
-        examples_df_txt (list[str] | None): The text for examples. Defaults to None.
+        examples_multimodal_data (list[dict[str, Any]] | None): The text for examples. Defaults to None.
         examples_answers (list[str] | None): The answers for examples. Defaults to None.
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
 
@@ -38,7 +38,7 @@ def sem_map(
     inputs = []
     for doc in docs:
         prompt = lotus.templates.task_instructions.map_formatter(
-            doc, user_instruction, examples_df_txt, examples_answers, cot_reasoning, strategy=strategy
+            doc, user_instruction, examples_multimodal_data, examples_answers, cot_reasoning, strategy=strategy
         )
         lotus.logger.debug(f"input to model: {prompt}")
         lotus.logger.debug(f"inputs content to model: {[x.get('content') for x in prompt]}")
@@ -101,15 +101,15 @@ class SemMapDataframe:
             if column not in self._obj.columns:
                 raise ValueError(f"Column {column} not found in DataFrame")
 
-        df_txt = task_instructions.df2text(self._obj, col_li)
+        multimodal_data = task_instructions.df2multimodal_info(self._obj, col_li)
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
 
-        examples_df_txt = None
+        examples_multimodal_data = None
         examples_answers = None
         cot_reasoning = None
         if examples is not None:
             assert "Answer" in examples.columns, "Answer must be a column in examples dataframe"
-            examples_df_txt = task_instructions.df2text(examples, col_li)
+            examples_multimodal_data = task_instructions.df2multimodal_info(examples, col_li)
             examples_answers = examples["Answer"].tolist()
 
             if strategy == "cot":
@@ -117,11 +117,11 @@ class SemMapDataframe:
                 cot_reasoning = examples["Reasoning"].tolist()
 
         output = sem_map(
-            df_txt,
+            multimodal_data,
             lotus.settings.lm,
             formatted_usr_instr,
             postprocessor=postprocessor,
-            examples_df_txt=examples_df_txt,
+            examples_multimodal_data=examples_multimodal_data,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,

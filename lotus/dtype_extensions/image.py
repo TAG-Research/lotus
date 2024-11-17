@@ -20,10 +20,11 @@ class ImageDtype(ExtensionDtype):
 
 
 class ImageArray(ExtensionArray):
-    def __init__(self, values: np.ndarray):
+    def __init__(self, values):
         self._data = np.asarray(values, dtype=object)
         self._dtype = ImageDtype()
-        self._cached_images: dict[int, str | Image.Image | None] = {}  # Cache for loaded images
+        self.allowed_image_types = ["Image", "base64"]
+        self._cached_images: dict[tuple[int, str], str | Image.Image | None] = {}  # Cache for loaded images
 
     def __getitem__(self, item: int | slice | Sequence[int]) -> np.ndarray:
         result = self._data[item]
@@ -55,22 +56,23 @@ class ImageArray(ExtensionArray):
 
     def _invalidate_cache(self, idx: int) -> None:
         """Remove an item from the cache."""
-        if idx in self._cached_images:
-            del self._cached_images[idx]
+        for image_type in self.allowed_image_types:
+            if (idx, image_type) in self._cached_images:
+                del self._cached_images[(idx, image_type)]
 
     def get_image(self, idx: int, image_type: str = "Image") -> Union[Image.Image, str, None]:
         """Explicit method to fetch and return the actual image"""
-        if idx not in self._cached_images:
+        if (idx, image_type) not in self._cached_images:
             image_result = fetch_image(self._data[idx], image_type)
             assert image_result is None or isinstance(image_result, (Image.Image, str))
-            self._cached_images[idx] = image_result
-        return self._cached_images[idx]
+            self._cached_images[(idx, image_type)] = image_result
+        return self._cached_images[(idx, image_type)]
 
     def isna(self) -> np.ndarray:
         return pd.isna(self._data)
 
     def take(self, indices: Sequence[int], allow_fill: bool = False, fill_value=None) -> "ImageArray":
-        result = self._data.take(indices)
+        result = self._data.take(indices, axis=0)
         if allow_fill and fill_value is not None:
             result[indices == -1] = fill_value
         return ImageArray(result)
@@ -112,6 +114,23 @@ class ImageArray(ExtensionArray):
 
     def _formatter(self, boxed: bool = False):
         return lambda x: f"<Image: {type(x)}>" if x is not None else "None"
+
+    def to_numpy(self, dtype=None, copy=False, na_value=None) -> np.ndarray:
+        """Convert the ImageArray to a numpy array."""
+        pil_images = []
+        for i, img_data in enumerate(self._data):
+            if isinstance(img_data, np.ndarray):
+                image = self.get_image(i)
+                pil_images.append(image)
+            else:
+                pil_images.append(img_data)
+        result = np.empty(len(self), dtype=object)
+        result[:] = pil_images
+        return result
+
+    def __array__(self, dtype=None) -> np.ndarray:
+        """Numpy array interface."""
+        return self.to_numpy(dtype=dtype)
 
 
 def _compare_images(img1, img2) -> bool:

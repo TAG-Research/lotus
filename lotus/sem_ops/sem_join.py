@@ -3,21 +3,20 @@ from typing import Any
 import pandas as pd
 
 import lotus
+from lotus.templates import task_instructions
 from lotus.types import SemanticJoinOutput
 
 from .sem_filter import sem_filter
 
 
 def sem_join(
-    l1: pd.Series,
-    l2: pd.Series,
+    left_multimodal_data: list[dict[str, Any]],
+    right_multimodal_data: list[dict[str, Any]],
     ids1: list[int],
     ids2: list[int],
-    col1_label: str,
-    col2_label: str,
     model: lotus.models.LM,
     user_instruction: str,
-    examples_df_txt: list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     default: bool = True,
@@ -27,15 +26,13 @@ def sem_join(
     Joins two series using a model.
 
     Args:
-        l1 (pd.Series): The first series.
-        l2 (pd.Series): The second series.
+        left_multimodal_data (list[dict[str, Any]]): The multimodal data for the first series.
+        right_multimodal_data (list[dict[str, Any]]): The multimodal data for the second series.
         ids1 (list[int]): The ids for the first series.
         ids2 (list[int]): The ids for the second series.
-        col1_label (str): The label for the first column.
-        col2_label (str): The label for the second column.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for join.
-        examples_df_txt (list[str] | None): The examples dataframe text. Defaults to None.
+        examples_multimodal_data (list[str] | None): The examples dataframe text. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
@@ -50,14 +47,14 @@ def sem_join(
     join_results = []
 
     # for i1 in enumerate(l1):
-    for id1, i1 in zip(ids1, l1):
+    for id1, i1 in zip(ids1, left_multimodal_data):
         # perform llm filter
-        modified_docs = l2.apply(lambda doc: f"{col1_label}: {i1}\n{col2_label}: {doc}")
+        modified_docs = task_instructions.merge_multimodal_info([i1], right_multimodal_data)
         output = sem_filter(
             modified_docs,
             model,
             user_instruction,
-            examples_multimodal_data=examples_df_txt,
+            examples_multimodal_data=examples_multimodal_data,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             default=default,
@@ -92,15 +89,13 @@ def sem_join(
 
 # TODO: THIS CODE CURRENTLY BREAKS
 def sem_join_cascade(
-    l1: pd.Series,
-    l2: pd.Series,
+    left_multimodal_data: list[dict[str, Any]],
+    right_multimodal_data: list[dict[str, Any]],
     ids1: list[int],
     ids2: list[int],
-    col1_label: str,
-    col2_label: str,
     user_instruction: str,
     cascade_threshold: float,
-    examples_df_txt: list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     default: bool = True,
@@ -114,14 +109,14 @@ def sem_join_cascade(
     num_helper = 0
     num_large = 0
 
-    for id1, i1 in zip(ids1, l1):
+    for id1, i1 in zip(ids1, left_multimodal_data):
         # perform llm filter
-        modified_docs = l2.apply(lambda doc: f"{col1_label}: {i1}\n{col2_label}: {doc}")
+        modified_docs = task_instructions.merge_multimodal_info([i1], right_multimodal_data)
         helper_output = sem_filter(
             modified_docs,
             lotus.settings.helper_lm,
             user_instruction,
-            examples_multimodal_data=examples_df_txt,
+            examples_multimodal_data=examples_multimodal_data,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             default=default,
@@ -157,7 +152,7 @@ def sem_join_cascade(
                 lotus.settings.lm,
                 user_instruction,
                 default=default,
-                examples_multimodal_data=examples_df_txt,
+                examples_multimodal_data=examples_multimodal_data,
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
@@ -294,57 +289,18 @@ class SemJoinDataframe:
         assert left_on is not None, "Column not found in left dataframe"
         assert right_on is not None, "Column not found in right dataframe"
 
-        examples_df_txt = None
+        examples_multimodal_data = None
         examples_answers = None
         cot_reasoning = None
         if examples is not None:
             assert "Answer" in examples.columns, "Answer must be a column in examples dataframe"
-            examples_df_txt = []
-            for idx, row in examples.iterrows():
-                examples_df_txt.append(f"{left_on}: {row[real_left_on]}\n{right_on}: {row[real_right_on]}")
+            examples_multimodal_data = []
+            examples_multimodal_data = task_instructions.df2multimodal_info(examples, [real_left_on, real_right_on])
             examples_answers = examples["Answer"].tolist()
 
             if strategy == "cot":
                 return_explanations = True
                 cot_reasoning = examples["Reasoning"].tolist()
-
-        if cascade_threshold is not None:
-            output = sem_join_cascade(
-                self._obj[real_left_on],
-                other[real_right_on],
-                self._obj.index,
-                other.index,
-                left_on,
-                right_on,
-                join_instruction,
-                cascade_threshold,
-                examples_df_txt=examples_df_txt,
-                examples_answers=examples_answers,
-                cot_reasoning=cot_reasoning,
-                default=default,
-                strategy=strategy,
-            )
-        else:
-            output = sem_join(
-                self._obj[real_left_on],
-                other[real_right_on],
-                self._obj.index,
-                other.index,
-                left_on,
-                right_on,
-                lotus.settings.lm,
-                join_instruction,
-                examples_df_txt=examples_df_txt,
-                examples_answers=examples_answers,
-                cot_reasoning=cot_reasoning,
-                default=default,
-                strategy=strategy,
-            )
-        join_results = output.join_results
-        all_raw_outputs = output.all_raw_outputs
-
-        lotus.logger.debug(f"join_results: {join_results}")
-        lotus.logger.debug(f"all_raw_outputs: {all_raw_outputs}")
 
         df1 = self._obj.copy()
         df2 = other.copy()
@@ -356,15 +312,60 @@ class SemJoinDataframe:
                 df1.rename(columns={col: col + ":left"}, inplace=True)
                 df2.rename(columns={col: col + ":right"}, inplace=True)
 
-        if return_explanations:
-            temp_df = pd.DataFrame(join_results, columns=["_left_id", "_right_id", f"explanation{suffix}"])
-        else:
-            temp_df = pd.DataFrame([(jr[0], jr[1]) for jr in join_results], columns=["_left_id", "_right_id"])
+        # create a new column with same data as real_left_on but name left_on
+        if left_on not in df1.columns:
+            df1.rename(columns={real_left_on: left_on}, inplace=True)
+        if right_on not in df2.columns:
+            df2.rename(columns={real_right_on: right_on}, inplace=True)
+        left_multimodal_data = task_instructions.df2multimodal_info(df1, [left_on])
+        right_multimodal_data = task_instructions.df2multimodal_info(df2, [right_on])
 
-        joined_df = (
-            df1.join(temp_df.set_index("_left_id"), how="right", on="_left_id")
-            .join(df2.set_index("_right_id"), how="left", on="_right_id")
-            .drop(columns=["_left_id", "_right_id"])
+        if cascade_threshold is not None:
+            output = sem_join_cascade(
+                left_multimodal_data,
+                right_multimodal_data,
+                self._obj.index,
+                other.index,
+                join_instruction,
+                cascade_threshold,
+                examples_multimodal_data=examples_multimodal_data,
+                examples_answers=examples_answers,
+                cot_reasoning=cot_reasoning,
+                default=default,
+                strategy=strategy,
+            )
+        else:
+            output = sem_join(
+                left_multimodal_data,
+                right_multimodal_data,
+                self._obj.index,
+                other.index,
+                lotus.settings.lm,
+                join_instruction,
+                examples_multimodal_data=examples_multimodal_data,
+                examples_answers=examples_answers,
+                cot_reasoning=cot_reasoning,
+                default=default,
+                strategy=strategy,
+            )
+        join_results = output.join_results
+        all_raw_outputs = output.all_raw_outputs
+
+        lotus.logger.debug(f"join_results: {join_results}")
+        lotus.logger.debug(f"all_raw_outputs: {all_raw_outputs}")
+
+        if return_explanations:
+            temp_df = pd.DataFrame(join_results, columns=["_left_id", "_right_id", f"explanation{suffix}"]).set_index(
+                "_left_id"
+            )
+        else:
+            temp_df = pd.DataFrame(
+                [(jr[0], jr[1]) for jr in join_results], columns=["_left_id", "_right_id"]
+            ).set_index("_left_id")
+
+        df1 = df1.join(temp_df, how="right", on="_left_id")
+        joined_df = df1.join(df2.set_index("_right_id"), how="left", on="_right_id").drop(
+            columns=["_left_id", "_right_id"]
         )
 
         if return_stats:

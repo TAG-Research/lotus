@@ -13,11 +13,11 @@ from .postprocessors import filter_postprocess
 
 
 def sem_filter(
-    docs: list[dict[str, Any]] | list[str],
+    docs: list[dict[str, Any]],
     model: lotus.models.LM,
     user_instruction: str,
     default: bool = True,
-    examples_multimodal_data: list[dict[str, Any]] | list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
@@ -27,11 +27,11 @@ def sem_filter(
     Filters a list of documents based on a given user instruction using a language model.
 
     Args:
-        docs (list[dict[str, Any]] | list[str]): The list of documents to filter. Each document is a tuple of text and images.
+        docs (list[dict[str, Any]]): The list of documents to filter. Each document is a tuple of text and images.
         model (lotus.models.LM): The language model used for filtering.
         user_instruction (str): The user instruction for filtering.
         default (bool): The default value for filtering in case of parsing errors. Defaults to True.
-        examples_multimodal_data (list[dict[str, Any]] | list[str] | None): The text for examples. Defaults to None.
+        examples_multimodal_data (list[dict[str, Any]] | None): The text for examples. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         logprobs (bool): Whether to return log probabilities. Defaults to False.
@@ -60,7 +60,7 @@ def sem_filter(
 
 
 def learn_filter_cascade_thresholds(
-    sample_multimodal_data: list[dict[str, Any]] | list[str],
+    sample_multimodal_data: list[dict[str, Any]],
     lm: lotus.models.LM,
     formatted_usr_instr: str,
     default: bool,
@@ -69,7 +69,7 @@ def learn_filter_cascade_thresholds(
     delta: float,
     helper_true_probs: list[float],
     sample_correction_factors: NDArray[np.float64],
-    examples_multimodal_data: list[dict[str, Any]] | list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
