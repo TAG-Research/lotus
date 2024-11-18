@@ -70,6 +70,9 @@ skills_df = pd.DataFrame(skills_data)
 # lotus sem join 
 res = courses_df.sem_join(skills_df, "Taking {Course Name} will help me learn {Skill}")
 print(res)
+
+# Print total LM usage
+lm.print_total_usage()
 ```
 
 # Supported Models
