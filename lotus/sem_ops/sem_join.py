@@ -545,15 +545,13 @@ class SemJoinDataframe:
             examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
             strategy (str | None): The reasoning strategy. Defaults to None.
             default (bool): The default value for the join in case of parsing errors. Defaults to True.
-            
-        Cascade-specific Arguments:
             recall_target (float | None): The target recall. Defaults to None.
-            precision_target (float | None): The target precision. Defaults to None.
-            sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
-            failure_probability (float): The failure probability. Defaults to 0.2.
-            map_instruction (str): The map instruction. Defaults to None.
-            map_examples (pd.DataFrame): The map examples. Defaults to None.
-            sampling_range (tuple[int, int]): The sampling range. Defaults to None.
+            precision_target (float | None): The target precision when cascading. Defaults to None.
+            sampling_percentage (float): The percentage of the data to sample when cascading. Defaults to 0.1.
+            failure_probability (float): The failure probability when cascading. Defaults to 0.2.
+            map_instruction (str): The map instruction when cascading. Defaults to None.
+            map_examples (pd.DataFrame): The map examples when cascading. Defaults to None.
+            sampling_range (tuple[int, int]): The sampling range when cascading. Defaults to None.
             return_stats (bool): Whether to return stats. Defaults to False.
 
         Returns:
