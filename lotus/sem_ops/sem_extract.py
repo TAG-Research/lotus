@@ -10,7 +10,7 @@ from .postprocessors import extract_postprocess
 
 
 def sem_extract(
-    docs: list[str],
+    docs: list[dict[str, Any]],
     model: lotus.models.LM,
     user_instruction: str,
     postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
@@ -19,7 +19,7 @@ def sem_extract(
     Extracts from a list of documents using a model.
 
     Args:
-        docs (list[str]): The list of documents to extract from.
+        docs (list[dict[str, Any]]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for extract.
         postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
@@ -85,11 +85,11 @@ class SemExtractDataframe:
             if column not in self._obj.columns:
                 raise ValueError(f"Column {column} not found in DataFrame")
 
-        df_txt = task_instructions.df2text(self._obj, col_li)
+        multimodal_data = task_instructions.df2multimodal_info(self._obj, col_li)
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
 
         output = sem_extract(
-            df_txt,
+            multimodal_data,
             lotus.settings.lm,
             formatted_usr_instr,
             postprocessor=postprocessor,

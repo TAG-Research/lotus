@@ -5,9 +5,9 @@ import pandas as pd
 from lotus.dtype_extensions import ImageDtype
 
 
-def filter_user_message_formatter(
+def user_message_formatter(
     multimodal_data: dict[str, Any] | str,
-    user_instruction: str,
+    user_instruction_with_tag: str,
 ) -> dict[str, Any]:
     if isinstance(multimodal_data, str):
         text = multimodal_data
@@ -35,58 +35,14 @@ def filter_user_message_formatter(
     if not image_inputs or len(image_inputs) == 0:
         return {
             "role": "user",
-            "content": f"Context:\n{text}\n\nClaim: {user_instruction}",
+            "content": f"Context:\n{text}\n\n{user_instruction_with_tag}",
         }
     return {
         "role": "user",
         "content": [
             {
                 "type": "text",
-                "text": f"Claim: {user_instruction}\n\nContext:\n{text}",
-            },
-        ]
-        + image_inputs,
-    }
-
-
-def map_user_message_formatter(
-    multimodal_data: dict[str, Any] | str,
-    user_instruction: str,
-) -> dict[str, Any]:
-    if isinstance(multimodal_data, str):
-        text = multimodal_data
-        image_inputs: list[dict[str, str]] = []
-    elif isinstance(multimodal_data, dict):
-        image_data: dict[str, str] = multimodal_data.get("image", {})
-        _image_inputs: list[tuple[dict, dict]] = [
-            (
-                {
-                    "type": "text",
-                    "text": f"[{key.capitalize()}]: \n",
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {"url": base64_image},
-                },
-            )
-            for key, base64_image in image_data.items()
-        ]
-        image_inputs = [m for image_input in _image_inputs for m in image_input]
-        text = multimodal_data["text"] or ""
-    else:
-        raise ValueError("multimodal_data must be a dictionary or a string")
-
-    if not image_inputs or len(image_inputs) == 0:
-        return {
-            "role": "user",
-            "content": f"Context:\n{text}\n\nInstruction: {user_instruction}",
-        }
-    return {
-        "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": f"nInstruction: {user_instruction}\n\nContext:\n{text}",
+                "text": f"{user_instruction_with_tag}\n\nContext:\n{text}",
             },
         ]
         + image_inputs,
@@ -115,7 +71,7 @@ def filter_formatter_cot(
         cot = cot_reasoning[idx]
         messages.extend(
             [
-                filter_user_message_formatter(ex_multimodal_data, user_instruction),
+                user_message_formatter(ex_multimodal_data, f"Claim: {user_instruction}"),
                 {
                     "role": "assistant",
                     "content": f"Reasoning:\n{cot}\n\nAnswer: {ex_ans}",
@@ -123,7 +79,7 @@ def filter_formatter_cot(
             ]
         )
 
-    messages.append(filter_user_message_formatter(multimodal_data, user_instruction))
+    messages.append(user_message_formatter(multimodal_data, f"Claim: {user_instruction}"))
     return messages
 
 
@@ -140,7 +96,7 @@ def filter_formatter_zs_cot(
         {"role": "system", "content": sys_instruction},
     ]
 
-    messages.append(filter_user_message_formatter(multimodal_data, user_instruction))
+    messages.append(user_message_formatter(multimodal_data, f"Claim: {user_instruction}"))
     return messages
 
 
@@ -177,12 +133,12 @@ def filter_formatter(
             ex_ans = examples_answer[i]
             messages.extend(
                 [
-                    filter_user_message_formatter(ex_multimodal_data, user_instruction),
+                    user_message_formatter(ex_multimodal_data, f"Claim: {user_instruction}"),
                     {"role": "assistant", "content": str(ex_ans)},
                 ]
             )
 
-    messages.append(filter_user_message_formatter(multimodal_data, user_instruction))
+    messages.append(user_message_formatter(multimodal_data, f"Claim: {user_instruction}"))
     return messages
 
 
@@ -208,7 +164,7 @@ def map_formatter_cot(
         cot = cot_reasoning[idx]
         messages.extend(
             [
-                map_user_message_formatter(ex_df_txt, user_instruction),
+                user_message_formatter(ex_df_txt, f"Instruction: {user_instruction}"),
                 {
                     "role": "assistant",
                     "content": f"Reasoning:\n{cot}\n\nAnswer: {ex_ans}",
@@ -216,7 +172,7 @@ def map_formatter_cot(
             ]
         )
 
-    messages.append(map_user_message_formatter(multimodal_data, user_instruction))
+    messages.append(user_message_formatter(multimodal_data, f"Instruction: {user_instruction}"))
     return messages
 
 
@@ -233,7 +189,7 @@ def map_formatter_zs_cot(
         {"role": "system", "content": sys_instruction},
     ]
 
-    messages.append(map_user_message_formatter(multimodal_data, user_instruction))
+    messages.append(user_message_formatter(multimodal_data, f"Instruction: {user_instruction}"))
     return messages
 
 
@@ -266,16 +222,16 @@ def map_formatter(
         for ex_df_txt, ex_ans in zip(examples_multimodal_data, examples_answer):
             messages.extend(
                 [
-                    map_user_message_formatter(ex_df_txt, user_instruction),
+                    user_message_formatter(ex_df_txt, f"Instruction: {user_instruction}"),
                     {"role": "assistant", "content": str(ex_ans)},
                 ]
             )
 
-    messages.append(map_user_message_formatter(multimodal_data, user_instruction))
+    messages.append(user_message_formatter(multimodal_data, f"Instruction: {user_instruction}"))
     return messages
 
 
-def extract_formatter(df_text: str, user_instruction: str) -> list[dict[str, str]]:
+def extract_formatter(multimodal_data: dict[str, Any], user_instruction: str) -> list[dict[str, str]]:
     sys_instruction = (
         "The user will provide an instruction and some relevant context.\n"
         "Your job is to extract the information requested in the instruction.\n"
@@ -284,10 +240,7 @@ def extract_formatter(df_text: str, user_instruction: str) -> list[dict[str, str
     )
     messages = [
         {"role": "system", "content": sys_instruction},
-        {
-            "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
-        },
+        user_message_formatter(multimodal_data, f"Instruction: {user_instruction}"),
     ]
     return messages
 
