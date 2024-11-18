@@ -39,13 +39,9 @@ def user_message_formatter(
         }
     return {
         "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": f"{user_instruction_with_tag}\n\nContext:\n{text}",
-            },
-        ]
-        + image_inputs,
+        "content": [{"type": "text", "text": f"Context:\n{text}"}]
+        + image_inputs
+        + [{"type": "text", "text": f"\n\n{user_instruction_with_tag}"}],
     }
 
 
