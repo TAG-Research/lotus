@@ -9,24 +9,22 @@ rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 lotus.settings.configure(lm=lm, rm=rm)
 data = {
     "Course Name": [
-        "Probability and Random Processes",
-        "Optimization Methods in Engineering",
         "Digital Design and Integrated Circuits",
         "Data Structures and Algorithms",
-        "Artificial Intelligence",
+        "The History of Art",
         "Natural Language Processing",
     ]
 }
 
 skills = [
-    "Math", "Computer Science", "Management", "Writing", "Data Analysis", "Machine Learning", "Project Management",
-    "Communication", "Problem Solving", "Creativity", "Critical Thinking", "Public Speaking", "Teamwork",
+    "Math", "Computer Science", "Management", "Creative Writing", "Data Analysis", "Machine Learning",
+    "Project Management", "Problem Solving", "Singing", "Critical Thinking", "Public Speaking", "Teamwork",
     "Adaptability", "Programming", "Leadership", "Time Management", "Negotiation", "Decision Making", "Networking",
-    "Presentation", "Customer Service", "Marketing", "Graphic Design", "Research", "SEO", "Content Creation",
+    "Painting", "Customer Service", "Marketing", "Graphic Design", "Nursery", "SEO", "Content Creation",
     "Video Editing", "Sales", "Financial Analysis", "Accounting", "Event Planning", "Foreign Languages",
     "Software Development", "Cybersecurity", "Social Media Management", "Photography", "Writing & Editing",
     "Technical Support", "Database Management", "Web Development", "Business Strategy", "Operations Management",
-    "UI/UX Design", "Machine Learning", "Data Visualization", "Product Management", "Cloud Computing",
+    "UI/UX Design", "Reinforcement Learning", "Data Visualization", "Product Management", "Cloud Computing",
     "Agile Methodology", "Blockchain", "IT Support", "Legal Research", "Supply Chain Management", "Copywriting",
     "Human Resources", "Quality Assurance", "Medical Research", "Healthcare Management", "Sports Coaching",
     "Editing & Proofreading", "Legal Writing", "Human Anatomy", "Chemistry", "Physics", "Biology", "Psychology",
@@ -45,7 +43,9 @@ join_instruction = "Taking {Course Name:left} will help me learn {Skill:right}"
 print(f"Joining {df1.shape[0]} rows from df1 with {df2.shape[0]} rows from df2")
 print(f"Naive join would require {df1.shape[0]*df2.shape[0]} LM calls")
 
-res = df1.sem_join(df2, join_instruction, recall_target = 0.7, precision_target = 0.7)
+res, stats = df1.sem_join(df2, join_instruction, recall_target = 0.7, precision_target = 0.7, return_stats=True)
 print(f"Joined {df1.shape[0]} rows from df1 with {df2.shape[0]} rows from df2")
+print(f"    Join cascade took {stats['join_resolved_by_large_model']} LM calls")
+print(f"    Helper resolved {stats['join_resolved_by_helper_model']} LM calls")
 print(f"Naive join would require {df1.shape[0]*df2.shape[0]} LM calls")
 print(res)
