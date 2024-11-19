@@ -2,6 +2,7 @@ import pandas as pd
 
 import lotus
 from lotus.models import LM, SentenceTransformersRM
+from lotus.types import SemJoinCascadeArgs
 
 lm = LM(model="gpt-4o-mini")
 rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
@@ -43,7 +44,8 @@ join_instruction = "Taking {Course Name:left} will help me learn {Skill:right}"
 print(f"Joining {df1.shape[0]} rows from df1 with {df2.shape[0]} rows from df2")
 print(f"Naive join would require {df1.shape[0]*df2.shape[0]} LM calls")
 
-res, stats = df1.sem_join(df2, join_instruction, recall_target = 0.7, precision_target = 0.7, return_stats=True)
+cascade_args = SemJoinCascadeArgs(recall_target = 0.7, precision_target = 0.7)
+res, stats = df1.sem_join(df2, join_instruction, cascade_args=cascade_args, return_stats=True)
 print(f"Joined {df1.shape[0]} rows from df1 with {df2.shape[0]} rows from df2")
 print(f"    Join cascade took {stats['join_resolved_by_large_model']} LM calls")
 print(f"    Helper resolved {stats['join_resolved_by_helper_model']} LM calls")

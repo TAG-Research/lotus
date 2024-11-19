@@ -6,6 +6,7 @@ from tokenizers import Tokenizer
 
 import lotus
 from lotus.models import LM, SentenceTransformersRM
+from lotus.types import SemJoinCascadeArgs
 
 ################################################################################
 # Setup
@@ -272,7 +273,7 @@ def test_join_cascade(setup_models):
     # Cascade join
     joined_df, stats = df1.sem_join(
         df2, join_instruction,
-        recall_target=0.7, precision_target=0.7,
+        cascade_args=SemJoinCascadeArgs(recall_target=0.7, precision_target=0.7),
         return_stats=True)
 
     for pair in expected_pairs:
@@ -285,7 +286,7 @@ def test_join_cascade(setup_models):
     # All joins resolved by the large model
     joined_df, stats = df1.sem_join(
         df2, join_instruction,
-        recall_target=1.0, precision_target=1.0,
+        cascade_args=SemJoinCascadeArgs(recall_target=1.0, precision_target=1.0),
         return_stats=True)
 
     for pair in expected_pairs:

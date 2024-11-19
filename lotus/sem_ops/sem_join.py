@@ -4,7 +4,7 @@ import pandas as pd
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticJoinOutput
+from lotus.types import SemanticJoinOutput, SemJoinCascadeArgs
 
 from .cascade_utils import calibrate_sem_sim_join, importance_sampling, learn_cascade_thresholds
 from .sem_filter import sem_filter
@@ -543,13 +543,7 @@ class SemJoinDataframe:
         examples: pd.DataFrame | None = None,
         strategy: str | None = None,
         default: bool = True,
-        recall_target: float | None = None,
-        precision_target: float | None = None,
-        sampling_percentage: float = 0.1,
-        failure_probability: float = 0.2,
-        map_instruction: str | None = None,
-        map_examples: pd.DataFrame | None = None,
-        sampling_range: tuple[int, int] | None = None,
+        cascade_args: SemJoinCascadeArgs | None = None,
         return_stats: bool = False,
     ) -> pd.DataFrame:
         """
@@ -564,13 +558,14 @@ class SemJoinDataframe:
             examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
             strategy (str | None): The reasoning strategy. Defaults to None.
             default (bool): The default value for the join in case of parsing errors. Defaults to True.
-            recall_target (float | None): The target recall. Defaults to None.
-            precision_target (float | None): The target precision when cascading. Defaults to None.
-            sampling_percentage (float): The percentage of the data to sample when cascading. Defaults to 0.1.
-            failure_probability (float): The failure probability when cascading. Defaults to 0.2.
-            map_instruction (str): The map instruction when cascading. Defaults to None.
-            map_examples (pd.DataFrame): The map examples when cascading. Defaults to None.
-            sampling_range (tuple[int, int]): The sampling range when cascading. Defaults to None.
+            cascade_args (SemJoinCascadeArgs | None): The arguments for join cascade. Defaults to None.
+                recall_target (float | None): The target recall. Defaults to None.
+                precision_target (float | None): The target precision when cascading. Defaults to None.
+                sampling_percentage (float): The percentage of the data to sample when cascading. Defaults to 0.1.
+                failure_probability (float): The failure probability when cascading. Defaults to 0.2.
+                map_instruction (str): The map instruction when cascading. Defaults to None.
+                map_examples (pd.DataFrame): The map examples when cascading. Defaults to None.
+                sampling_range (tuple[int, int]): The sampling range when cascading. Defaults to None.
             return_stats (bool): Whether to return stats. Defaults to False.
 
         Returns:
@@ -634,10 +629,11 @@ class SemJoinDataframe:
 
         num_full_join = len(self._obj) * len(other)
 
-        if (recall_target is not None or precision_target is not None) and \
+        if  (cascade_args is not None) and \
+            (cascade_args.recall_target is not None or cascade_args.precision_target is not None) and \
             (num_full_join >= lotus.settings.min_join_cascade_size):
-            recall_target = 1.0 if recall_target is None else recall_target
-            precision_target = 1.0 if precision_target is None else precision_target
+            cascade_args.recall_target = 1.0 if cascade_args.recall_target is None else cascade_args.recall_target
+            cascade_args.precision_target = 1.0 if cascade_args.precision_target is None else cascade_args.precision_target
             output = sem_join_cascade(
                 self._obj[real_left_on],
                 other[real_right_on],
@@ -646,18 +642,18 @@ class SemJoinDataframe:
                 left_on,
                 right_on,
                 join_instruction,
-                recall_target,
-                precision_target,
-                sampling_percentage=sampling_percentage,
-                failure_probability=failure_probability,
+                cascade_args.recall_target,
+                cascade_args.precision_target,
+                sampling_percentage=cascade_args.sampling_percentage,
+                failure_probability=cascade_args.failure_probability,
                 examples_df_txt=examples_df_txt,
                 examples_answers=examples_answers,
-                map_instruction=map_instruction,
-                map_examples=map_examples,
+                map_instruction=cascade_args.map_instruction,
+                map_examples=cascade_args.map_examples,
                 cot_reasoning=cot_reasoning,
                 default=default,
                 strategy=strategy,
-                sampling_range=sampling_range,
+                sampling_range=cascade_args.sampling_range,
             )
         else:
             output = sem_join(
