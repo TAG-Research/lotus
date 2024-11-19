@@ -64,11 +64,9 @@ def learn_cascade_thresholds(
         helper_accepted = [x for x in sorted_pairs if x[0] >= pos_threshold or x[0] <= neg_threshold]
         sent_to_oracle = [x for x in sorted_pairs if x[0] < pos_threshold and x[0] > neg_threshold]
         total_correct = sum(pair[1] * pair[2] for pair in sorted_pairs)
-        if total_correct == 0:
-            return 0
         recall = (
             sum(1 for x in helper_accepted if x[0] >= pos_threshold and x[1]) + sum(x[1] * x[2] for x in sent_to_oracle)
-        ) / total_correct
+        ) / total_correct if total_correct > 0 else 0.0
         return recall
 
     def precision(pos_threshold: float, neg_threshold: float, sorted_pairs: list[tuple[float, bool, float]]) -> float:
@@ -77,7 +75,7 @@ def learn_cascade_thresholds(
         oracle_positive = sum(x[1] for x in sent_to_oracle)
         true_positives = sum(1 for x in helper_accepted if x[0] >= pos_threshold and x[1]) + oracle_positive
         predicted_positives = sum(1 for x in helper_accepted if x[0] >= pos_threshold) + oracle_positive
-        precision = true_positives / predicted_positives if predicted_positives > 0 else 0
+        precision = true_positives / predicted_positives if predicted_positives > 0 else 0.0
         return precision
 
     # Pair helper model probabilities with helper correctness and oracle answer
@@ -103,10 +101,14 @@ def learn_cascade_thresholds(
     mean_z2 = float(np.mean(Z2)) if Z2 else 0.0
     std_z2 = float(np.std(Z2)) if Z2 else 0.0
 
-    corrected_recall_target = UB(mean_z1, std_z1, sample_size, delta / 2) / (
-        UB(mean_z1, std_z1, sample_size, delta / 2) + LB(mean_z2, std_z2, sample_size, delta / 2)
-    )
+    ub_z1 = UB(mean_z1, std_z1, sample_size, delta / 2)
+    lb_z2 = LB(mean_z2, std_z2, sample_size, delta / 2)
+    if ub_z1 + lb_z2 == 0:  # Avoid division by zero
+        corrected_recall_target = 1.0
+    else:
+        corrected_recall_target = ub_z1 / (ub_z1 + lb_z2)
     corrected_recall_target = min(1, corrected_recall_target)
+
     tau_neg_prime = max(
         (x[0] for x in sorted_pairs[::-1] if recall(best_combination[0], x[0], sorted_pairs) >= corrected_recall_target),
         default=0
