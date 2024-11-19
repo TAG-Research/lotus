@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -9,8 +7,8 @@ import lotus
 def importance_sampling(
     proxy_scores: list[float],
     sample_percentage: float,
-    sampling_range: Optional[tuple[int, int]] = None,
-    random_seed: Optional[int] = 42,
+    sampling_range: tuple[int, int] | None = None,
+    random_seed: int | None = 42,
 ) -> tuple[NDArray[np.int64], NDArray[np.float64]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
     np.random.seed(random_seed)
@@ -27,7 +25,7 @@ def importance_sampling(
         sample_w = w
         indices = np.arange(len(proxy_scores))
 
-    sample_size = (int) (sample_percentage * len(proxy_scores))
+    sample_size = int(sample_percentage * len(proxy_scores))
     sample_indices = np.random.choice(indices, sample_size, p=sample_w)
 
     correction_factors = (1/len(proxy_scores)) / w
