@@ -138,10 +138,18 @@ def sem_join_cascade(
         sampling_range (tuple[int, int] | None): The sampling range. Defaults to None.
         
     Returns:
-        SemanticJoinOutput: The join results, filter outputs, all raw outputs, and all explanations.
+        SemanticJoinOutput: The join results, filter outputs, all raw outputs, all explanations, and stats.
         
         Note that filter_outputs, all_raw_outputs, and all_explanations are empty list because
         the helper model do not generate these outputs.
+        
+        SemanticJoinOutput.stats:
+            join_resolved_by_helper_model: total number of join records resolved by the helper model
+            join_helper_positive: number of high confidence positive results from the helper model
+            join_helper_negative: number of high confidence negative results from the helper model
+            join_resolved_by_large_model: total number of joins resolved by the large model
+            optimized_join_cost: number of LM calls from finding optimal join plan
+            total_LM_calls: the total number of LM calls from join cascade, ie: optimized_join_cost + join_resolved_by_helper_model
     """
     filter_outputs: list[bool] = []
     all_raw_outputs: list[str] = []
@@ -152,7 +160,7 @@ def sem_join_cascade(
     num_large = 0
 
     # Determine the join plan
-    helper_high_conf, helper_low_conf, num_helper_high_conf_neg = join_optimizer(
+    helper_high_conf, helper_low_conf, num_helper_high_conf_neg, join_optimization_cost = join_optimizer(
         recall_target,
         precision_target,
         l1,
@@ -172,7 +180,7 @@ def sem_join_cascade(
         sampling_range=sampling_range,
         )
 
-    num_helper = len(helper_high_conf) + num_helper_high_conf_neg
+    num_helper = len(helper_high_conf)
     num_large = len(helper_low_conf)
     
     # Accept helper results with high confidence
@@ -204,7 +212,14 @@ def sem_join_cascade(
     lotus.logger.debug(f"outputs: {filter_outputs}")
     lotus.logger.debug(f"explanations: {all_explanations}")
 
-    stats = {"filters_resolved_by_helper_model": num_helper, "filters_resolved_by_large_model": num_large}
+    # Log join cascade stats:
+    stats = {"join_resolved_by_helper_model": num_helper + num_helper_high_conf_neg,
+             "join_helper_positive": num_helper,
+             "join_helper_negative": num_helper_high_conf_neg,
+             "join_resolved_by_large_model": num_large,
+             "optimized_join_cost": join_optimization_cost,
+             "total_LM_calls": join_optimization_cost + num_large}
+
     return SemanticJoinOutput(
         join_results=join_results,
         filter_outputs=filter_outputs,
@@ -353,6 +368,7 @@ def join_optimizer(
     returns:
         tuple[pd.DataFrame, pd.DataFrame]: The high confidence and low confidence join results.
         int: The number of high confidence negative results.
+        int: The number of LM calls from optimizing join plan.
     """
     
     # Helper is currently default to similiarity join
@@ -361,7 +377,7 @@ def join_optimizer(
 
     # Learn search-filter thresholds
     sf_helper_join = run_sem_sim_join(l1, l2, col1_label, col2_label)
-    sf_t_pos, sf_t_neg, _ = learn_join_cascade_threshold(
+    sf_t_pos, sf_t_neg, sf_learn_cost = learn_join_cascade_threshold(
         sf_helper_join, 
         recall_target, 
         precision_target, 
@@ -384,7 +400,7 @@ def join_optimizer(
     # Learn map-search-filter thresholds
     mapped_l1, mapped_col1_label = map_l1_to_l2(l1, col1_label, col2_label, map_instruction=map_instruction, map_examples=map_examples)
     msf_helper_join = run_sem_sim_join(mapped_l1, l2, mapped_col1_label, col2_label)
-    msf_t_pos, msf_t_neg, _ = learn_join_cascade_threshold(
+    msf_t_pos, msf_t_neg, msf_learn_cost = learn_join_cascade_threshold(
         msf_helper_join, 
         recall_target, 
         precision_target, 
@@ -403,6 +419,7 @@ def join_optimizer(
     msf_high_conf_neg = len(msf_helper_join[msf_helper_join['_scores'] <= msf_t_neg])
     msf_low_conf = msf_helper_join[(msf_helper_join['_scores'] < msf_t_pos) & (msf_helper_join['_scores'] > msf_t_neg)]
     msf_cost = len(msf_low_conf)
+    msf_learn_cost += len(l1) # cost from map l1 to l2
 
     # Select the cheaper join plan
     lotus.logger.info("Join Optimizer: plan cost analysis:")
@@ -411,16 +428,17 @@ def join_optimizer(
     lotus.logger.info(f"    Map-Search-Filter: {msf_cost} LLM calls.")
     lotus.logger.info(f"    Map-Search-Filter: accept {len(msf_high_conf)} helper positive results, {msf_high_conf_neg} helper negative results.")
 
+    learning_cost = sf_learn_cost + msf_learn_cost
     if sf_cost < msf_cost:
         lotus.logger.info("Proceeding with Search-Filter")
         sf_high_conf = sf_high_conf.sort_values(by='_scores', ascending=False)
         sf_low_conf = sf_low_conf.sort_values(by='_scores', ascending=False)
-        return sf_high_conf, sf_low_conf, sf_high_conf_neg
+        return sf_high_conf, sf_low_conf, sf_high_conf_neg, learning_cost
     else:
         lotus.logger.info("Proceeding with Map-Search-Filter")
         msf_high_conf = msf_high_conf.sort_values(by='_scores', ascending=False)
         msf_low_conf = msf_low_conf.sort_values(by='_scores', ascending=False)
-        return msf_high_conf, msf_low_conf, msf_high_conf_neg
+        return msf_high_conf, msf_low_conf, msf_high_conf_neg, learning_cost
 
 
 def learn_join_cascade_threshold(
@@ -456,12 +474,13 @@ def learn_join_cascade_threshold(
         strategy (Optional[str]): The reasoning strategy. Defaults to None.
         sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
     Returns:
-        tuple: The join results, filter outputs, all raw outputs, and all explanations.
+        tuple: The positive threshold, negative threshold, and the number of LM calls from learning thresholds.
     """
     # Sample a small subset of the helper join result
     helper_scores = helper_join['_scores'].tolist()
     
     sample_indices, correction_factors = importance_sampling(helper_scores, sampling_percentage, sampling_range=sampling_range)
+    lotus.logger.info(f"Sampled {len(sample_indices)} out of {len(helper_scores)} helper join results.")
 
     sample_df = helper_join.iloc[sample_indices]
     sample_scores = sample_df['_scores'].tolist()
@@ -482,7 +501,7 @@ def learn_join_cascade_threshold(
             strategy=strategy,
         )
 
-        (pos_threshold, neg_threshold), large_calls = learn_cascade_thresholds(
+        (pos_threshold, neg_threshold), _ = learn_cascade_thresholds(
             proxy_scores=sample_scores,
             oracle_outputs=output.outputs,
             sample_correction_factors=sample_correction_factors,
@@ -498,7 +517,7 @@ def learn_join_cascade_threshold(
         lotus.logger.error("Default to full join.")
         return 1.0, 0.0, float('inf')
     
-    return pos_threshold, neg_threshold, large_calls
+    return pos_threshold, neg_threshold, len(sample_indices)
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_join")

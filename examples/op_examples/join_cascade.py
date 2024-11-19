@@ -47,5 +47,6 @@ res, stats = df1.sem_join(df2, join_instruction, recall_target = 0.7, precision_
 print(f"Joined {df1.shape[0]} rows from df1 with {df2.shape[0]} rows from df2")
 print(f"    Join cascade took {stats['join_resolved_by_large_model']} LM calls")
 print(f"    Helper resolved {stats['join_resolved_by_helper_model']} LM calls")
+print(f"Join cascade used {stats['total_LM_calls']} LM calls in total")
 print(f"Naive join would require {df1.shape[0]*df2.shape[0]} LM calls")
 print(res)
