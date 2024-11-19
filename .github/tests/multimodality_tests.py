@@ -74,3 +74,29 @@ def test_filter_operation(setup_models, model):
     )
 
     assert expected_image_url == filtered_df["image"]
+
+
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_join_operation(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    # Test filter operation on an easy dataframe
+    image_url = [
+        "https://img.etsystatic.com/il/4bee20/1469037676/il_340x270.1469037676_iiti.jpg?version=0",
+        "https://i1.wp.com/www.alloverthemap.net/wp-content/uploads/2014/02/2012-09-25-12.46.15.jpg?resize=400%2C284&amp;ssl=1",
+        "https://i.pinimg.com/236x/a4/3a/65/a43a65683a0314f29b66402cebdcf46d.jpg",
+        "https://pravme.ru/wp-content/uploads/2018/01/sobor-Bogord-1.jpg",
+    ]
+    elements = ["doll", "bird"]
+    image_df = pd.DataFrame({"image": ImageArray(image_url)})
+    element_df = pd.DataFrame({"element": elements})
+    user_instruction = "{image} contains {element}"
+    filtered_df = image_df.sem_join(element_df, user_instruction)
+
+    expected_result = [
+        ("https://img.etsystatic.com/il/4bee20/1469037676/il_340x270.1469037676_iiti.jpg?version=0", "doll"),
+        ("https://i.pinimg.com/236x/a4/3a/65/a43a65683a0314f29b66402cebdcf46d.jpg", "bird"),
+    ]
+
+    assert expected_result == list(zip(filtered_df["image"], filtered_df["element"]))
