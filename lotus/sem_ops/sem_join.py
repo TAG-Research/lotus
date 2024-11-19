@@ -337,7 +337,7 @@ def join_optimizer(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
-) -> tuple[pd.DataFrame, pd.DataFrame, int]:
+) -> tuple[pd.DataFrame, pd.DataFrame, int, int]:
     """
     Find most cost-effective join plan between Search-Filter and Map-Search-Filter 
     while satisfying the recall and precision target.
@@ -448,7 +448,7 @@ def learn_join_cascade_threshold(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
-) -> tuple[float, float, float]:
+) -> tuple[float, float, int]:
     """
     Extract a small sample of the data and find the optimal threshold pair that satisfies the recall and 
     precision target.
@@ -509,7 +509,7 @@ def learn_join_cascade_threshold(
     except Exception as e:
         lotus.logger.error(f"Error while learning filter cascade thresholds: {e}")
         lotus.logger.error("Default to full join.")
-        return 1.0, 0.0, float('inf')
+        return 1.0, 0.0, len(sample_indices)
     
     return pos_threshold, neg_threshold, len(sample_indices)
 
