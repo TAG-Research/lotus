@@ -96,7 +96,6 @@ class SemJoinCascadeArgs(BaseModel):
     failure_probability: float = 0.2
     map_instruction: str | None = None
     map_examples: pd.DataFrame | None = None
-    sampling_range: tuple[int, int] | None = None
 
     # to enable pandas
     class Config:

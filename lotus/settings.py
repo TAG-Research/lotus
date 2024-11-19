@@ -117,4 +117,4 @@ class Settings(object):
 settings = Settings()
 settings.configure(enable_cache=False)
 settings.configure(cascade_is_weight=0.5, cascade_num_calibration_quantiles=50) # Filter cascade settings
-settings.configure(min_join_cascade_size=100) # Join cascade settings
+settings.configure(min_join_cascade_size=100, cascade_is_sampling_range=None) # Join cascade settings

@@ -111,7 +111,6 @@ def sem_join_cascade(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
-    sampling_range: tuple[int, int] | None = None,
 ) -> SemanticJoinOutput:
     """
     Joins two series using a cascade helper model and a large model.
@@ -135,7 +134,6 @@ def sem_join_cascade(
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
         strategy (str | None): The reasoning strategy. Defaults to None.
-        sampling_range (tuple[int, int] | None): The sampling range. Defaults to None.
         
     Returns:
         SemanticJoinOutput: The join results, filter outputs, all raw outputs, all explanations, and stats.
@@ -177,7 +175,6 @@ def sem_join_cascade(
         cot_reasoning=cot_reasoning,
         default=default,
         strategy=strategy,
-        sampling_range=sampling_range,
         )
 
     num_helper = len(helper_high_conf)
@@ -340,7 +337,6 @@ def join_optimizer(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
-    sampling_range: tuple[int, int] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, int]:
     """
     Find most cost-effective join plan between Search-Filter and Map-Search-Filter 
@@ -363,7 +359,6 @@ def join_optimizer(
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         default (bool): The default value for the join in case of parsing errors. Defaults to True.
         strategy (str | None): The reasoning strategy. Defaults to None.
-        sampling_range (tuple[int, int] | None): The sampling range. Defaults to None.
     
     returns:
         tuple[pd.DataFrame, pd.DataFrame]: The high confidence and low confidence join results.
@@ -390,8 +385,7 @@ def join_optimizer(
         examples_answers=examples_answers,
         cot_reasoning=cot_reasoning,
         default=default,
-        strategy=strategy,
-        sampling_range=sampling_range)
+        strategy=strategy)
     sf_high_conf = sf_helper_join[sf_helper_join['_scores'] >= sf_t_pos]
     sf_high_conf_neg = len(sf_helper_join[sf_helper_join['_scores'] <= sf_t_neg])
     sf_low_conf = sf_helper_join[(sf_helper_join['_scores'] < sf_t_pos) & (sf_helper_join['_scores'] > sf_t_neg)]
@@ -413,8 +407,7 @@ def join_optimizer(
         examples_answers=examples_answers,
         cot_reasoning=cot_reasoning,
         default=default,
-        strategy=strategy,
-        sampling_range=sampling_range)
+        strategy=strategy)
     msf_high_conf = msf_helper_join[msf_helper_join['_scores'] >= msf_t_pos]
     msf_high_conf_neg = len(msf_helper_join[msf_helper_join['_scores'] <= msf_t_neg])
     msf_low_conf = msf_helper_join[(msf_helper_join['_scores'] < msf_t_pos) & (msf_helper_join['_scores'] > msf_t_neg)]
@@ -455,31 +448,32 @@ def learn_join_cascade_threshold(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
-    sampling_range: tuple[int, int] | None = None,
 ) -> tuple[float, float, float]:
     """
     Extract a small sample of the data and find the optimal threshold pair that satisfies the recall and 
     precision target.
 
     Args:
-        model (lotus.models.LM): The model to use.
         helper_join (pd.DataFrame): The helper join results.
-        user_instruction (str): The user instruction for join.
         recall_target (float): The target recall.
         precision_target (float): The target precision.
-        examples_df_txt (Optional[str]): The examples dataframe text. Defaults to None.
-        examples_answers (Optional[list[bool]]): The answers for examples. Defaults to None.
-        cot_reasoning (Optional[list[str]]): The reasoning for CoT. Defaults to None.
-        default (bool): The default value for the join in case of parsing errors. Defaults to True.
-        strategy (Optional[str]): The reasoning strategy. Defaults to None.
+        col1_label (str): The label for the first column.
+        col2_label (str): The label for the second column.
+        user_instruction (str): The user instruction for join.
         sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
+        delta (float): The failure probability. Defaults to 0.2.
+        examples_df_txt (list[str] | None): The examples dataframe text. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
+        default (bool): The default value for the join in case of parsing errors. Defaults to True.
+        strategy (str | None): The reasoning strategy. Defaults to None.
     Returns:
         tuple: The positive threshold, negative threshold, and the number of LM calls from learning thresholds.
     """
     # Sample a small subset of the helper join result
     helper_scores = helper_join['_scores'].tolist()
     
-    sample_indices, correction_factors = importance_sampling(helper_scores, sampling_percentage, sampling_range=sampling_range)
+    sample_indices, correction_factors = importance_sampling(helper_scores, sampling_percentage)
     lotus.logger.info(f"Sampled {len(sample_indices)} out of {len(helper_scores)} helper join results.")
 
     sample_df = helper_join.iloc[sample_indices]
@@ -565,7 +559,6 @@ class SemJoinDataframe:
                 failure_probability (float): The failure probability when cascading. Defaults to 0.2.
                 map_instruction (str): The map instruction when cascading. Defaults to None.
                 map_examples (pd.DataFrame): The map examples when cascading. Defaults to None.
-                sampling_range (tuple[int, int]): The sampling range when cascading. Defaults to None.
             return_stats (bool): Whether to return stats. Defaults to False.
 
         Returns:
@@ -653,7 +646,6 @@ class SemJoinDataframe:
                 cot_reasoning=cot_reasoning,
                 default=default,
                 strategy=strategy,
-                sampling_range=cascade_args.sampling_range,
             )
         else:
             output = sem_join(
