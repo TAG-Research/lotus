@@ -100,3 +100,33 @@ def test_join_operation(setup_models, model):
     ]
 
     assert expected_result == list(zip(filtered_df["image"], filtered_df["element"]))
+
+
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_topk_operation(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    # Test filter operation on an easy dataframe
+    image_url = [
+        "https://img.etsystatic.com/il/4bee20/1469037676/il_340x270.1469037676_iiti.jpg?version=0",
+        "https://thumbs.dreamstime.com/b/comida-r%C3%A1pida-nachos-con-el-sause-del-tomate-ejemplo-exhausto-de-la-acuarela-mano-aislado-en-blanco-150936354.jpg",
+        "https://i1.wp.com/www.alloverthemap.net/wp-content/uploads/2014/02/2012-09-25-12.46.15.jpg?resize=400%2C284&amp;ssl=1",
+        "https://i.pinimg.com/236x/a4/3a/65/a43a65683a0314f29b66402cebdcf46d.jpg",
+        "https://pravme.ru/wp-content/uploads/2018/01/sobor-Bogord-1.jpg",
+    ]
+    df = pd.DataFrame({"image": ImageArray(image_url)})
+    user_instruction = "{image} represents living beings"
+    top_2_expected = set(
+        [
+            "https://i.pinimg.com/236x/a4/3a/65/a43a65683a0314f29b66402cebdcf46d.jpg",
+            "https://pravme.ru/wp-content/uploads/2018/01/sobor-Bogord-1.jpg",
+        ]
+    )
+
+    strategies = ["quick", "heap", "naive"]
+    for strategy in strategies:
+        sorted_df = df.sem_topk(user_instruction, K=2, strategy=strategy)
+
+        top_2_actual = set(sorted_df["image"].values)
+        assert top_2_expected == top_2_actual

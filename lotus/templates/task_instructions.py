@@ -5,10 +5,9 @@ import pandas as pd
 from lotus.dtype_extensions import ImageDtype
 
 
-def user_message_formatter(
+def context_formatter(
     multimodal_data: dict[str, Any] | str,
-    user_instruction_with_tag: str,
-) -> dict[str, Any]:
+) -> tuple[str, list[dict[str, str]]]:
     if isinstance(multimodal_data, str):
         text = multimodal_data
         image_inputs: list[dict[str, str]] = []
@@ -31,7 +30,14 @@ def user_message_formatter(
         text = multimodal_data["text"] or ""
     else:
         raise ValueError("multimodal_data must be a dictionary or a string")
+    return text, image_inputs
 
+
+def user_message_formatter(
+    multimodal_data: dict[str, Any] | str,
+    user_instruction_with_tag: str,
+) -> dict[str, Any]:
+    text, image_inputs = context_formatter(multimodal_data)
     if not image_inputs or len(image_inputs) == 0:
         return {
             "role": "user",
