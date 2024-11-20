@@ -2,9 +2,8 @@ import os
 import pickle
 import base64
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 from PIL import Image
-
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -12,6 +11,7 @@ from tqdm import tqdm
 from transformers import CLIPProcessor, CLIPModel
 
 from lotus.models.rm import RM
+from lotus.types import RMOutput
 
 from lotus.templates import task_instructions
 
@@ -253,7 +253,7 @@ class CLIPModelRetriever(RM):
         queries: Union[str, List[str], List[List[float]]],
         k: int,
         **kwargs: Dict[str, Any],
-    ) -> Tuple[List[float], List[int]]:
+    ) -> RMOutput:
         """Modified to handle both text and image queries"""
         if isinstance(queries, str):
             queries = [queries]
@@ -286,5 +286,5 @@ class CLIPModelRetriever(RM):
 
         # Search using the appropriate embeddings
         distances, indices = self.faiss_index.search(embedded_queries, k)
-
-        return distances, indices
+        
+        return RMOutput(distances=distances, indices=indices)

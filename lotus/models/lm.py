@@ -1,5 +1,5 @@
 import hashlib
-from typing import Any
+from typing import Any, Union
 
 import litellm
 import numpy as np
@@ -167,9 +167,19 @@ class LM:
 
     def count_tokens(self, messages: list[dict[str, str]] | str) -> int:
         """Count tokens in messages using either custom tokenizer or model's default tokenizer"""
+        # Check if tokenizer supports images (not sure how so just 'true' for now)
+        # if errors get thrown, for now this can be set to false to remove image data from the messages before tokenization
+        supports_images = True
+
         if isinstance(messages, str):
-            processed_messages = self._remove_image_data(messages) # need to do same if not a string but dict
-            messages = [{"role": "user", "content": processed_messages}]
+            if not supports_images:
+                messages = self._remove_image_data(messages)
+            messages = [{"role": "user", "content": messages}]
+        elif isinstance(messages, list):
+            if not supports_images:
+                messages = [{"role": "user", "content": self._remove_image_data(msg["content"])} for msg in messages]
+            else:
+                messages = [{"role": "user", "content": msg["content"]} for msg in messages]
 
         custom_tokenizer: dict[str, Any] | None = None
         if self.tokenizer:

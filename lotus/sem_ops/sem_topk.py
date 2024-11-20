@@ -40,7 +40,6 @@ def get_match_prompt_binary(
     
     content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
     content_entries.append({"type": "text", "text": prompt_without_images})
-    #messages.append({"role": "user", "content": prompt})
     
     messages.append({
         "role": "user",
@@ -73,7 +72,7 @@ def compare_batch_binary(
     tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
-        #tokens += lotus.settings.lm.count_tokens(match_prompts[-1]) # disabled for now due to no image tokenization support
+        tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
 
     lm_results: LMOutput = lotus.settings.lm(match_prompts)
     results: list[bool] = list(map(parse_ans_binary, lm_results.outputs))
