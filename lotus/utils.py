@@ -2,11 +2,9 @@ import base64
 from io import BytesIO
 from typing import Callable
 
-import boto3
 import numpy as np
 import pandas as pd
 import requests  # type: ignore
-from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 from PIL import Image
 
 import lotus
@@ -81,7 +79,11 @@ def fetch_image(image: str | np.ndarray | Image.Image | None, image_type: str = 
             data = base64.b64decode(base64_data)
             image_obj = Image.open(BytesIO(data))
     elif image.startswith("s3://"):
+        from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+
         try:
+            import boto3
+
             s3 = boto3.client("s3")
             bucket_name, key = image[5:].split("/", 1)  # Split after "s3://"
             response = s3.get_object(Bucket=bucket_name, Key=key)
