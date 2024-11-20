@@ -4,6 +4,7 @@ from PIL import Image
 import base64
 import pandas as pd
 import lotus
+import requests
 
 
 def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:
@@ -56,10 +57,16 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
     return ret
 
 # function to convert an image to a base64 string with a prefix
-def image_to_base64(image_path):
-    with open(image_path, "rb") as image_file:
-        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
-        return f"data:image/jpeg;base64,{base64_image}"
+def image_to_base64(image_path_or_url):
+    if image_path_or_url.startswith('http://') or image_path_or_url.startswith('https://'):
+        response = requests.get(image_path_or_url)
+        image_data = response.content
+    else:
+        with open(image_path_or_url, "rb") as image_file:
+            image_data = image_file.read()
+    
+    base64_image = base64.b64encode(image_data).decode('utf-8')
+    return f"data:image/jpeg;base64,{base64_image}"
 
 # Function to decode base64 string to an image
 def base64_to_image(base64_str):
