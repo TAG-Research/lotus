@@ -1,17 +1,19 @@
-from typing import Optional
+from typing import Any
 import pandas as pd
 import lotus
+from lotus.types import RerankerOutput, RMOutput
+
 
 @pd.api.extensions.register_dataframe_accessor("sem_search")
 class SemSearchDataframe:
     """DataFrame accessor for semantic search."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 
@@ -19,8 +21,8 @@ class SemSearchDataframe:
         self,
         col_name: str,
         query: str,
-        K: Optional[int] = None,
-        n_rerank: Optional[int] = None,
+        K: int | None = None,
+        n_rerank: int | None = None,
         return_scores: bool = False,
         suffix: str = "_sim_score",
         chunk_size: int = -1  # New parameter for setting chunk size
@@ -31,8 +33,8 @@ class SemSearchDataframe:
         Args:
             col_name (str): The column name to search on.
             query (str): The query string.
-            K (Optional[int]): The number of documents to retrieve.
-            n_rerank (Optional[int]): The number of documents to rerank.
+            K (int | None): The number of documents to retrieve.
+            n_rerank (int | None): The number of documents to rerank.
             return_scores (bool): Whether to return the similarity scores.
             suffix (str): The suffix to append to the new column containing the similarity scores.
             chunk_size (int): The size of chunks for memory optimization (-1 to disable).
@@ -60,13 +62,15 @@ class SemSearchDataframe:
                     scores, doc_idxs = [], []
                     for start in range(0, search_K, chunk_size):
                         end = min(start + chunk_size, search_K)
-                        chunk_scores, chunk_doc_idxs = rm(query, end - start)
+                        rm_output: RMOutput = rm(query, end - start)
+                        chunk_scores = rm_output.distances[0]
+                        chunk_doc_idxs = rm_output.indices[0]                        
                         scores.extend(chunk_scores[0])
                         doc_idxs.extend(chunk_doc_idxs[0])
                 else:
-                    scores, doc_idxs = rm(query, search_K)
-                    doc_idxs = doc_idxs[0]
-                    scores = scores[0]
+                    rm_output: RMOutput = rm(query, search_K)
+                    doc_idxs = rm_output.indices[0]
+                    scores = rm_output.distances[0]
 
                 assert len(doc_idxs) == len(scores)
 
@@ -93,7 +97,8 @@ class SemSearchDataframe:
 
         if n_rerank is not None:
             docs = new_df[col_name].tolist()
-            reranked_idxs = lotus.settings.reranker(query, docs, n_rerank)
+            reranked_output: RerankerOutput = lotus.settings.reranker(query, docs, n_rerank)
+            reranked_idxs = reranked_output.indices
             new_df = new_df.iloc[reranked_idxs]
 
         return new_df

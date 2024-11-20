@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 
 import lotus
@@ -7,12 +9,12 @@ import lotus
 class SemClusterByDataframe:
     """DataFrame accessor for semantic clustering."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any) -> None:
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         if not isinstance(obj, pd.DataFrame):
             raise AttributeError("Must be a DataFrame")
 
@@ -36,11 +38,7 @@ class SemClusterByDataframe:
             pd.DataFrame: The DataFrame with the cluster assignments.
         """
         cluster_fn = lotus.utils.cluster(col_name, ncentroids)
-        indices = cluster_fn(
-            self._obj,
-            niter=niter,
-            verbose=verbose,
-        )
+        indices = cluster_fn(self._obj, niter, verbose)
 
         self._obj["cluster_id"] = pd.Series(indices, index=self._obj.index)
         return self._obj

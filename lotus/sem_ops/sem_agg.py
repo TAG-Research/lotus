@@ -1,25 +1,26 @@
-from typing import List
+from typing import Any
 
 import pandas as pd
 
-import lotus
+import lotus.models
 from lotus.templates import task_instructions
+from lotus.types import LMOutput, SemanticAggOutput
 
 
 def sem_agg(
-    docs: List[str],
+    docs: list[str],
     model: lotus.models.LM,
     user_instruction: str,
-    partition_ids: List[int],
-) -> str:
+    partition_ids: list[int],
+) -> SemanticAggOutput:
     """
     Aggregates multiple documents into a single answer using a model.
 
     Args:
-        docs (List[str]): The list of documents to aggregate.
+        docs (list[str]): The list of documents to aggregate.
         model (lotus.models.LM): The model to use.
         user_instruction (str): The user instruction for aggregation.
-        partition_ids (List[int]): The partition ids for the documents. Documents with the same partition id will be aggregated together.
+        partition_ids (list[int]): The partition ids for the documents. Documents with the same partition id will be aggregated together.
 
     Returns:
         str: The aggregated answer.
@@ -50,18 +51,18 @@ def sem_agg(
         f"Instruction:  {user_instruction}\n\nAnswer:\n"
     )
 
-    def leaf_doc_formatter(doc, ctr):
+    def leaf_doc_formatter(doc: str, ctr: int) -> str:
         return f"\n\tDocument {ctr}: {doc}"
 
-    def node_doc_formatter(doc, ctr):
+    def node_doc_formatter(doc: str, ctr: int) -> str:
         return f"\n\tSource {ctr}: {doc}"
 
-    def doc_formatter(tree_level, doc, ctr):
+    def doc_formatter(tree_level: int, doc: str, ctr: int) -> str:
         return leaf_doc_formatter(doc, ctr) if tree_level == 0 else node_doc_formatter(doc, ctr)
 
     tree_level = 0
-    summaries = []
-    new_partition_ids = []
+    summaries: list[str] = []
+    new_partition_ids: list[int] = []
     while len(docs) != 1 or summaries == []:
         cur_partition_id = partition_ids[0]
         do_fold = len(partition_ids) == len(set(partition_ids))
@@ -107,7 +108,9 @@ def sem_agg(
             lotus.logger.debug(f"Prompt added to batch: {prompt}")
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
-        summaries = model(batch)
+        lm_output: LMOutput = model(batch)
+
+        summaries = lm_output.outputs
         partition_ids = new_partition_ids
         new_partition_ids = []
 
@@ -115,19 +118,19 @@ def sem_agg(
         lotus.logger.debug(f"Model outputs from tree level {tree_level}: {summaries}")
         tree_level += 1
 
-    return summaries[0]
+    return SemanticAggOutput(outputs=summaries)
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_agg")
 class SemAggDataframe:
     """DataFrame accessor for semantic aggregation."""
 
-    def __init__(self, pandas_obj):
+    def __init__(self, pandas_obj: Any):
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj):
+    def _validate(obj: Any) -> None:
         pass
 
     def __call__(
@@ -135,6 +138,7 @@ class SemAggDataframe:
         user_instruction: str,
         all_cols: bool = False,
         suffix: str = "_output",
+        group_by: list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Applies semantic aggregation over a dataframe.
@@ -142,8 +146,8 @@ class SemAggDataframe:
         Args:
             user_instruction (str): The user instruction for aggregation.
             all_cols (bool): Whether to use all columns in the dataframe. Defaults to False.
-            suffix (Optional[str]): The suffix for the new column. Defaults to "_output".
-
+            suffix (str): The suffix for the new column. Defaults to "_output".
+            group_by (list[str] | None): The columns to group by before aggregation. Each group will be aggregated separately.
         Returns:
             pd.DataFrame: The dataframe with the aggregated answer.
         """
@@ -159,6 +163,14 @@ class SemAggDataframe:
         for column in col_li:
             if column not in self._obj.columns:
                 raise ValueError(f"column {column} not found in DataFrame. Given usr instruction: {user_instruction}")
+
+        if group_by:
+            grouped = self._obj.groupby(group_by)
+            new_df = pd.DataFrame()
+            for name, group in grouped:
+                res = group.sem_agg(user_instruction, all_cols, suffix, None)
+                new_df = pd.concat([new_df, res])
+            return new_df
 
         # Sort df by partition_id if it exists
         if "_lotus_partition_id" in self._obj.columns:
@@ -180,5 +192,5 @@ class SemAggDataframe:
         )
 
         # package answer in a dataframe
-        answer_df = pd.DataFrame([answer], columns=[suffix])
+        answer_df = pd.DataFrame(answer.outputs, columns=[suffix])
         return answer_df

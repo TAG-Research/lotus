@@ -1,19 +1,24 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
+
+import numpy as np
+from numpy.typing import NDArray
+
+from lotus.types import RMOutput
 
 
 class RM(ABC):
     """Abstract class for retriever models."""
 
-    def _init__(self):
-        pass
+    def __init__(self) -> None:
+        self.index_dir: str | None = None
 
     @abstractmethod
-    def index(self, docs: List[str], index_dir: str, **kwargs: Dict[str, Any]) -> None:
+    def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
         """Create index and store it to a directory.
 
         Args:
-            docs (List[str]): A list of documents to index.
+            docs (list[str]): A list of documents to index.
             index_dir (str): The directory to save the index in.
         """
         pass
@@ -28,15 +33,15 @@ class RM(ABC):
         pass
 
     @abstractmethod
-    def get_vectors_from_index(self, index_dir: str, ids: List[int]) -> List:
+    def get_vectors_from_index(self, index_dir: str, ids: list[int]) -> NDArray[np.float64]:
         """Get the vectors from the index.
 
         Args:
             index_dir (str): Directory of the index.
-            ids (List[int]): The ids of the vectors to retrieve
+            ids (list[int]): The ids of the vectors to retrieve
 
         Returns:
-            List: The vectors matching the specified ids.
+            NDArray[np.float64]: The vectors matching the specified ids.
         """
 
         pass
@@ -44,18 +49,18 @@ class RM(ABC):
     @abstractmethod
     def __call__(
         self,
-        queries: Union[str, List[str], List[List[float]]],
-        k: int,
-        **kwargs: Dict[str, Any],
-    ) -> Tuple[List[float], List[int]]:
+        queries: str | list[str] | NDArray[np.float64],
+        K: int,
+        **kwargs: dict[str, Any],
+    ) -> RMOutput:
         """Run top-k search on the index.
 
         Args:
-            queries (Union[str, List[str]]): Either a query or a list of queries or a 2D FP32 array.
-            k (int): The k to use for top-k search.
-            **kwargs (Dict[str, Any]): Additional keyword arguments.
+            queries (str | list[str] | NDArray[np.float64]): Either a query or a list of queries or a 2D FP32 array.
+            K (int): The k to use for top-k search.
+            **kwargs (dict[str, Any]): Additional keyword arguments.
 
         Returns:
-            Tuple[List[float], List[int]]: A tuple of (distances, indices) of the top-k vectors
+            RMOutput: An RMOutput object containing the distances and indices of the top-k vectors.
         """
         pass

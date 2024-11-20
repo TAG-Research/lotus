@@ -25,6 +25,10 @@ Sem Ops Module
     :members:
     :show-inheritance:
 
+.. automodule:: lotus.sem_ops.sem_dedup
+    :members:
+    :show-inheritance:
+
 .. automodule:: lotus.sem_ops.sem_index
     :members:
     :show-inheritance:
