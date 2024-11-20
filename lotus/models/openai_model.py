@@ -154,6 +154,7 @@ class OpenAIModel(LM):
         backoff.expo,
         ERRORS,
         max_time=1000,
+        max_tries=3,
         on_backoff=backoff_hdlr,
     )
     def request(self, messages: List, **kwargs) -> Union[List, Tuple[List, List]]:
