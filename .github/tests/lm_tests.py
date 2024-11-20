@@ -293,7 +293,7 @@ def test_join_cascade(setup_models):
         school, school_type = pair
         exists = ((joined_df['School'] == school) & (joined_df['School Type'] == school_type)).any()
         assert exists, f"Expected pair {pair} does not exist in the dataframe!"
-    assert stats["filters_resolved_by_large_model"] >  stats["join_resolved_by_helper_model"], stats # helper negative still can still meet the precision target
+    assert stats["join_resolved_by_large_model"] >  stats["join_resolved_by_helper_model"], stats # helper negative still can still meet the precision target
     assert stats["join_helper_positive"] == 0, stats
 
 
