@@ -1,7 +1,13 @@
 import json
+import re
 
 import lotus
-from lotus.types import SemanticExtractPostprocessOutput, SemanticFilterPostprocessOutput, SemanticMapPostprocessOutput
+from lotus.types import (
+    SemanticExtractPostprocessOutput,
+    SemanticFilterPostprocessOutput,
+    SemanticMapPostprocessOutput,
+    SemanticSchemaPostprocessOutput,
+)
 
 
 def map_postprocess_cot(llm_answers: list[str]) -> SemanticMapPostprocessOutput:
@@ -50,6 +56,25 @@ def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> Sema
     outputs: list[str] = llm_answers
     explanations: list[str | None] = [None] * len(llm_answers)
     return SemanticMapPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
+
+
+def schema_postprocess(llm_answers: list[str]) -> SemanticSchemaPostprocessOutput:
+    """
+    Postprocess the output of the schema operator to extract the schema.
+
+    Args:
+        llm_answers (list[str]): The list of llm answers containging the schema.
+
+    Returns:
+        SemanticSchemaPostprocessOutput
+    """
+    schema_data = []
+    for answers in llm_answers:
+        cleaned_answers = re.findall(r"(\{.*\})", answers, re.DOTALL)[0]
+        cleaned_answers = re.sub(r"\\(?![\"\\/bfnrt])", r"\\\\", cleaned_answers)
+        output = json.loads(cleaned_answers)
+        schema_data.append(output)
+    return SemanticSchemaPostprocessOutput(raw_outputs=llm_answers, outputs=schema_data)
 
 
 def filter_postprocess_cot(llm_answers: list[str], default: bool) -> SemanticFilterPostprocessOutput:

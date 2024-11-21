@@ -56,6 +56,15 @@ class SemanticMapOutput(SemanticMapPostprocessOutput):
     pass
 
 
+class SemanticSchemaPostprocessOutput(BaseModel):
+    raw_outputs: list[str]
+    outputs: list[dict[str, str]]
+
+
+class SemanticSchemaOutput(SemanticSchemaPostprocessOutput):
+    pass
+
+
 class SemanticFilterPostprocessOutput(BaseModel):
     raw_outputs: list[str]
     outputs: list[bool]
