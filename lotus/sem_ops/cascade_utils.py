@@ -7,10 +7,10 @@ import lotus
 def importance_sampling(
     proxy_scores: list[float],
     sample_percentage: float,
-    random_seed: int | None = 42,
 ) -> tuple[NDArray[np.int64], NDArray[np.float64]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
-    np.random.seed(random_seed)
+    if lotus.settings.cascade_is_sampling_random_seed is not None:
+        np.random.seed(lotus.settings.cascade_is_sampling_random_seed)
 
     w = np.sqrt(proxy_scores)
     is_weight = lotus.settings.cascade_is_weight
@@ -77,6 +77,12 @@ def learn_cascade_thresholds(
         precision = true_positives / predicted_positives if predicted_positives > 0 else 0.0
         return precision
 
+    def calculate_tau_neg(sorted_pairs: list[tuple[float, bool, float]], tau_pos: float, recall_target: float) -> float:
+        return max(
+            (x[0] for x in sorted_pairs[::-1] if recall(tau_pos, x[0], sorted_pairs) >= recall_target),
+            default=0
+        )
+
     # Pair helper model probabilities with helper correctness and oracle answer
     paired_data = list(zip(proxy_scores, oracle_outputs, sample_correction_factors))
     sorted_pairs = sorted(paired_data, key=lambda x: x[0], reverse=True)
@@ -85,10 +91,7 @@ def learn_cascade_thresholds(
     best_combination = (1.0, 0.0)  # initial tau_+, tau_-
 
     # Find tau_negative based on recall
-    tau_neg_0 = max(
-        (x[0] for x in sorted_pairs[::-1] if recall(best_combination[0], x[0], sorted_pairs) >= recall_target),
-        default=0
-    )
+    tau_neg_0 = calculate_tau_neg(sorted_pairs, best_combination[0], recall_target)
     best_combination = (best_combination[0], tau_neg_0)
 
     # Do a statistical correction to get a new target recall
@@ -108,10 +111,7 @@ def learn_cascade_thresholds(
         corrected_recall_target = ub_z1 / (ub_z1 + lb_z2)
     corrected_recall_target = min(1, corrected_recall_target)
 
-    tau_neg_prime = max(
-        (x[0] for x in sorted_pairs[::-1] if recall(best_combination[0], x[0], sorted_pairs) >= corrected_recall_target),
-        default=0
-    )
+    tau_neg_prime = calculate_tau_neg(sorted_pairs, best_combination[0], corrected_recall_target)
     best_combination = (best_combination[0], tau_neg_prime)
 
     # Do a statistical correction to get a target satisfying precision
