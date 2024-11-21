@@ -10,11 +10,10 @@ from lotus.types import LMOutput, SemanticSchemaOutput, SemanticSchemaPostproces
 from .postprocessors import schema_postprocess
 
 
-def sem_schema(
+def sem_to_schema(
     docs: list[str],
     model: LM,
     columns: list[str],
-    col_description: list[str],
     postprocessor: Callable[[list[str]], SemanticSchemaPostprocessOutput] = schema_postprocess,
 ) -> SemanticSchemaOutput:
     """
@@ -34,7 +33,7 @@ def sem_schema(
     # prepare model inputs
     inputs = []
     for doc in docs:
-        prompt = task_instructions.schema_formatter(doc, columns, col_description)
+        prompt = task_instructions.schema_formatter(doc, columns)
         lotus.logger.debug(f"input to model: {prompt}")
         lotus.logger.debug(f"inputs content to model: {[x.get('content') for x in prompt]}")
         inputs.append(prompt)
@@ -65,7 +64,6 @@ class SemSchemaDataFrame:
         self,
         user_instruction: str,
         columns: list[str],
-        col_description: list[str],
         postprocessor: Callable[[list[str]], SemanticSchemaPostprocessOutput] = schema_postprocess,
         return_raw_outputs: bool = False,
     ) -> pd.DataFrame:
@@ -75,7 +73,6 @@ class SemSchemaDataFrame:
         Args:
             user_instruction (str): The columns from the documents to schema.
             columns (list[str]): The columns to schema.
-            col_description (str): The description of the columns.
             postprocessor (Callable): The postprocessor for the model outputs. Defaults to schema_postprocess.
             return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
 
@@ -91,18 +88,19 @@ class SemSchemaDataFrame:
 
         docs = task_instructions.df2text(self._obj, col_li)
 
-        out = sem_schema(
+        out = sem_to_schema(
             docs=docs,
             model=lotus.settings.lm,
             columns=columns,
-            col_description=col_description,
             postprocessor=postprocessor,
         )
 
-        new_df = pd.DataFrame()
-
-        for column, value in zip(columns, out.outputs):
-            new_df[column] = value
+        new_df = self._obj.copy()
+        for i, output_dict in enumerate(out.outputs):
+            for key, value in output_dict.items():
+                if key not in new_df.columns:
+                    new_df[key] = None
+                new_df.loc[i, key] = value
 
         new_df = new_df.reset_index(drop=True)
 

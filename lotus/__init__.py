@@ -18,6 +18,7 @@ from lotus.sem_ops import (
     sem_cluster_by,
     sem_dedup,
     sem_topk,
+    sem_to_schema,
 )
 from lotus.settings import settings  # type: ignore[attr-defined]
 
@@ -39,6 +40,7 @@ __all__ = [
     "sem_cluster_by",
     "sem_search",
     "sem_dedup",
+    "sem_to_schema",
     "settings",
     "nl_expression",
     "templates",

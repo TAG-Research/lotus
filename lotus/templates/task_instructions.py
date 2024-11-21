@@ -203,11 +203,11 @@ def map_formatter(
     return messages
 
 
-def schema_formatter(df_text: str, columns: list[str], column_description: list[str]) -> list[dict[str, str]]:
+def schema_formatter(df_text: str, columns: list[str]) -> list[dict[str, str]]:
     sys_instruction = (
-        "The user will provide the columns that need to be extracted as well as the column descriptions and some relevant context.\n"
+        "The user will provide the columns that need to be extracted and some relevant context.\n"
         f"Your job is to extract these columns from the context in JSONL format in a single line with the following fields {columns}\n"
-        "Only repsond in JSONL format and no other text. Your output will be parsed json.loads"
+        "Only repsonds in JSONL format and no other text. Your output will be parsed json.loads"
     )
     messages = [
         {"role": "system", "content": sys_instruction},
