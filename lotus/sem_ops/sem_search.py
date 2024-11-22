@@ -1,7 +1,5 @@
 from typing import Any
-
 import pandas as pd
-
 import lotus
 from lotus.types import RerankerOutput, RMOutput
 
@@ -27,6 +25,7 @@ class SemSearchDataframe:
         n_rerank: int | None = None,
         return_scores: bool = False,
         suffix: str = "_sim_score",
+        chunk_size: int = -1  # New parameter for setting chunk size
     ) -> pd.DataFrame:
         """
         Perform semantic search on the DataFrame.
@@ -38,11 +37,13 @@ class SemSearchDataframe:
             n_rerank (int | None): The number of documents to rerank.
             return_scores (bool): Whether to return the similarity scores.
             suffix (str): The suffix to append to the new column containing the similarity scores.
+            chunk_size (int): The size of chunks for memory optimization (-1 to disable).
 
         Returns:
             pd.DataFrame: The DataFrame with the search results.
         """
         assert not (K is None and n_rerank is None), "K or n_rerank must be provided"
+
         if K is not None:
             # get retriever model and index
             rm = lotus.settings.rm
@@ -56,9 +57,21 @@ class SemSearchDataframe:
 
             search_K = K
             while True:
-                rm_output: RMOutput = rm(query, search_K)
-                doc_idxs = rm_output.indices[0]
-                scores = rm_output.distances[0]
+                if chunk_size > 0:
+                    # Process in specified chunk sizes to reduce memory usage
+                    scores, doc_idxs = [], []
+                    for start in range(0, search_K, chunk_size):
+                        end = min(start + chunk_size, search_K)
+                        rm_output: RMOutput = rm(query, end - start)
+                        chunk_scores = rm_output.distances[0]
+                        chunk_doc_idxs = rm_output.indices[0]                        
+                        scores.extend(chunk_scores[0])
+                        doc_idxs.extend(chunk_doc_idxs[0])
+                else:
+                    rm_output: RMOutput = rm(query, search_K)
+                    doc_idxs = rm_output.indices[0]
+                    scores = rm_output.distances[0]
+
                 assert len(doc_idxs) == len(scores)
 
                 postfiltered_doc_idxs = []

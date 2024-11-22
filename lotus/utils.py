@@ -1,8 +1,10 @@
 from typing import Callable
-
+from io import BytesIO
+from PIL import Image
+import base64
 import pandas as pd
-
 import lotus
+import requests
 
 
 def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:
@@ -53,3 +55,49 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         return list(map(int, indices.flatten().tolist()))
 
     return ret
+
+# function to convert an image to a base64 string with a prefix
+def image_to_base64(image_path_or_url):
+    if image_path_or_url.startswith('http://') or image_path_or_url.startswith('https://'):
+        response = requests.get(image_path_or_url)
+        image_data = response.content
+    else:
+        with open(image_path_or_url, "rb") as image_file:
+            image_data = image_file.read()
+    
+    base64_image = base64.b64encode(image_data).decode('utf-8')
+    return f"data:image/jpeg;base64,{base64_image}"
+
+# Function to decode base64 string to an image
+def base64_to_image(base64_str):
+    image_data = base64.b64decode(base64_str.split(',')[1])  # Remove prefix before decoding
+    return Image.open(BytesIO(image_data))
+
+def encode_images(df, column_name, new_column_name):
+    df[new_column_name] = df[column_name].apply(image_to_base64)
+    return df
+
+@pd.api.extensions.register_dataframe_accessor("load_images")
+class LoadImagesDataframe:
+    def __init__(self, pandas_obj):
+        self._validate(pandas_obj)
+        self._obj = pandas_obj
+        
+    @staticmethod
+    def _validate(obj):
+        if not isinstance(obj, pd.DataFrame):
+            raise AttributeError("Must be a DataFrame")
+        
+    def __call__(self, col_name: str, new_col_name: str = 'image_base64') -> pd.DataFrame:
+        """
+        Load the images from the paths specified in col_name as base64 strings in new column
+
+        Args:
+            col_name (str): The column name to index.
+            new_col_name (str, optional): The new column name to save the encoded images. Defaults to 'image_base64'.
+
+        Returns:
+            pd.DataFrame: The DataFrame with the index directory saved.
+        """
+        self._obj[new_col_name] = self._obj[col_name].apply(image_to_base64)
+        return self._obj

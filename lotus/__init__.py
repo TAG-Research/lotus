@@ -45,4 +45,5 @@ __all__ = [
     "logger",
     "models",
     "utils",
+    "load_images",
 ]

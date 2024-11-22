@@ -1,5 +1,14 @@
+from typing import List, Optional
 import pandas as pd
+import re
 
+def extract_image_data(df_text: str) -> (List[str], str):
+    """Extracts all instances of base64 image data from df_text and returns them as a list."""
+    matches = re.findall(r'data:image/[^;]+;base64,[A-Za-z0-9+/=]+', df_text)
+    text_without_images = df_text
+    for match in matches:
+        text_without_images = text_without_images.replace(match, '')
+    return matches, text_without_images.strip()
 
 def filter_formatter_cot(
     df_text: str,
@@ -34,7 +43,17 @@ def filter_formatter_cot(
             ]
         )
 
-    messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+    image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {usr_instruct_noimg}"})
+
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+
     return messages
 
 
@@ -51,7 +70,17 @@ def filter_formatter_zs_cot(
         {"role": "system", "content": sys_instruction},
     ]
 
-    messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+    image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {usr_instruct_noimg}"})
+
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+        
     return messages
 
 
@@ -91,7 +120,17 @@ def filter_formatter(
                 ]
             )
 
-    messages.append({"role": "user", "content": f"Context:\n{df_text}\n\nClaim: {user_instruction}"})
+    image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nClaim: {usr_instruct_noimg}"})
+
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+        
     return messages
 
 
@@ -128,12 +167,18 @@ def map_formatter_cot(
             ]
         )
 
-    messages.append(
-        {
-            "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
-        }
-    )
+
+    image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
+
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+
     return messages
 
 
@@ -150,12 +195,17 @@ def map_formatter_zs_cot(
         {"role": "system", "content": sys_instruction},
     ]
 
-    messages.append(
-        {
-            "role": "user",
-            "content": f"Context:\n{df_text}\nInstruction: {user_instruction}",
-        }
-    )
+    image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
+
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+        
     return messages
 
 
@@ -194,12 +244,17 @@ def map_formatter(
                 ]
             )
 
-    messages.append(
-        {
-            "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
-        }
-    )
+    image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
+
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+        
     return messages
 
 
@@ -210,13 +265,22 @@ def extract_formatter(df_text: str, user_instruction: str) -> list[dict[str, str
         "Write the response in JSONL format in a single line with the following fields:\n"
         """{"answer": "your answer", "quotes": "quote from context supporting your answer"}"""
     )
+    
     messages = [
         {"role": "system", "content": sys_instruction},
-        {
-            "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
-        },
     ]
+
+    image_data_list, text_without_images = extract_image_data(df_text)
+    usr_image_data_list, usr_instruct_noimg = extract_image_data(user_instruction)
+    image_data_list.extend(usr_image_data_list)
+    content_entries = [{"type": "image_url", "image_url": {"url": img}} for img in image_data_list]
+    content_entries.append({"type": "text", "text": f"Context:\n{text_without_images}\n\nInstruction: {usr_instruct_noimg}"})
+
+    messages.append({
+        "role": "user",
+        "content": content_entries
+    })
+        
     return messages
 
 

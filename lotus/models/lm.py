@@ -1,5 +1,5 @@
 import hashlib
-from typing import Any
+from typing import Any, Union
 
 import litellm
 import numpy as np
@@ -12,6 +12,7 @@ from tokenizers import Tokenizer
 import lotus
 from lotus.cache import Cache
 from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
+from lotus.templates import task_instructions
 
 
 class LM:
@@ -166,8 +167,19 @@ class LM:
 
     def count_tokens(self, messages: list[dict[str, str]] | str) -> int:
         """Count tokens in messages using either custom tokenizer or model's default tokenizer"""
+        # Check if tokenizer supports images (not sure how so just 'true' for now)
+        # if errors get thrown, for now this can be set to false to remove image data from the messages before tokenization
+        supports_images = True
+
         if isinstance(messages, str):
+            if not supports_images:
+                messages = self._remove_image_data(messages)
             messages = [{"role": "user", "content": messages}]
+        elif isinstance(messages, list):
+            if not supports_images:
+                messages = [{"role": "user", "content": self._remove_image_data(msg["content"])} for msg in messages]
+            else:
+                messages = [{"role": "user", "content": msg["content"]} for msg in messages]
 
         custom_tokenizer: dict[str, Any] | None = None
         if self.tokenizer:
@@ -178,6 +190,8 @@ class LM:
             model=self.model,
             messages=messages,
         )
+        
+
 
     def print_total_usage(self):
         print(f"Total cost: ${self.stats.total_usage.total_cost:.6f}")
@@ -193,3 +207,21 @@ class LM:
 
     def reset_cache(self, max_size: int | None = None):
         self.cache.reset(max_size)
+
+    def _remove_image_data(self, prompt: Union[str, list]) -> Union[str, list]:
+        """
+        Removes image data from the prompt.
+
+        Args:
+            prompt (Union[str, list]): The original prompt.
+
+        Returns:
+            Union[str, list]: The prompt without image data.
+        """
+        if isinstance(prompt, str):
+            _, prompt_without_images = task_instructions.extract_image_data(prompt)
+            return prompt_without_images
+        elif isinstance(prompt, list):
+            return [task_instructions.extract_image_data(p)[1] for p in prompt]
+        else:
+            raise ValueError("Prompt must be either a string or a list of strings.")
