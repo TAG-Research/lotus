@@ -9,17 +9,18 @@ def importance_sampling(
     sample_percentage: float,
 ) -> tuple[NDArray[np.int64], NDArray[np.float64]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
-    if lotus.settings.cascade_is_sampling_random_seed is not None:
-        np.random.seed(lotus.settings.cascade_is_sampling_random_seed)
+    if lotus.settings.cascade_IS_random_seed is not None:
+        np.random.seed(lotus.settings.cascade_IS_random_seed)
 
     w = np.sqrt(proxy_scores)
-    is_weight = lotus.settings.cascade_is_weight
+    is_weight = lotus.settings.cascade_IS_weight
     w = is_weight * w / np.sum(w) + (1 - is_weight) * np.ones((len(proxy_scores))) / len(proxy_scores)
 
-    if lotus.settings.cascade_is_sampling_range is not None:
-        sample_w = w[lotus.settings.cascade_is_sampling_range[0]:lotus.settings.cascade_is_sampling_range[1]]
+    if lotus.settings.cascade_IS_max_sample_range is not None:
+        sample_range = min(lotus.settings.cascade_IS_max_sample_range, len(proxy_scores))
+        sample_w = w[:sample_range]
         sample_w = sample_w / np.sum(sample_w)
-        indices = np.arange(lotus.settings.cascade_is_sampling_range[0], lotus.settings.cascade_is_sampling_range[1])
+        indices = np.arange(sample_range)
     else:
         sample_w = w
         indices = np.arange(len(proxy_scores))
