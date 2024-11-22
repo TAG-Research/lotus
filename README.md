@@ -3,6 +3,7 @@
 <!--[![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing)-->
 [![Colab Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1qtmklXD_J1SSJLR86ws4GsYcLln6FZqY?usp=sharing#scrollTo=p5YByUTZqUqN)
 [![Arxiv](https://img.shields.io/badge/arXiv-2407.11418-B31B1B.svg)][#arxiv-paper-package]
+[![Slack](https://img.shields.io/badge/slack-lotus-purple.svg?logo=slack)][#slack]
 [![Documentation Status](https://readthedocs.org/projects/lotus-ai/badge/?version=latest)](https://lotus-ai.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lotus-ai)][#pypi-package]
 [![PyPI](https://img.shields.io/pypi/v/lotus-ai)][#pypi-package]
@@ -11,6 +12,7 @@
 [#license-gh-package]: https://lbesson.mit-license.org/
 [#arxiv-paper-package]: https://arxiv.org/abs/2407.11418
 [#pypi-package]: https://pypi.org/project/lotus-ai/
+[#slack]: https://join.slack.com/t/lotus-fnm8919/shared_invite/zt-2tnq6948j-juGuSIR0__fsh~kUmZ6TJw
 <!--- BADGES: END --->
 
 Easily build knowledge-intensive LLM applications that reason over your data with LOTUS!
