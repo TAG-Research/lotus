@@ -65,7 +65,7 @@ class SemExtractDataFrame:
         self,
         input_cols: list[str],
         output_cols: dict[str, str | None],
-        extract_quotes: bool = True,
+        extract_quotes: bool = False,
         postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
         return_raw_outputs: bool = False,
     ) -> pd.DataFrame:

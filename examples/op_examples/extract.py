@@ -23,7 +23,7 @@ output_cols = {
     "masked_col_2": "The age of the person",
 }
 
-new_df = df.sem_extract(input_cols, output_cols)
+new_df = df.sem_extract(input_cols, output_cols, extract_quotes=True)
 print(new_df)
 
 # A description can also be omitted for each output column
