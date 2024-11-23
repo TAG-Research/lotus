@@ -96,7 +96,7 @@ For recent updates related to LOTUS, follow [@lianapatel_](https://x.com/lianapa
 
 If you find LOTUS or semantic operators useful, we'd appreciate if you can please cite this work as follows:
 ```bibtex
-@misc{patel2024lotusenablingsemanticqueries,
+@misc{patel2024semanticoperators,
       title={Semantic Operators: A Declarative Model for Rich, AI-based Analytics Over Text Data},
       author={Liana Patel and Siddharth Jha and Parth Asawa and Melissa Pan and Carlos Guestrin and Matei Zaharia},
       year={2024},
