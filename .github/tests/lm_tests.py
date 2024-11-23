@@ -167,7 +167,7 @@ def test_group_by_with_agg(setup_models, model):
     assert set(cleaned_df["final_output"].values[1].lower().strip(".,!?\"'").split(", ")) == {"michael", "dwight"}
 
 
-@pytest.maerk.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.1"))
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.1"))
 def test_sem_extract(setup_models, model):
     lm = setup_models[model]
     lotus.settings.configure(lm=lm)
