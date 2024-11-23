@@ -40,12 +40,12 @@ data2 = pd.DataFrame({"Skill": skills})
 
 df1 = pd.DataFrame(data)
 df2 = pd.DataFrame(data2)
-join_instruction = "Taking {Course Name:left} will help me learn {Skill:right}"
-print(f"Joining {df1.shape[0]} rows from df1 with {df2.shape[0]} rows from df2")
-print(f"Naive join would require {df1.shape[0]*df2.shape[0]} LM calls")
+join_instruction = "By taking {Course Name:left} I will learn {Skill:right}"
 
 cascade_args = SemJoinCascadeArgs(recall_target = 0.7, precision_target = 0.7)
 res, stats = df1.sem_join(df2, join_instruction, cascade_args=cascade_args, return_stats=True)
+
+
 print(f"Joined {df1.shape[0]} rows from df1 with {df2.shape[0]} rows from df2")
 print(f"    Join cascade took {stats['join_resolved_by_large_model']} LM calls")
 print(f"    Helper resolved {stats['join_resolved_by_helper_model']} LM calls")
