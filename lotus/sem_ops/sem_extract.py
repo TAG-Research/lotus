@@ -14,7 +14,7 @@ def sem_extract(
     docs: list[str],
     model: LM,
     output_cols: dict[str, str | None],
-    extract_quotes: bool = True,
+    extract_quotes: bool = False,
     postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
 ) -> SemanticExtractOutput:
     """
@@ -24,7 +24,7 @@ def sem_extract(
         docs (list[str]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
         output_cols (dict[str, str | None]): A mapping from desired output column names to optional descriptions.
-        extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
+        extract_quotes (bool): Whether to extract quotes for the output columns. Defaults to False.
         postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
 
     Returns:
@@ -75,7 +75,7 @@ class SemExtractDataFrame:
         Args:
             input_cols (list[str]): The columns that a model should extract from.
             output_cols (dict[str, str | None]): A mapping from desired output column names to optional descriptions.
-            extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
+            extract_quotes (bool): Whether to extract quotes for the output columns. Defaults to False.
             postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
             return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
 
