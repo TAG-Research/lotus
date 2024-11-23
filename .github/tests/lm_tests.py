@@ -181,9 +181,9 @@ def test_sem_extract(setup_models, model):
         ]
     }
     df = pd.DataFrame(data)
-    user_instruction = "{Text}"
-    columns = ["Name", "Sport", "Number of Championships"]
-    df = df.sem_extract(columns=columns, user_instruction=user_instruction)
+    input_cols = ["Text"]
+    output_cols = ["Name", "Sport", "Number of Championships"]
+    df = df.sem_extract(input_cols, output_cols)
 
     expected_values = {
         "Name": ["lionel messi", "michael jordan", "tiger woods", "tom brady"],
@@ -191,7 +191,7 @@ def test_sem_extract(setup_models, model):
         "Number of Championships": ["5", "6", "4", "7"],
     }
 
-    for col in columns:
+    for col in output_cols:
         assert [str(val).strip().lower() for val in df[col].tolist()] == expected_values[col]
 
     for idx, row in df.iterrows():

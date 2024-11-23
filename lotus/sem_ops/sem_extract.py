@@ -13,7 +13,7 @@ from .postprocessors import extract_postprocess
 def sem_extract(
     docs: list[str],
     model: LM,
-    columns: list[str],
+    output_cols: list[str],
     extract_quotes: bool = True,
     postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
 ) -> SemanticExtractOutput:
@@ -23,7 +23,7 @@ def sem_extract(
     Args:
         docs (list[str]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
-        columns (list[str]): The columns that a model should extract.
+        output_cols (list[str]): The columns that a model should extract.
         extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
         postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
 
@@ -34,7 +34,7 @@ def sem_extract(
     # prepare model inputs
     inputs = []
     for doc in docs:
-        prompt = task_instructions.extract_formatter(doc, columns, extract_quotes)
+        prompt = task_instructions.extract_formatter(doc, output_cols, extract_quotes)
         lotus.logger.debug(f"input to model: {prompt}")
         lotus.logger.debug(f"inputs content to model: {[x.get('content') for x in prompt]}")
         inputs.append(prompt)
@@ -63,8 +63,8 @@ class SemExtractDataFrame:
 
     def __call__(
         self,
-        columns: list[str],
-        user_instruction: str,
+        input_cols: list[str],
+        output_cols: list[str],
         extract_quotes: bool = True,
         postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
         return_raw_outputs: bool = False,
@@ -73,8 +73,8 @@ class SemExtractDataFrame:
         Extracts the attributes and values of a dataframe.
 
         Args:
-            user_instruction (str): The columns from the documents to extract from.
-            columns (list[str]): The columns that a model should extract.
+            input_cols (list[str]): The columns that a model should extract from.
+            output_cols (list[str]): The columns that a model should extract.
             extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
             postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
             return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
@@ -82,19 +82,18 @@ class SemExtractDataFrame:
         Returns:
             pd.DataFrame: The dataframe with the new mapped columns.
         """
-        col_li = lotus.nl_expression.parse_cols(user_instruction)
 
         # check that column exists
-        for column in col_li:
+        for column in input_cols:
             if column not in self._obj.columns:
                 raise ValueError(f"Column {column} not found in DataFrame")
 
-        docs = task_instructions.df2text(self._obj, col_li)
+        docs = task_instructions.df2text(self._obj, input_cols)
 
         out = sem_extract(
             docs=docs,
             model=lotus.settings.lm,
-            columns=columns,
+            output_cols=output_cols,
             extract_quotes=extract_quotes,
             postprocessor=postprocessor,
         )

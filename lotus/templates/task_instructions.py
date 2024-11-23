@@ -203,19 +203,19 @@ def map_formatter(
     return messages
 
 
-def extract_formatter(df_text: str, columns: list[str], extract_quotes: bool = True) -> list[dict[str, str]]:
+def extract_formatter(df_text: str, output_cols: list[str], extract_quotes: bool = True) -> list[dict[str, str]]:
     if extract_quotes:
-        quote_fields = [f"{col}_quote" for col in columns]
-        all_fields = columns + quote_fields
+        quote_fields = [f"{col}_quote" for col in output_cols]
+        all_fields = output_cols + quote_fields
     else:
-        all_fields = columns
+        all_fields = output_cols
 
     fields_str = ", ".join(all_fields)
 
     sys_instruction = (
         "The user will provide the columns that need to be extracted and some relevant context.\n"
         f"Your job is to extract these columns and provide only the concise subject or topic as the value for each field "
-        f"and the corresponding full quote for each field in the '{', '.join([f'{col}_quote' for col in columns])}' fields.\n"
+        f"and the corresponding full quote for each field in the '{', '.join([f'{col}_quote' for col in output_cols])}' fields.\n"
         f"The response should be in JSONL in a single line format with the following fields: {fields_str}.\n"
         "Only respond in JSONL format and no other text. Your output will be parsed with json.loads.\n"
     )

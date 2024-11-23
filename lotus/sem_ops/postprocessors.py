@@ -71,7 +71,12 @@ def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOut
     for answers in llm_answers:
         cleaned_answers = re.findall(r"(\{.*\})", answers, re.DOTALL)[0]
         cleaned_answers = re.sub(r"\\(?![\"\\/bfnrt])", r"\\\\", cleaned_answers)
-        output = json.loads(cleaned_answers)
+
+        try:
+            output = json.loads(cleaned_answers)
+        except json.JSONDecodeError:
+            lotus.logger.info(f"\t Failed to parse: {cleaned_answers}")
+            output = {}
 
         output = {key: str(value) for key, value in output.items()}
         extract_data.append(output)

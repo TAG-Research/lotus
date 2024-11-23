@@ -1,16 +1,22 @@
-from datasets import load_dataset
+import pandas as pd
 
 import lotus
 from lotus.models import LM
 
-lm = LM(model="gpt-4o-mini")
+lm = LM(model="gpt-4o")
 lotus.settings.configure(lm=lm)
 
-dataset = load_dataset("CShorten/ML-ArXiv-Papers", split="train")
-df = dataset.to_pandas().head(3)
+df = pd.DataFrame(
+    {
+        "description": [
+            "Yoshi is 25 years old",
+            "Bowser is 45 years old",
+            "Luigi is 15 years old",
+        ]
+    }
+)
+input_cols = ["description"]
+output_cols = ["name", "age"]
 
-columns = ["problem", "dataset", "results"]
-
-user_instruction = "{abstract}"
-new_df = df.sem_extract(columns, user_instruction)
+new_df = df.sem_extract(input_cols, output_cols)
 print(new_df)
