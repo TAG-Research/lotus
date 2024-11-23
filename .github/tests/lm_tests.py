@@ -186,15 +186,13 @@ def test_sem_extract(setup_models, model):
     df = df.sem_extract(columns=columns, user_instruction=user_instruction)
 
     for idx, row in df.iterrows():
+        assert row["Name"] in row["Name_quote"], f"Name '{row['Name']}' not found in '{row['Name_quote']}'"
         assert (
-            row["Name"] in row["Name extracted quote"]
-        ), f"Name '{row['Name']}' not found in '{row['Name extracted quote']}'"
+            row["Sport"].lower() in row["Sport_quote"].lower()
+        ), f"Sport '{row['Sport']}' not found in '{row['Sport_quote']}'"
         assert (
-            row["Sport"].lower() in row["Sport extracted quote"].lower()
-        ), f"Sport '{row['Sport']}' not found in '{row['Sport extracted quote']}'"
-        assert (
-            str(row["Number of Championships"]) in row["Number of Championships extracted quote"]
-        ), f"Number of Championships '{row['Number of Championships']}' not found in '{row['Number of Championships extracted quote']}'"
+            str(row["Number of Championships"]) in row["Number of Championships_quote"]
+        ), f"Number of Championships '{row['Number of Championships']}' not found in '{row['Number of Championships_quote']}'"
 
 
 ################################################################################
