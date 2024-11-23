@@ -3,8 +3,7 @@ from datasets import load_dataset
 import lotus
 from lotus.models import LM
 
-lm = LM(model="ollama/llama3.1")
-
+lm = LM(model="gpt-4o-mini")
 lotus.settings.configure(lm=lm)
 
 dataset = load_dataset("CShorten/ML-ArXiv-Papers", split="train")
