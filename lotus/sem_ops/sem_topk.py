@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 import lotus
-from lotus.dtype_extensions import ImageDtype
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, SemanticTopKOutput
 
@@ -375,9 +374,6 @@ class SemTopKDataframe:
 
         if method == "quick-sem":
             assert len(col_li) == 1, "Only one column can be used for embedding optimization"
-            assert not isinstance(
-                self._obj[col_li[0]].dtype, ImageDtype
-            ), "Image columns are not supported for embedding optimization"
             col_name = col_li[0]
             # Sort the dataframe by the column to be used for embedding optimization
             self._obj = self._obj.sem_index(col_name, f"{col_name}_lotus_index").sem_search(

@@ -2,7 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
+from PIL import Image
 
 from lotus.types import RMOutput
 
@@ -14,7 +16,7 @@ class RM(ABC):
         self.index_dir: str | None = None
 
     @abstractmethod
-    def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
+    def index(self, docs: pd.Series, index_dir: str, **kwargs: dict[str, Any]) -> None:
         """Create index and store it to a directory.
 
         Args:
@@ -49,7 +51,7 @@ class RM(ABC):
     @abstractmethod
     def __call__(
         self,
-        queries: str | list[str] | NDArray[np.float64],
+        queries: pd.Series | str | Image.Image | list | NDArray[np.float64],
         K: int,
         **kwargs: dict[str, Any],
     ) -> RMOutput:

@@ -63,9 +63,9 @@ class SemSimJoinDataframe:
             try:
                 queries = rm.get_vectors_from_index(query_index_dir, self._obj.index)
             except NotImplementedError:
-                queries = self._obj[left_on].tolist()
+                queries = self._obj[left_on]
         else:
-            queries = self._obj[left_on].tolist()
+            queries = self._obj[left_on]
 
         # load index to search over
         try:

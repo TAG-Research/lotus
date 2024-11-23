@@ -5,7 +5,9 @@ from typing import Any
 
 import faiss
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
+from PIL import Image
 
 from lotus.models.rm import RM
 from lotus.types import RMOutput
@@ -20,7 +22,7 @@ class FaissRM(RM):
         self.faiss_index: faiss.Index | None = None
         self.vecs: NDArray[np.float64] | None = None
 
-    def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
+    def index(self, docs: pd.Series, index_dir: str, **kwargs: dict[str, Any]) -> None:
         vecs = self._embed(docs)
         self.faiss_index = faiss.index_factory(vecs.shape[1], self.factory_string, self.metric)
         self.faiss_index.add(vecs)
@@ -42,12 +44,14 @@ class FaissRM(RM):
             vecs: NDArray[np.float64] = pickle.load(fp)
         return vecs[ids]
 
-    def __call__(self, queries: str | list[str] | NDArray[np.float64], K: int, **kwargs: dict[str, Any]) -> RMOutput:
-        if isinstance(queries, str):
+    def __call__(
+        self, queries: pd.Series | str | Image.Image | list | NDArray[np.float64], K: int, **kwargs: dict[str, Any]
+    ) -> RMOutput:
+        if isinstance(queries, str) or isinstance(queries, Image.Image):
             queries = [queries]
 
-        if isinstance(queries[0], str):
-            embedded_queries = self._embed([str(q) for q in queries])
+        if not isinstance(queries, np.ndarray):
+            embedded_queries = self._embed(queries)
         else:
             embedded_queries = np.asarray(queries, dtype=np.float32)
 
@@ -58,5 +62,5 @@ class FaissRM(RM):
         return RMOutput(distances=distances, indices=indices)
 
     @abstractmethod
-    def _embed(self, docs: list[str]) -> NDArray[np.float64]:
+    def _embed(self, docs: pd.Series | list) -> NDArray[np.float64]:
         pass
