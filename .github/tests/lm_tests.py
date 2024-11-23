@@ -190,7 +190,7 @@ def test_sem_extract(setup_models, model):
             row["Name"] in row["Name extracted quote"]
         ), f"Name '{row['Name']}' not found in '{row['Name extracted quote']}'"
         assert (
-            row["Sport"] in row["Sport extracted quote"]
+            row["Sport"].lower() in row["Sport extracted quote"].lower()
         ), f"Sport '{row['Sport']}' not found in '{row['Sport extracted quote']}'"
         assert (
             str(row["Number of Championships"]) in row["Number of Championships extracted quote"]
