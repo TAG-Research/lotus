@@ -86,7 +86,7 @@ There are 3 main model classes in LOTUS:
 - `Reranker`: The reranker model class.
     - Any `CrossEncoder` from `SentenceTransformers` can be used with the `CrossEncoderReranker` class, by passing the model name to the `model` parameter (see [an example here](examples/op_examples/search.py)).
 
-# Feature Reqeusts and Contributing
+# Feature Requests and Contributing
 If you have a feature request, we're happy to hear from you! Please open an issue.
 
 If you're interested in contributing, we'd be happy to coordinate on ongoing efforts! Please send an email to Liana (lianapat@stanford.edu) or reach out on our [slack](https://join.slack.com/t/lotus-fnm8919/shared_invite/zt-2tnq6948j-juGuSIR0__fsh~kUmZ6TJw). 
