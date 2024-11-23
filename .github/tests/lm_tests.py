@@ -187,7 +187,7 @@ def test_sem_extract(setup_models, model):
         "Sport": None,
         "Number of Championships": None,
     }
-    df = df.sem_extract(input_cols, output_cols)
+    df = df.sem_extract(input_cols, output_cols, extract_quotes=True)
 
     expected_values = {
         "Name": ["lionel messi", "michael jordan", "tiger woods", "tom brady"],
