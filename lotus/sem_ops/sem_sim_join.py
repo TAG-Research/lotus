@@ -29,6 +29,7 @@ class SemSimJoinDataframe:
         lsuffix: str = "",
         rsuffix: str = "",
         score_suffix: str = "",
+        keep_index: bool = False,
     ) -> pd.DataFrame:
         """
         Perform semantic similarity join on the DataFrame.
@@ -107,7 +108,8 @@ class SemSimJoinDataframe:
                 lsuffix=lsuffix,
                 rsuffix=rsuffix,
             )
-            .drop(columns=["_left_id", "_right_id"])
         )
+        if not keep_index:
+            joined_df.drop(columns=["_left_id", "_right_id"], inplace=True)
 
         return joined_df

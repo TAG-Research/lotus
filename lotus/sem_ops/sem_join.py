@@ -3,8 +3,10 @@ from typing import Any
 import pandas as pd
 
 import lotus
-from lotus.types import SemanticJoinOutput
+from lotus.templates import task_instructions
+from lotus.types import SemanticJoinOutput, SemJoinCascadeArgs
 
+from .cascade_utils import calibrate_sem_sim_join, importance_sampling, learn_cascade_thresholds
 from .sem_filter import sem_filter
 
 
@@ -90,7 +92,6 @@ def sem_join(
     )
 
 
-# TODO: THIS CODE CURRENTLY BREAKS
 def sem_join_cascade(
     l1: pd.Series,
     l2: pd.Series,
@@ -99,13 +100,55 @@ def sem_join_cascade(
     col1_label: str,
     col2_label: str,
     user_instruction: str,
-    cascade_threshold: float,
+    recall_target: float,
+    precision_target: float,
+    sampling_percentage: float = 0.1,
+    failure_probability: float = 0.2,
     examples_df_txt: list[str] | None = None,
     examples_answers: list[bool] | None = None,
+    map_instruction: str | None = None,
+    map_examples: pd.DataFrame | None = None,
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
 ) -> SemanticJoinOutput:
+    """
+    Joins two series using a cascade helper model and a large model.
+    
+    Args:
+        l1 (pd.Series): The first series.
+        l2 (pd.Series): The second series.
+        ids1 (list[int]): The ids for the first series.
+        ids2 (list[int]): The ids for the second series.
+        col1_label (str): The label for the first column.
+        col2_label (str): The label for the second column.
+        user_instruction (str): The user instruction for join.
+        recall_target (float): The target recall.
+        precision_target (float): The target precision.
+        sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
+        failure_probability (float): The failure probability. Defaults to 0.2.
+        examples_df_txt list[str] | None): The examples dataframe text. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        map_instruction (str | None): The map instruction. Defaults to None.
+        map_examples (pd.DataFrame | None): The map examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
+        default (bool): The default value for the join in case of parsing errors. Defaults to True.
+        strategy (str | None): The reasoning strategy. Defaults to None.
+        
+    Returns:
+        SemanticJoinOutput: The join results, filter outputs, all raw outputs, all explanations, and stats.
+        
+        Note that filter_outputs, all_raw_outputs, and all_explanations are empty list because
+        the helper model do not generate these outputs.
+        
+        SemanticJoinOutput.stats:
+            join_resolved_by_helper_model: total number of join records resolved by the helper model
+            join_helper_positive: number of high confidence positive results from the helper model
+            join_helper_negative: number of high confidence negative results from the helper model
+            join_resolved_by_large_model: total number of joins resolved by the large model
+            optimized_join_cost: number of LM calls from finding optimal join plan
+            total_LM_calls: the total number of LM calls from join cascade, ie: optimized_join_cost + join_resolved_by_helper_model
+    """
     filter_outputs: list[bool] = []
     all_raw_outputs: list[str] = []
     all_explanations: list[str | None] = []
@@ -114,91 +157,66 @@ def sem_join_cascade(
     num_helper = 0
     num_large = 0
 
-    for id1, i1 in zip(ids1, l1):
-        # perform llm filter
-        modified_docs = l2.apply(lambda doc: f"{col1_label}: {i1}\n{col2_label}: {doc}")
-        helper_output = sem_filter(
-            modified_docs,
-            lotus.settings.helper_lm,
+    # Determine the join plan
+    helper_high_conf, helper_low_conf, num_helper_high_conf_neg, join_optimization_cost = join_optimizer(
+        recall_target,
+        precision_target,
+        l1,
+        l2,
+        col1_label,
+        col2_label,
+        user_instruction,
+        sampling_percentage=sampling_percentage,
+        failure_probability=failure_probability,
+        examples_df_txt=examples_df_txt,
+        examples_answers=examples_answers,
+        map_instruction=map_instruction,
+        map_examples=map_examples,
+        cot_reasoning=cot_reasoning,
+        default=default,
+        strategy=strategy,
+        )
+
+    num_helper = len(helper_high_conf)
+    num_large = len(helper_low_conf)
+    
+    # Accept helper results with high confidence
+    join_results = [(row['_left_id'], row['_right_id'], None) for _, row in helper_high_conf.iterrows()]
+
+    # Send low confidence rows to large LM
+    for unique_l1 in helper_low_conf[col1_label].unique():
+        unique_l1_id = helper_low_conf[helper_low_conf[col1_label] == unique_l1]['_left_id'].iloc[0]
+        l2_for_l1 = helper_low_conf[helper_low_conf[col1_label] == unique_l1][col2_label]
+        l2_for_l1_index = helper_low_conf[helper_low_conf[col1_label] == unique_l1]['_right_id']
+        large_join_output = sem_join(
+            pd.Series([unique_l1]),
+            l2_for_l1,
+            [unique_l1_id],
+            l2_for_l1_index.tolist(),
+            col1_label,
+            col2_label,
+            lotus.settings.lm,
             user_instruction,
             examples_df_txt=examples_df_txt,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             default=default,
-            logprobs=True,
             strategy=strategy,
         )
-        helper_outputs = helper_output.outputs
-        helper_raw_outputs = helper_output.raw_outputs
-        helper_explanations = helper_output.explanations
-        helper_logprobs = helper_output.logprobs
-        assert helper_logprobs is not None
-
-        high_conf_idxs = set()
-        # Get the logprobs in a standardized format
-        formatted_logprobs = lotus.settings.helper_lm.format_logprobs_for_cascade(helper_logprobs)
-        tokens, confidences = formatted_logprobs.tokens, formatted_logprobs.confidences
-
-        for doc_idx in range(len(helper_outputs)):
-            # Find where true/false is said and look at confidence
-            for token_idx in range(len(tokens[doc_idx]) - 1, -1, -1):
-                if tokens[doc_idx][token_idx].strip(" \n").lower() in ["true", "false"]:
-                    confidence = confidences[doc_idx][token_idx]
-                    if confidence >= cascade_threshold:
-                        high_conf_idxs.add(doc_idx)
-
-        # Send low confidence samples to large LM
-        low_conf_idxs = sorted([i for i in range(len(helper_outputs)) if i not in high_conf_idxs])
-        low_conf_docs = [modified_docs[idx] for idx in low_conf_idxs]
-
-        if len(low_conf_docs) > 0:
-            large_output = sem_filter(
-                low_conf_docs,
-                lotus.settings.lm,
-                user_instruction,
-                default=default,
-                examples_df_txt=examples_df_txt,
-                examples_answers=examples_answers,
-                cot_reasoning=cot_reasoning,
-                strategy=strategy,
-            )
-            large_outputs = large_output.outputs
-            large_raw_outputs = large_output.raw_outputs
-            large_explanations = large_output.explanations
-
-        outputs: list[bool] = [False] * len(modified_docs)
-        raw_outputs: list[str] = [""] * len(modified_docs)
-        explanations: list[str | None] = [None] * len(modified_docs)
-
-        for idx in high_conf_idxs:
-            outputs[idx] = helper_outputs[idx]
-            raw_outputs[idx] = helper_raw_outputs[idx]
-            explanations[idx] = helper_explanations[idx]
-
-        for idx, large_idx in enumerate(low_conf_idxs):
-            outputs[large_idx] = large_outputs[idx]
-            raw_outputs[large_idx] = large_raw_outputs[idx]
-            explanations[large_idx] = large_explanations[idx]
-
-        filter_outputs.extend(outputs)
-        all_raw_outputs.extend(raw_outputs)
-        all_explanations.extend(explanations)
-
-        join_results.extend(
-            [
-                (id1, ids2[i], explanation)
-                for i, (output, explanation) in enumerate(zip(outputs, explanations))
-                if output
-            ]
-        )
-
-        num_helper += len(high_conf_idxs)
-        num_large += len(low_conf_idxs)
+    
+        join_results.extend(large_join_output.join_results)
 
     lotus.logger.debug(f"outputs: {filter_outputs}")
     lotus.logger.debug(f"explanations: {all_explanations}")
 
-    stats = {"filters_resolved_by_helper_model": num_helper, "filters_resolved_by_large_model": num_large}
+    # Log join cascade stats:
+    stats = {"join_resolved_by_helper_model": num_helper + num_helper_high_conf_neg,
+             "join_helper_positive": num_helper,
+             "join_helper_negative": num_helper_high_conf_neg,
+             "join_resolved_by_large_model": num_large,
+             "optimized_join_cost": join_optimization_cost,
+             "total_LM_calls": join_optimization_cost + num_large}
+
     return SemanticJoinOutput(
         join_results=join_results,
         filter_outputs=filter_outputs,
@@ -206,6 +224,294 @@ def sem_join_cascade(
         all_explanations=all_explanations,
         stats=stats,
     )
+
+
+def run_sem_sim_join(
+    l1: pd.Series,
+    l2: pd.Series,
+    col1_label: str,
+    col2_label: str
+) -> pd.DataFrame:
+    """
+    Wrapper function to run sem_sim_join in sem_join then calibrate the scores for approximate join
+    
+    Args:
+        l1 (pd.Series): The first series.
+        l2 (pd.Series): The second series.
+        col1_label (str): The label for the first column.
+        col2_label (str): The label for the second column.
+        
+    Returns:
+        pd.DataFrame: The similarity join results.
+    """
+    # Transform the series into DataFrame
+    if isinstance(l1, pd.Series):
+        l1_df = l1.to_frame(name=col1_label)
+    elif isinstance(l1, pd.DataFrame):
+        l1_df = l1
+    else:
+        lotus.logger.error("l1 must be a pandas Series or DataFrame")
+
+    l2_df = l2.to_frame(name=col2_label)
+    l2_df = l2_df.sem_index(col2_label, f"{col2_label}_index")
+
+    K = len(l2) * len(l1)
+    # Run sem_sim_join as helper on the sampled data
+    out = l1_df.sem_sim_join(
+        l2_df, 
+        left_on=col1_label, 
+        right_on=col2_label, 
+        K=K, 
+        keep_index=True)
+
+    # Correct helper scores
+    out['_scores'] = calibrate_sem_sim_join(out['_scores'].tolist())
+    return out
+
+
+def map_l1_to_l2(
+    l1: pd.Series,
+    col1_label: str,
+    col2_label: str,
+    map_instruction: str | None = None,
+    map_examples: pd.DataFrame | None = None
+) -> tuple[pd.DataFrame, str]:
+    """
+    Wrapper function to run sem_map in sem_join.
+    
+    Args:
+        l1 (pd.Series): The first series.
+        col1_label (str): The label for the first column.
+        col2_label (str): The label for the second column.
+        map_instruction (str): The map instruction. Defaults to None.
+        map_examples (pd.DataFrame): The map examples. Defaults to None.
+        
+    Returns:
+        tuple[pd.DataFrame, str]: The mapped DataFrame and the mapped column name.
+    """
+    if ":left" in col1_label:
+        real_left_on = col1_label.split(":left")[0]
+    else:
+        real_left_on = col1_label
+        
+    if ":right" in col2_label:
+        real_right_on = col2_label.split(":right")[0]
+    else:
+        real_right_on = col2_label
+    
+    inst = ""
+    if map_instruction:
+        inst = map_instruction
+    else:
+        default_map_instruction = f"Given {{{real_left_on}}}, identify the most relevant {real_right_on}. Always write your answer as a list of 2-10 comma-separated {real_right_on}."
+        inst = default_map_instruction
+
+    # Transform l1 into DataFrame for sem_map
+    l1_df = l1.to_frame(name=real_left_on)
+    mapped_col1_name = f"_{col1_label}"
+    
+    # Map l1 to l2
+    out = l1_df.sem_map(
+        inst,
+        suffix=mapped_col1_name,
+        examples=map_examples)
+    out = out.rename(columns={real_left_on: col1_label})
+
+    return out, mapped_col1_name
+
+
+def join_optimizer(
+    recall_target: float,
+    precision_target: float,
+    l1: pd.Series,
+    l2: pd.Series,
+    col1_label: str,
+    col2_label: str,
+    user_instruction: str,
+    sampling_percentage: float = 0.1,
+    failure_probability: float = 0.2,
+    examples_df_txt: list[str] | None = None,
+    examples_answers: list[bool] | None = None,
+    map_instruction: str | None = None,
+    map_examples: pd.DataFrame | None = None,
+    cot_reasoning: list[str] | None = None,
+    default: bool = True,
+    strategy: str | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame, int, int]:
+    """
+    Find most cost-effective join plan between Search-Filter and Map-Search-Filter 
+    while satisfying the recall and precision target.
+    
+    Args:
+        recall_target (float): The target recall.
+        precision_target (float): The target precision.
+        l1 (pd.Series): The first series.
+        l2 (pd.Series): The second series.
+        col1_label (str): The label for the first column.
+        col2_label (str): The label for the second column.
+        user_instruction (str): The user instruction for join.
+        sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
+        failure_probability (float): The failure probability. Defaults to 0.2.
+        examples_df_txt (list[str] | None): The examples dataframe text. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        map_instruction (str | None): The map instruction. Defaults to None.
+        map_examples (pd.DataFrame | None): The map examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
+        default (bool): The default value for the join in case of parsing errors. Defaults to True.
+        strategy (str | None): The reasoning strategy. Defaults to None.
+    
+    returns:
+        tuple[pd.DataFrame, pd.DataFrame]: The high confidence and low confidence join results.
+        int: The number of high confidence negative results.
+        int: The number of LM calls from optimizing join plan.
+    """
+    
+    # Helper is currently default to similiarity join
+    if lotus.settings.helper_lm is not None:
+        lotus.logger.debug("Helper model is not supported yet. Default to similarity join.")
+
+    # Learn search-filter thresholds
+    sf_helper_join = run_sem_sim_join(l1, l2, col1_label, col2_label)
+    sf_t_pos, sf_t_neg, sf_learn_cost = learn_join_cascade_threshold(
+        sf_helper_join, 
+        recall_target, 
+        precision_target, 
+        col1_label,
+        col2_label, 
+        user_instruction, 
+        sampling_percentage,
+        delta=failure_probability / 2,
+        examples_df_txt=examples_df_txt,
+        examples_answers=examples_answers,
+        cot_reasoning=cot_reasoning,
+        default=default,
+        strategy=strategy)
+    sf_high_conf = sf_helper_join[sf_helper_join['_scores'] >= sf_t_pos]
+    sf_high_conf_neg = len(sf_helper_join[sf_helper_join['_scores'] <= sf_t_neg])
+    sf_low_conf = sf_helper_join[(sf_helper_join['_scores'] < sf_t_pos) & (sf_helper_join['_scores'] > sf_t_neg)]
+    sf_cost = len(sf_low_conf)
+
+    # Learn map-search-filter thresholds
+    mapped_l1, mapped_col1_label = map_l1_to_l2(l1, col1_label, col2_label, map_instruction=map_instruction, map_examples=map_examples)
+    msf_helper_join = run_sem_sim_join(mapped_l1, l2, mapped_col1_label, col2_label)
+    msf_t_pos, msf_t_neg, msf_learn_cost = learn_join_cascade_threshold(
+        msf_helper_join, 
+        recall_target, 
+        precision_target, 
+        col1_label,
+        col2_label,
+        user_instruction, 
+        sampling_percentage,
+        delta=failure_probability / 2,
+        examples_df_txt=examples_df_txt,
+        examples_answers=examples_answers,
+        cot_reasoning=cot_reasoning,
+        default=default,
+        strategy=strategy)
+    msf_high_conf = msf_helper_join[msf_helper_join['_scores'] >= msf_t_pos]
+    msf_high_conf_neg = len(msf_helper_join[msf_helper_join['_scores'] <= msf_t_neg])
+    msf_low_conf = msf_helper_join[(msf_helper_join['_scores'] < msf_t_pos) & (msf_helper_join['_scores'] > msf_t_neg)]
+    msf_cost = len(msf_low_conf)
+    msf_learn_cost += len(l1) # cost from map l1 to l2
+
+    # Select the cheaper join plan
+    lotus.logger.info("Join Optimizer: plan cost analysis:")
+    lotus.logger.info(f"    Search-Filter: {sf_cost} LLM calls.")
+    lotus.logger.info(f"    Search-Filter: accept {len(sf_high_conf)} helper positive results, {sf_high_conf_neg} helper negative results.")
+    lotus.logger.info(f"    Map-Search-Filter: {msf_cost} LLM calls.")
+    lotus.logger.info(f"    Map-Search-Filter: accept {len(msf_high_conf)} helper positive results, {msf_high_conf_neg} helper negative results.")
+
+    learning_cost = sf_learn_cost + msf_learn_cost
+    if sf_cost < msf_cost:
+        lotus.logger.info("Proceeding with Search-Filter")
+        sf_high_conf = sf_high_conf.sort_values(by='_scores', ascending=False)
+        sf_low_conf = sf_low_conf.sort_values(by='_scores', ascending=False)
+        return sf_high_conf, sf_low_conf, sf_high_conf_neg, learning_cost
+    else:
+        lotus.logger.info("Proceeding with Map-Search-Filter")
+        msf_high_conf = msf_high_conf.sort_values(by='_scores', ascending=False)
+        msf_low_conf = msf_low_conf.sort_values(by='_scores', ascending=False)
+        return msf_high_conf, msf_low_conf, msf_high_conf_neg, learning_cost
+
+
+def learn_join_cascade_threshold(
+    helper_join: pd.DataFrame,
+    recall_target: float,
+    precision_target: float,
+    col1_label: str,
+    col2_label: str,
+    user_instruction: str,
+    sampling_percentage: float = 0.1,
+    delta: float = 0.2,
+    examples_df_txt: list[str] | None = None,
+    examples_answers: list[bool] | None = None,
+    cot_reasoning: list[str] | None = None,
+    default: bool = True,
+    strategy: str | None = None,
+) -> tuple[float, float, int]:
+    """
+    Extract a small sample of the data and find the optimal threshold pair that satisfies the recall and 
+    precision target.
+
+    Args:
+        helper_join (pd.DataFrame): The helper join results.
+        recall_target (float): The target recall.
+        precision_target (float): The target precision.
+        col1_label (str): The label for the first column.
+        col2_label (str): The label for the second column.
+        user_instruction (str): The user instruction for join.
+        sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
+        delta (float): The failure probability. Defaults to 0.2.
+        examples_df_txt (list[str] | None): The examples dataframe text. Defaults to None.
+        examples_answers (list[bool] | None): The answers for examples. Defaults to None.
+        cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
+        default (bool): The default value for the join in case of parsing errors. Defaults to True.
+        strategy (str | None): The reasoning strategy. Defaults to None.
+    Returns:
+        tuple: The positive threshold, negative threshold, and the number of LM calls from learning thresholds.
+    """
+    # Sample a small subset of the helper join result
+    helper_scores = helper_join['_scores'].tolist()
+    
+    sample_indices, correction_factors = importance_sampling(helper_scores, sampling_percentage)
+    lotus.logger.info(f"Sampled {len(sample_indices)} out of {len(helper_scores)} helper join results.")
+
+    sample_df = helper_join.iloc[sample_indices]
+    sample_scores = sample_df['_scores'].tolist()
+    sample_correction_factors = correction_factors[sample_indices]
+
+    col_li = [col1_label, col2_label]
+    sample_df_txt = task_instructions.df2text(sample_df, col_li)
+
+    try:
+        output = sem_filter(
+            sample_df_txt,
+            lotus.settings.lm,
+            user_instruction,
+            default=default,
+            examples_df_txt=examples_df_txt,
+            examples_answers=examples_answers,
+            cot_reasoning=cot_reasoning,
+            strategy=strategy,
+        )
+
+        (pos_threshold, neg_threshold), _ = learn_cascade_thresholds(
+            proxy_scores=sample_scores,
+            oracle_outputs=output.outputs,
+            sample_correction_factors=sample_correction_factors,
+            recall_target=recall_target,
+            precision_target=precision_target,
+            delta=delta
+        )
+
+        lotus.logger.info(f"Learned cascade thresholds: {(pos_threshold, neg_threshold)}")
+
+    except Exception as e:
+        lotus.logger.error(f"Error while learning filter cascade thresholds: {e}")
+        lotus.logger.error("Default to full join.")
+        return 1.0, 0.0, len(sample_indices)
+    
+    return pos_threshold, neg_threshold, len(sample_indices)
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_join")
@@ -231,7 +537,7 @@ class SemJoinDataframe:
         examples: pd.DataFrame | None = None,
         strategy: str | None = None,
         default: bool = True,
-        cascade_threshold: float | None = None,
+        cascade_args: SemJoinCascadeArgs | None = None,
         return_stats: bool = False,
     ) -> pd.DataFrame:
         """
@@ -246,7 +552,13 @@ class SemJoinDataframe:
             examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
             strategy (str | None): The reasoning strategy. Defaults to None.
             default (bool): The default value for the join in case of parsing errors. Defaults to True.
-            cascade_threshold (float | None): The threshold for cascading. Defaults to None.
+            cascade_args (SemJoinCascadeArgs | None): The arguments for join cascade. Defaults to None.
+                recall_target (float | None): The target recall. Defaults to None.
+                precision_target (float | None): The target precision when cascading. Defaults to None.
+                sampling_percentage (float): The percentage of the data to sample when cascading. Defaults to 0.1.
+                failure_probability (float): The failure probability when cascading. Defaults to 0.2.
+                map_instruction (str): The map instruction when cascading. Defaults to None.
+                map_examples (pd.DataFrame): The map examples when cascading. Defaults to None.
             return_stats (bool): Whether to return stats. Defaults to False.
 
         Returns:
@@ -308,7 +620,13 @@ class SemJoinDataframe:
                 return_explanations = True
                 cot_reasoning = examples["Reasoning"].tolist()
 
-        if cascade_threshold is not None:
+        num_full_join = len(self._obj) * len(other)
+
+        if  (cascade_args is not None) and \
+            (cascade_args.recall_target is not None or cascade_args.precision_target is not None) and \
+            (num_full_join >= lotus.settings.min_join_cascade_size):
+            cascade_args.recall_target = 1.0 if cascade_args.recall_target is None else cascade_args.recall_target
+            cascade_args.precision_target = 1.0 if cascade_args.precision_target is None else cascade_args.precision_target
             output = sem_join_cascade(
                 self._obj[real_left_on],
                 other[real_right_on],
@@ -317,9 +635,14 @@ class SemJoinDataframe:
                 left_on,
                 right_on,
                 join_instruction,
-                cascade_threshold,
+                cascade_args.recall_target,
+                cascade_args.precision_target,
+                sampling_percentage=cascade_args.sampling_percentage,
+                failure_probability=cascade_args.failure_probability,
                 examples_df_txt=examples_df_txt,
                 examples_answers=examples_answers,
+                map_instruction=cascade_args.map_instruction,
+                map_examples=cascade_args.map_examples,
                 cot_reasoning=cot_reasoning,
                 default=default,
                 strategy=strategy,
@@ -367,7 +690,7 @@ class SemJoinDataframe:
             .drop(columns=["_left_id", "_right_id"])
         )
 
-        if return_stats:
+        if output.stats and return_stats:
             return joined_df, output.stats
 
         return joined_df

@@ -151,9 +151,9 @@ class SemFilterDataframe:
             strategy (str | None): The reasoning strategy. Defaults to None.
             helper_strategy (str | None): The reasoning strategy for helper. Defaults to None.
             learn_cascade_threshold_sample_size (Optional[int]): The percentage of samples from which to learn thresholds when cascading.
-            recall_target (float | None): The specified recall target.
-            precision_target (float | None): The specified precision target.
-            failure_probability (float | None): The specified failure probability for precision/recall targets.
+            recall_target (float | None): The specified recall target when cascading.
+            precision_target (float | None): The specified precision target when cascading.
+            failure_probability (float | None): The specified failure probability for precision/recall targets when cascading.
             return_stats (bool): Whether to return statistics. Defaults to False.
 
         Returns:

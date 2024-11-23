@@ -1,5 +1,6 @@
 from typing import Any
 
+import pandas as pd
 from litellm.types.utils import ChatCompletionTokenLogprob
 from pydantic import BaseModel
 
@@ -85,6 +86,18 @@ class SemanticJoinOutput(StatsMixin):
     all_raw_outputs: list[str]
     all_explanations: list[str | None]
 
+
+class SemJoinCascadeArgs(BaseModel):
+    recall_target: float | None = None
+    precision_target: float | None = None
+    sampling_percentage: float = 0.1
+    failure_probability: float = 0.2
+    map_instruction: str | None = None
+    map_examples: pd.DataFrame | None = None
+
+    # to enable pandas
+    class Config:
+        arbitrary_types_allowed = True
 
 class SemanticTopKOutput(StatsMixin):
     indexes: list[int]

@@ -5,7 +5,8 @@ import pytest
 from tokenizers import Tokenizer
 
 import lotus
-from lotus.models import LM
+from lotus.models import LM, SentenceTransformersRM
+from lotus.types import SemJoinCascadeArgs
 
 ################################################################################
 # Setup
@@ -284,29 +285,61 @@ def test_filter_cascade(setup_models):
 @pytest.mark.skipif(not ENABLE_OPENAI_TESTS, reason="Skipping test because OpenAI tests are not enabled")
 def test_join_cascade(setup_models):
     models = setup_models
-    lotus.settings.configure(lm=models["gpt-4o"], helper_lm=models["gpt-4o-mini"])
+    rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
+    lotus.settings.configure(lm=models["gpt-4o-mini"],
+                             rm=rm,
+                             min_join_cascade_size=10, # for smaller testings
+                             cascade_IS_random_seed=42)
 
-    data1 = {"School": ["UC Berkeley", "Stanford"]}
+    data1 = {
+        "School": [
+            "University of California, Berkeley",
+            "Stanford University",
+            "Carnegie Mellon University",
+            "Massachusetts Institute of Technology (MIT)",
+            "Harvard University",
+            "University of Michigan",
+            "California Institute of Technology (Caltech)",
+            "University of Illinois Urbana-Champaign",
+            "Princeton University",
+            "University of Texas at Austin",
+            "University of Chicago",
+            "University of Washington",
+            "Yale University",
+            "Cornell University",
+            "University of Pennsylvania",
+        ]}
     data2 = {"School Type": ["Public School", "Private School"]}
 
     df1 = pd.DataFrame(data1)
     df2 = pd.DataFrame(data2)
     join_instruction = "{School} is a {School Type}"
-    expected_pairs = set([("UC Berkeley", "Public School"), ("Stanford", "Private School")])
+    expected_pairs = [("University of California, Berkeley", "Public School"), ("Stanford University", "Private School")]
 
-    # All joins resolved by the helper model
-    joined_df, stats = df1.sem_join(df2, join_instruction, cascade_threshold=0, return_stats=True)
-    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
-    assert joined_pairs == expected_pairs
-    assert stats["filters_resolved_by_large_model"] == 0, stats
-    assert stats["filters_resolved_by_helper_model"] == 4, stats
+    # Cascade join
+    joined_df, stats = df1.sem_join(
+        df2, join_instruction,
+        cascade_args=SemJoinCascadeArgs(recall_target=0.7, precision_target=0.7),
+        return_stats=True)
+
+    for pair in expected_pairs:
+        school, school_type = pair
+        exists = ((joined_df['School'] == school) & (joined_df['School Type'] == school_type)).any()
+        assert exists, f"Expected pair {pair} does not exist in the dataframe!"
+    assert stats["join_resolved_by_helper_model"] > 0, stats
 
     # All joins resolved by the large model
-    joined_df, stats = df1.sem_join(df2, join_instruction, cascade_threshold=1.01, return_stats=True)
-    joined_pairs = set(zip(joined_df["School"], joined_df["School Type"]))
-    assert joined_pairs == expected_pairs
-    assert stats["filters_resolved_by_large_model"] == 4, stats
-    assert stats["filters_resolved_by_helper_model"] == 0, stats
+    joined_df, stats = df1.sem_join(
+        df2, join_instruction,
+        cascade_args=SemJoinCascadeArgs(recall_target=1.0, precision_target=1.0),
+        return_stats=True)
+
+    for pair in expected_pairs:
+        school, school_type = pair
+        exists = ((joined_df['School'] == school) & (joined_df['School Type'] == school_type)).any()
+        assert exists, f"Expected pair {pair} does not exist in the dataframe!"
+    assert stats["join_resolved_by_large_model"] >  stats["join_resolved_by_helper_model"], stats # helper negative still can still meet the precision target
+    assert stats["join_helper_positive"] == 0, stats
 
 
 @pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
