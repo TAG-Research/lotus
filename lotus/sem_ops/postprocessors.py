@@ -1,5 +1,4 @@
 import json
-import re
 
 import lotus
 from lotus.types import (
@@ -68,14 +67,11 @@ def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOut
         SemanticExtractPostprocessOutput
     """
     extract_data = []
-    for answers in llm_answers:
-        cleaned_answers = re.findall(r"(\{.*\})", answers, re.DOTALL)[0]
-        cleaned_answers = re.sub(r"\\(?![\"\\/bfnrt])", r"\\\\", cleaned_answers)
-
+    for llm_answer in llm_answers:
         try:
-            output = json.loads(cleaned_answers)
+            output = json.loads(llm_answer)
         except json.JSONDecodeError:
-            lotus.logger.info(f"\t Failed to parse: {cleaned_answers}")
+            lotus.logger.info(f"\t Failed to parse: {llm_answer}")
             output = {}
 
         output = {key: str(value) for key, value in output.items()}

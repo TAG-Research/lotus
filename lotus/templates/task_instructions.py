@@ -203,21 +203,26 @@ def map_formatter(
     return messages
 
 
-def extract_formatter(df_text: str, output_cols: list[str], extract_quotes: bool = True) -> list[dict[str, str]]:
+def extract_formatter(
+    df_text: str, output_cols: dict[str, str | None], extract_quotes: bool = True
+) -> list[dict[str, str]]:
+    output_col_names = list(output_cols.keys())
+    # Set the description to be the key if no value is provided
+    output_cols_with_desc: dict[str, str] = {col: col if desc is None else desc for col, desc in output_cols.items()}
+
+    all_fields = output_col_names
     if extract_quotes:
-        quote_fields = [f"{col}_quote" for col in output_cols]
-        all_fields = output_cols + quote_fields
-    else:
-        all_fields = output_cols
+        quote_fields = [f"{col}_quote" for col in output_col_names]
+        all_fields += quote_fields
 
     fields_str = ", ".join(all_fields)
 
     sys_instruction = (
         "The user will provide the columns that need to be extracted and some relevant context.\n"
-        f"Your job is to extract these columns and provide only the concise subject or topic as the value for each field "
-        f"and the corresponding full quote for each field in the '{', '.join([f'{col}_quote' for col in output_cols])}' fields.\n"
-        f"The response should be in JSONL in a single line format with the following fields: {fields_str}.\n"
-        "Only respond in JSONL format and no other text. Your output will be parsed with json.loads.\n"
+        f"Your job is to extract these columns and provide only a concise value for each field "
+        f"and the corresponding full quote for each field in the '{', '.join([f'{col}_quote' for col in output_col_names])}' fields.\n"
+        f"Here is a description of each field: {output_cols_with_desc}\n"
+        f"The response should be valid JSON format with the following fields: {fields_str}.\n"
     )
 
     messages = [

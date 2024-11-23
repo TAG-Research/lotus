@@ -13,7 +13,7 @@ from .postprocessors import extract_postprocess
 def sem_extract(
     docs: list[str],
     model: LM,
-    output_cols: list[str],
+    output_cols: dict[str, str | None],
     extract_quotes: bool = True,
     postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
 ) -> SemanticExtractOutput:
@@ -23,7 +23,7 @@ def sem_extract(
     Args:
         docs (list[str]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
-        output_cols (list[str]): The columns that a model should extract.
+        output_cols (dict[str, str | None]): A mapping from desired output column names to optional descriptions.
         extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
         postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
 
@@ -40,7 +40,7 @@ def sem_extract(
         inputs.append(prompt)
 
     # call model
-    lm_output: LMOutput = model(inputs)
+    lm_output: LMOutput = model(inputs, response_format={"type": "json_object"})
 
     # post process results
     postprocess_output = postprocessor(lm_output.outputs)
@@ -64,7 +64,7 @@ class SemExtractDataFrame:
     def __call__(
         self,
         input_cols: list[str],
-        output_cols: list[str],
+        output_cols: dict[str, str | None],
         extract_quotes: bool = True,
         postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
         return_raw_outputs: bool = False,
@@ -74,7 +74,7 @@ class SemExtractDataFrame:
 
         Args:
             input_cols (list[str]): The columns that a model should extract from.
-            output_cols (list[str]): The columns that a model should extract.
+            output_cols (dict[str, str | None]): A mapping from desired output column names to optional descriptions.
             extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
             postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
             return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
@@ -104,6 +104,9 @@ class SemExtractDataFrame:
                 if key not in new_df.columns:
                     new_df[key] = None
                 new_df.loc[i, key] = value
+
+        if return_raw_outputs:
+            new_df["raw_output"] = out.raw_outputs
 
         new_df = new_df.reset_index(drop=True)
 
