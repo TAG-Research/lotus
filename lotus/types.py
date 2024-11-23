@@ -56,12 +56,12 @@ class SemanticMapOutput(SemanticMapPostprocessOutput):
     pass
 
 
-class SemanticSchemaPostprocessOutput(BaseModel):
+class SemanticExtractPostprocessOutput(BaseModel):
     raw_outputs: list[str]
     outputs: list[dict[str, str]]
 
 
-class SemanticSchemaOutput(SemanticSchemaPostprocessOutput):
+class SemanticExtractOutput(SemanticExtractPostprocessOutput):
     pass
 
 
@@ -77,16 +77,6 @@ class SemanticFilterOutput(SemanticFilterPostprocessOutput, StatsMixin, Logprobs
 
 class SemanticAggOutput(BaseModel):
     outputs: list[str]
-
-
-class SemanticExtractPostprocessOutput(BaseModel):
-    raw_outputs: list[str]
-    outputs: list[str]
-    quotes: list[str | None]
-
-
-class SemanticExtractOutput(SemanticExtractPostprocessOutput):
-    pass
 
 
 class SemanticJoinOutput(StatsMixin):

@@ -13,5 +13,5 @@ df = dataset.to_pandas().head(3)
 columns = ["problem", "dataset", "results"]
 
 user_instruction = "{abstract}"
-new_df = df.sem_to_schema(user_instruction, columns)
+new_df = df.sem_extract(columns, user_instruction)
 print(new_df)

@@ -6,7 +6,6 @@ from lotus.types import (
     SemanticExtractPostprocessOutput,
     SemanticFilterPostprocessOutput,
     SemanticMapPostprocessOutput,
-    SemanticSchemaPostprocessOutput,
 )
 
 
@@ -58,7 +57,7 @@ def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> Sema
     return SemanticMapPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
 
 
-def schema_postprocess(llm_answers: list[str]) -> SemanticSchemaPostprocessOutput:
+def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOutput:
     """
     Postprocess the output of the schema operator to extract the schema.
 
@@ -74,7 +73,8 @@ def schema_postprocess(llm_answers: list[str]) -> SemanticSchemaPostprocessOutpu
         cleaned_answers = re.sub(r"\\(?![\"\\/bfnrt])", r"\\\\", cleaned_answers)
         output = json.loads(cleaned_answers)
         schema_data.append(output)
-    return SemanticSchemaPostprocessOutput(raw_outputs=llm_answers, outputs=schema_data)
+
+    return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=schema_data)
 
 
 def filter_postprocess_cot(llm_answers: list[str], default: bool) -> SemanticFilterPostprocessOutput:
@@ -146,30 +146,3 @@ def filter_postprocess(
             outputs.append(default)
 
     return SemanticFilterPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
-
-
-def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOutput:
-    """
-    Postprocess the output of the extract operator, which we assume to
-    be a JSONL with an answer and quotes field.
-
-    Args:
-        llm_answers (list[str]): The list of llm answers.
-
-    Returns:
-        SemanticExtractPostprocessOutput
-    """
-    answers = []
-    quotes = []
-
-    for json_string in llm_answers:
-        try:
-            data = json.loads(json_string)
-            answers.append(data["answer"])
-            quotes.append(data["quotes"])
-        except Exception as e:
-            lotus.logger.error(f"Failed to parse JSON: {e}")
-            answers.append(None)
-            quotes.append(None)
-
-    return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=answers, quotes=quotes)

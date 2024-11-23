@@ -203,34 +203,28 @@ def map_formatter(
     return messages
 
 
-def schema_formatter(df_text: str, columns: list[str]) -> list[dict[str, str]]:
+def extract_formatter(df_text: str, columns: list[str], extract_quotes: bool = True) -> list[dict[str, str]]:
+    if extract_quotes:
+        quote_fields = [f"{col} extracted quote" for col in columns]
+        all_fields = columns + quote_fields
+    else:
+        all_fields = columns
+
+    fields_str = ", ".join(all_fields)
+
     sys_instruction = (
         "The user will provide the columns that need to be extracted and some relevant context.\n"
-        f"Your job is to extract these columns from the context in JSONL format in a single line with the following fields {columns}\n"
-        "Only repsonds in JSONL format and no other text. Your output will be parsed json.loads"
+        f"Your job is to extract these columns and provide only the concise subject or topic as the value for each field "
+        f"and the corresponding full quote for each field in the '{', '.join([f'{col} extracted quote' for col in columns])}' fields.\n"
+        f"The response should be in JSONL format with the following fields: {fields_str}.\n"
+        "Only respond in JSONL format and no other text. Your output will be parsed with json.loads.\n"
     )
+
     messages = [
         {"role": "system", "content": sys_instruction},
         {
             "role": "user",
             "content": f"Context:\n{df_text}",
-        },
-    ]
-    return messages
-
-
-def extract_formatter(df_text: str, user_instruction: str) -> list[dict[str, str]]:
-    sys_instruction = (
-        "The user will provide an instruction and some relevant context.\n"
-        "Your job is to extract the information requested in the instruction.\n"
-        "Write the response in JSONL format in a single line with the following fields:\n"
-        """{"answer": "your answer", "quotes": "quote from context supporting your answer"}"""
-    )
-    messages = [
-        {"role": "system", "content": sys_instruction},
-        {
-            "role": "user",
-            "content": f"Context:\n{df_text}\n\nInstruction: {user_instruction}",
         },
     ]
     return messages

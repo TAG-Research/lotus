@@ -167,6 +167,52 @@ def test_group_by_with_agg(setup_models, model):
     assert set(cleaned_df["final_output"].values[1].lower().strip(".,!?\"'").split(", ")) == {"michael", "dwight"}
 
 
+@pytest.maerk.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.1"))
+def test_sem_extract(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    data = {
+        "Text": [
+            "Lionel Messi is a good soccer player, he has won the World Cup 5 times",
+            "Michael Jordan is a good basketball player, he has won the NBA championships 6 times",
+            "Tiger Woods is a good golf player, he has won the Master championships 4 times",
+            "Tom Brady is a good football player, he has won the NFL championships 7 times",
+        ]
+    }
+    df = pd.dataframe(data)
+    user_instruction = "{Text}"
+    columns = ["Name", "Sport", "Number of Championships"]
+    df = df.sem_to_schema(user_instruction, columns=columns)
+
+    expected_df = pd.DataFrame(
+        {
+            "Name": ["Lionel Messi", "Michael Jordan", "Tiger Woods", "Tom Brady"],
+            "Sport": ["Soccer", "Basketball", "Golf", "Football"],
+            "Number of Championships": ["5", "6", "4", "7"],
+            "Name extracted quote": [
+                "Lionel Messi is a good soccer player",
+                "Michael Jordan is a good basketball player",
+                "Tiger Woods is a good golf player",
+                "Tom Brady is a good football player",
+            ],
+            "Sport extracted quote": [
+                "Lionel Messi is a good soccer player",
+                "Michael Jordan is a good basketball player",
+                "Tiger Woods is a good golf player",
+                "Tom Brady is a good football player",
+            ],
+            "Number of Championships extracted quote": [
+                "he has won the World Cup 5 times",
+                "he has won the NBA championships 6 times",
+                "he has won the NBA championships 4 times",
+                "he has won the NFL championships 7 times",
+            ],
+        }
+    )
+    assert df.equals(expected_df)
+
+
 ################################################################################
 # Cascade tests
 ################################################################################
