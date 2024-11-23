@@ -72,6 +72,8 @@ def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOut
         cleaned_answers = re.findall(r"(\{.*\})", answers, re.DOTALL)[0]
         cleaned_answers = re.sub(r"\\(?![\"\\/bfnrt])", r"\\\\", cleaned_answers)
         output = json.loads(cleaned_answers)
+
+        output = {key: str(value) for key, value in output.items()}
         schema_data.append(output)
 
     return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=schema_data)

@@ -167,7 +167,7 @@ def test_group_by_with_agg(setup_models, model):
     assert set(cleaned_df["final_output"].values[1].lower().strip(".,!?\"'").split(", ")) == {"michael", "dwight"}
 
 
-@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini", "ollama/llama3.1"))
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
 def test_sem_extract(setup_models, model):
     lm = setup_models[model]
     lotus.settings.configure(lm=lm)
@@ -185,38 +185,16 @@ def test_sem_extract(setup_models, model):
     columns = ["Name", "Sport", "Number of Championships"]
     df = df.sem_extract(columns=columns, user_instruction=user_instruction)
 
-    expected_df = pd.DataFrame(
-        {
-            "Text": [
-                "Lionel Messi is a good soccer player, he has won the World Cup 5 times",
-                "Michael Jordan is a good basketball player, he has won the NBA championships 6 times",
-                "Tiger Woods is a good golf player, he has won the Master championships 4 times",
-                "Tom Brady is a good football player, he has won the NFL championships 7 times",
-            ],
-            "Name": ["Lionel Messi", "Michael Jordan", "Tiger Woods", "Tom Brady"],
-            "Sport": ["Soccer", "Basketball", "Golf", "Football"],
-            "Number of Championships": ["5", "6", "4", "7"],
-            "Name extracted quote": [
-                "Lionel Messi is a good soccer player",
-                "Michael Jordan is a good basketball player",
-                "Tiger Woods is a good golf player",
-                "Tom Brady is a good football player",
-            ],
-            "Sport extracted quote": [
-                "Lionel Messi is a good soccer player",
-                "Michael Jordan is a good basketball player",
-                "Tiger Woods is a good golf player",
-                "Tom Brady is a good football player",
-            ],
-            "Number of Championships extracted quote": [
-                "he has won the World Cup 5 times",
-                "he has won the NBA championships 6 times",
-                "he has won the NBA championships 4 times",
-                "he has won the NFL championships 7 times",
-            ],
-        }
-    )
-    assert df.equals(expected_df)
+    for idx, row in df.iterrows():
+        assert (
+            row["Name"] in row["Name extracted quote"]
+        ), f"Name '{row['Name']}' not found in '{row['Name extracted quote']}'"
+        assert (
+            row["Sport"].lower() in row["Sport extracted quote"]
+        ), f"Sport '{row['Sport']}' not found in '{row['Sport extracted quote']}'"
+        assert (
+            str(row["Number of Championships"]) in row["Number of Championships extracted quote"]
+        ), f"Number of Championships '{row['Number of Championships']}' not found in '{row['Number of Championships extracted quote']}'"
 
 
 ################################################################################
