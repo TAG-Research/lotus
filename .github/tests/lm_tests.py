@@ -280,8 +280,7 @@ def test_join_cascade(setup_models):
         school, school_type = pair
         exists = ((joined_df['School'] == school) & (joined_df['School Type'] == school_type)).any()
         assert exists, f"Expected pair {pair} does not exist in the dataframe!"
-    assert stats["join_helper_positive"] > 0, stats
-    assert stats["join_helper_negative"] > 0, stats
+    assert stats["join_resolved_by_helper_model"] > 0, stats
 
     # All joins resolved by the large model
     joined_df, stats = df1.sem_join(
