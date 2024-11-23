@@ -59,24 +59,24 @@ def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> Sema
 
 def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOutput:
     """
-    Postprocess the output of the schema operator to extract the schema.
+    Postprocess the output of the extract operator to extract the schema.
 
     Args:
-        llm_answers (list[str]): The list of llm answers containging the schema.
+        llm_answers (list[str]): The list of llm answers containging the extract.
 
     Returns:
-        SemanticSchemaPostprocessOutput
+        SemanticExtractPostprocessOutput
     """
-    schema_data = []
+    extract_data = []
     for answers in llm_answers:
         cleaned_answers = re.findall(r"(\{.*\})", answers, re.DOTALL)[0]
         cleaned_answers = re.sub(r"\\(?![\"\\/bfnrt])", r"\\\\", cleaned_answers)
         output = json.loads(cleaned_answers)
 
         output = {key: str(value) for key, value in output.items()}
-        schema_data.append(output)
+        extract_data.append(output)
 
-    return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=schema_data)
+    return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=extract_data)
 
 
 def filter_postprocess_cot(llm_answers: list[str], default: bool) -> SemanticFilterPostprocessOutput:

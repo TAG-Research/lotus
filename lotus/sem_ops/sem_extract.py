@@ -18,17 +18,17 @@ def sem_extract(
     postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
 ) -> SemanticExtractOutput:
     """
-    Schemas a list of documents using a model.
+    Extracts attributes and values from a list of documents using a model.
 
     Args:
-        docs (list[str]): The list of documents to schema.
+        docs (list[str]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
-        columns (list[str]): The columns to schema.
+        columns (list[str]): The columns that a model should extract.
         extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
-        postprocessor (Callable): The postprocessor for the model outputs. Defaults to to_schema_postprocess.
+        postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
 
     Returns:
-        SemanticSchemaOutput: The outputs, raw outputs, and quotes.
+        SemanticExtractOutput: The outputs, raw outputs, and quotes.
     """
 
     # prepare model inputs
@@ -70,13 +70,13 @@ class SemExtractDataFrame:
         return_raw_outputs: bool = False,
     ) -> pd.DataFrame:
         """
-        Schemas the attributes and values of a dataframe.
+        Extracts the attributes and values of a dataframe.
 
         Args:
-            user_instruction (str): The columns from the documents to schema.
-            columns (list[str]): The columns to schema.
+            user_instruction (str): The columns from the documents to extract from.
+            columns (list[str]): The columns that a model should extract.
             extract_quotes (bool, optional): Whether to extract quotes for user_instruction. Defaults to True.
-            postprocessor (Callable): The postprocessor for the model outputs. Defaults to to_schema_postprocess.
+            postprocessor (Callable): The postprocessor for the model outputs. Defaults to extract_postprocess.
             return_raw_outputs (bool): Whether to return raw outputs. Defaults to False.
 
         Returns:
