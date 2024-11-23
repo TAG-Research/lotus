@@ -183,7 +183,7 @@ def test_sem_extract(setup_models, model):
     df = pd.DataFrame(data)
     user_instruction = "{Text}"
     columns = ["Name", "Sport", "Number of Championships"]
-    df = df.sem_extract(user_instruction, columns=columns)
+    df = df.sem_extract(columns=columns, user_instruction=user_instruction)
 
     expected_df = pd.DataFrame(
         {
