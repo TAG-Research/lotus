@@ -18,5 +18,5 @@ df = pd.DataFrame(
 input_cols = ["description"]
 output_cols = ["name", "age"]
 
-new_df = df.sem_extract(input_cols, output_cols)
+new_df = df.sem_extract(input_cols, output_cols, extract_quotes=True)
 print(new_df)
