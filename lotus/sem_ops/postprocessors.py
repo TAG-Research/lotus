@@ -1,7 +1,11 @@
 import json
 
 import lotus
-from lotus.types import SemanticExtractPostprocessOutput, SemanticFilterPostprocessOutput, SemanticMapPostprocessOutput
+from lotus.types import (
+    SemanticExtractPostprocessOutput,
+    SemanticFilterPostprocessOutput,
+    SemanticMapPostprocessOutput,
+)
 
 
 def map_postprocess_cot(llm_answers: list[str]) -> SemanticMapPostprocessOutput:
@@ -50,6 +54,30 @@ def map_postprocess(llm_answers: list[str], cot_reasoning: bool = False) -> Sema
     outputs: list[str] = llm_answers
     explanations: list[str | None] = [None] * len(llm_answers)
     return SemanticMapPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
+
+
+def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOutput:
+    """
+    Postprocess the output of the extract operator to extract the schema.
+
+    Args:
+        llm_answers (list[str]): The list of llm answers containging the extract.
+
+    Returns:
+        SemanticExtractPostprocessOutput
+    """
+    extract_data = []
+    for llm_answer in llm_answers:
+        try:
+            output = json.loads(llm_answer)
+        except json.JSONDecodeError:
+            lotus.logger.info(f"\t Failed to parse: {llm_answer}")
+            output = {}
+
+        output = {key: str(value) for key, value in output.items()}
+        extract_data.append(output)
+
+    return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=extract_data)
 
 
 def filter_postprocess_cot(llm_answers: list[str], default: bool) -> SemanticFilterPostprocessOutput:
@@ -121,30 +149,3 @@ def filter_postprocess(
             outputs.append(default)
 
     return SemanticFilterPostprocessOutput(raw_outputs=llm_answers, outputs=outputs, explanations=explanations)
-
-
-def extract_postprocess(llm_answers: list[str]) -> SemanticExtractPostprocessOutput:
-    """
-    Postprocess the output of the extract operator, which we assume to
-    be a JSONL with an answer and quotes field.
-
-    Args:
-        llm_answers (list[str]): The list of llm answers.
-
-    Returns:
-        SemanticExtractPostprocessOutput
-    """
-    answers = []
-    quotes = []
-
-    for json_string in llm_answers:
-        try:
-            data = json.loads(json_string)
-            answers.append(data["answer"])
-            quotes.append(data["quotes"])
-        except Exception as e:
-            lotus.logger.error(f"Failed to parse JSON: {e}")
-            answers.append(None)
-            quotes.append(None)
-
-    return SemanticExtractPostprocessOutput(raw_outputs=llm_answers, outputs=answers, quotes=quotes)

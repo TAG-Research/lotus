@@ -167,6 +167,47 @@ def test_group_by_with_agg(setup_models, model):
     assert set(cleaned_df["final_output"].values[1].lower().strip(".,!?\"'").split(", ")) == {"michael", "dwight"}
 
 
+@pytest.mark.parametrize("model", get_enabled("gpt-4o-mini"))
+def test_sem_extract(setup_models, model):
+    lm = setup_models[model]
+    lotus.settings.configure(lm=lm)
+
+    data = {
+        "Text": [
+            "Lionel Messi is a good soccer player, he has won the World Cup 5 times",
+            "Michael Jordan is a good basketball player, he has won the NBA championships 6 times",
+            "Tiger Woods is a good golf player, he has won the Master championships 4 times",
+            "Tom Brady is a good football player, he has won the NFL championships 7 times",
+        ]
+    }
+    df = pd.DataFrame(data)
+    input_cols = ["Text"]
+    output_cols = {
+        "Name": None,
+        "Sport": None,
+        "Number of Championships": None,
+    }
+    df = df.sem_extract(input_cols, output_cols, extract_quotes=True)
+
+    expected_values = {
+        "Name": ["lionel messi", "michael jordan", "tiger woods", "tom brady"],
+        "Sport": ["soccer", "basketball", "golf", "football"],
+        "Number of Championships": ["5", "6", "4", "7"],
+    }
+
+    for col in output_cols:
+        assert [str(val).strip().lower() for val in df[col].tolist()] == expected_values[col]
+
+    for idx, row in df.iterrows():
+        assert row["Name"] in row["Name_quote"], f"Name '{row['Name']}' not found in '{row['Name_quote']}'"
+        assert (
+            row["Sport"].lower() in row["Sport_quote"].lower()
+        ), f"Sport '{row['Sport']}' not found in '{row['Sport_quote']}'"
+        assert (
+            str(row["Number of Championships"]) in row["Number of Championships_quote"]
+        ), f"Number of Championships '{row['Number of Championships']}' not found in '{row['Number of Championships_quote']}'"
+
+
 ################################################################################
 # Cascade tests
 ################################################################################
