@@ -243,7 +243,10 @@ def test_filter_cascade(setup_models):
 def test_join_cascade(setup_models):
     models = setup_models
     rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
-    lotus.settings.configure(lm=models["gpt-4o-mini"], rm=rm, min_join_cascade_size=10) # for smaller testings
+    lotus.settings.configure(lm=models["gpt-4o-mini"],
+                             rm=rm,
+                             min_join_cascade_size=10, # for smaller testings
+                             cascade_IS_random_seed=42)
 
     data1 = {
         "School": [
