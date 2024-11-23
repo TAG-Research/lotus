@@ -51,7 +51,7 @@ def sem_extract(
 
 
 @pd.api.extensions.register_dataframe_accessor("sem_extract")
-class SemSchemaDataFrame:
+class SemExtractDataFrame:
     def __init__(self, pandas_obj: pd.DataFrame):
         self._validate(pandas_obj)
         self._obj = pandas_obj
