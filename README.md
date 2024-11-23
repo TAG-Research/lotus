@@ -86,14 +86,19 @@ There are 3 main model classes in LOTUS:
 - `Reranker`: The reranker model class.
     - Any `CrossEncoder` from `SentenceTransformers` can be used with the `CrossEncoderReranker` class, by passing the model name to the `model` parameter (see [an example here](examples/op_examples/search.py)).
 
+# Feature Reqeusts and Contributing
+If you have a feature request, we're happy to hear from you! Please open an issue.
+
+If you're interested in contributing, we'd be happy to coordinate on ongoing efforts! Please send an email to Liana (lianapat@stanford.edu) or reach out on our [slack](https://join.slack.com/t/lotus-fnm8919/shared_invite/zt-2tnq6948j-juGuSIR0__fsh~kUmZ6TJw). 
+
 # References
 For recent updates related to LOTUS, follow [@lianapatel_](https://x.com/lianapatel_) on X.
 
-If you use LOTUS or semantic operators in a research paper, please cite this work as follows:
+If you find LOTUS or semantic operators useful, we'd appreciate if you can please cite this work as follows:
 ```bibtex
 @misc{patel2024lotusenablingsemanticqueries,
-      title={LOTUS: Enabling Semantic Queries with LLMs Over Tables of Unstructured and Structured Data},
-      author={Liana Patel and Siddharth Jha and Carlos Guestrin and Matei Zaharia},
+      title={Semantic Operators: A Declarative Model for Rich, AI-based Analytics Over Text Data},
+      author={Liana Patel and Siddharth Jha and Parth Asawa and Melissa Pan and Carlos Guestrin and Matei Zaharia},
       year={2024},
       eprint={2407.11418},
       archivePrefix={arXiv},
