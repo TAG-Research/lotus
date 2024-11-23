@@ -180,10 +180,10 @@ def test_sem_extract(setup_models, model):
             "Tom Brady is a good football player, he has won the NFL championships 7 times",
         ]
     }
-    df = pd.dataframe(data)
+    df = pd.DataFrame(data)
     user_instruction = "{Text}"
     columns = ["Name", "Sport", "Number of Championships"]
-    df = df.sem_to_schema(user_instruction, columns=columns)
+    df = df.sem_extract(user_instruction, columns=columns)
 
     expected_df = pd.DataFrame(
         {
