@@ -187,6 +187,12 @@ def test_sem_extract(setup_models, model):
 
     expected_df = pd.DataFrame(
         {
+            "Text": [
+                "Lionel Messi is a good soccer player, he has won the World Cup 5 times",
+                "Michael Jordan is a good basketball player, he has won the NBA championships 6 times",
+                "Tiger Woods is a good golf player, he has won the Master championships 4 times",
+                "Tom Brady is a good football player, he has won the NFL championships 7 times",
+            ],
             "Name": ["Lionel Messi", "Michael Jordan", "Tiger Woods", "Tom Brady"],
             "Sport": ["Soccer", "Basketball", "Golf", "Football"],
             "Number of Championships": ["5", "6", "4", "7"],
