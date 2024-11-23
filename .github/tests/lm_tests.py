@@ -185,6 +185,15 @@ def test_sem_extract(setup_models, model):
     columns = ["Name", "Sport", "Number of Championships"]
     df = df.sem_extract(columns=columns, user_instruction=user_instruction)
 
+    expected_values = {
+        "Name": ["Lionel Messi", "Michael Jordan", "Tiger Woods", "Tom Brady"],
+        "Sport": ["Soccer", "Basketball", "Golf", "Football"],
+        "Number of Championships": ["5", "6", "4", "7"],
+    }
+
+    for col in columns:
+        assert df[col].tolist() == expected_values[col]
+
     for idx, row in df.iterrows():
         assert row["Name"] in row["Name_quote"], f"Name '{row['Name']}' not found in '{row['Name_quote']}'"
         assert (
