@@ -15,26 +15,9 @@
 [#slack]: https://join.slack.com/t/lotus-fnm8919/shared_invite/zt-2tnq6948j-juGuSIR0__fsh~kUmZ6TJw
 <!--- BADGES: END --->
 
-Easily build knowledge-intensive LLM applications that reason over your data with LOTUS!
+LOTUS makes LLM-powered data processing fast and easy. 
 
 LOTUS (**L**LMs **O**ver **T**ables of **U**nstructured and **S**tructured Data) provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators**. 
-
-## Key Concept: The Semantic Operator Model
-LOTUS' implements is the semantic operator programming model. Semantic operators as declarative transformations on one or more datasets, parameterized by a natural language expression, that can be implemented by a variety of AI-based algorithms. Semantic operators seamlessly extend the relational model, operating over tables that may contain traditional structured data as well as unstructured fields, such as free-form text. These composable, modular language- based operators allow you to write AI-based pipelines with high-level logic, leaving the rest of the work to the query engine! Each operator can be implemented and optimized in multiple ways, opening a rich space for execution plans, similar to relational operators. To learn more about the semantic operator model, read the full [research paper](https://arxiv.org/abs/2407.11418).
-
-LOTUS offers a number of semantic operators in a Pandas-like API, some of which are described below. To learn more about semantic operators provided in LOTUS, check out the full [documentation](https://lotus-ai.readthedocs.io/en/latest/), run the [colab tutorial](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing), or you can also refer to these [examples](https://github.com/TAG-Research/lotus/tree/main/examples/op_examples).
-
-| Operator   | Description                                     |
-|------------|-------------------------------------------------|
-| sem_map    | Map each record using a natural language projection                   |
-| sem_filter | Keep records that match the natural language predicate                |
-| sem_agg    | Performs a natural language aggregation across all records (e.g. for summarization)           |
-| sem_topk   | Order the records by some natural langauge sorting criteria            |
-| sem_join   | Join two datasets based on a natural language predicate        |
-| sem_dedup  | Deduplicate records based on semantic similarity           |
-| sem_index  | Create a semantic similarity index over a text column           |
-| sem_search | Perform top-k search the over a text column          |
-
 
 # Installation
 ```
@@ -76,6 +59,24 @@ print(res)
 # Print total LM usage
 lm.print_total_usage()
 ```
+
+
+## Key Concept: The Semantic Operator Model
+LOTUS' implements is the semantic operator programming model. Semantic operators as declarative transformations on one or more datasets, parameterized by a natural language expression, that can be implemented by a variety of AI-based algorithms. Semantic operators seamlessly extend the relational model, operating over tables that may contain traditional structured data as well as unstructured fields, such as free-form text. These composable, modular language- based operators allow you to write AI-based pipelines with high-level logic, leaving the rest of the work to the query engine! Each operator can be implemented and optimized in multiple ways, opening a rich space for execution plans, similar to relational operators. To learn more about the semantic operator model, read the full [research paper](https://arxiv.org/abs/2407.11418).
+
+LOTUS offers a number of semantic operators in a Pandas-like API, some of which are described below. To learn more about semantic operators provided in LOTUS, check out the full [documentation](https://lotus-ai.readthedocs.io/en/latest/), run the [colab tutorial](https://colab.research.google.com/drive/1OzoJXH13aOwNOIEemClxzNCNYnqSGxVl?usp=sharing), or you can also refer to these [examples](https://github.com/TAG-Research/lotus/tree/main/examples/op_examples).
+
+| Operator   | Description                                     |
+|------------|-------------------------------------------------|
+| sem_map    | Map each record using a natural language projection                   |
+| sem_filter | Keep records that match the natural language predicate                |
+| sem_agg    | Performs a natural language aggregation across all records (e.g. for summarization)           |
+| sem_topk   | Order the records by some natural langauge sorting criteria            |
+| sem_join   | Join two datasets based on a natural language predicate        |
+| sem_dedup  | Deduplicate records based on semantic similarity           |
+| sem_index  | Create a semantic similarity index over a text column           |
+| sem_search | Perform top-k search the over a text column          |
+
 
 # Supported Models
 There are 3 main model classes in LOTUS:
