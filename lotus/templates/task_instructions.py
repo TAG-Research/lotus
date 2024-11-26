@@ -35,7 +35,7 @@ def context_formatter(
 
 def user_message_formatter(
     multimodal_data: dict[str, Any] | str,
-    user_instruction_with_tag: str,
+    user_instruction_with_tag: str | None = None,
 ) -> dict[str, Any]:
     text, image_inputs = context_formatter(multimodal_data)
     if not image_inputs or len(image_inputs) == 0:
@@ -43,11 +43,12 @@ def user_message_formatter(
             "role": "user",
             "content": f"Context:\n{text}\n\n{user_instruction_with_tag}",
         }
+    content = [{"type": "text", "text": f"Context:\n{text}"}] + image_inputs
+    if user_instruction_with_tag:
+        content.append({"type": "text", "text": f"\n\n{user_instruction_with_tag}"})
     return {
         "role": "user",
-        "content": [{"type": "text", "text": f"Context:\n{text}"}]
-        + image_inputs
-        + [{"type": "text", "text": f"\n\n{user_instruction_with_tag}"}],
+        "content": content,
     }
 
 
@@ -233,16 +234,31 @@ def map_formatter(
     return messages
 
 
-def extract_formatter(multimodal_data: dict[str, Any], user_instruction: str) -> list[dict[str, str]]:
+def extract_formatter(
+    multimodal_data: dict[str, Any], output_cols: dict[str, str | None], extract_quotes: bool = True
+) -> list[dict[str, str]]:
+    output_col_names = list(output_cols.keys())
+    # Set the description to be the key if no value is provided
+    output_cols_with_desc: dict[str, str] = {col: col if desc is None else desc for col, desc in output_cols.items()}
+
+    all_fields = output_col_names
+    if extract_quotes:
+        quote_fields = [f"{col}_quote" for col in output_col_names]
+        all_fields += quote_fields
+
+    fields_str = ", ".join(all_fields)
+
     sys_instruction = (
-        "The user will provide an instruction and some relevant context.\n"
-        "Your job is to extract the information requested in the instruction.\n"
-        "Write the response in JSONL format in a single line with the following fields:\n"
-        """{"answer": "your answer", "quotes": "quote from context supporting your answer"}"""
+        "The user will provide the columns that need to be extracted and some relevant context.\n"
+        f"Your job is to extract these columns and provide only a concise value for each field "
+        f"and the corresponding full quote for each field in the '{', '.join([f'{col}_quote' for col in output_col_names])}' fields.\n"
+        f"Here is a description of each field: {output_cols_with_desc}\n"
+        f"The response should be valid JSON format with the following fields: {fields_str}.\n"
     )
+
     messages = [
         {"role": "system", "content": sys_instruction},
-        user_message_formatter(multimodal_data, f"Instruction: {user_instruction}"),
+        user_message_formatter(multimodal_data),
     ]
     return messages
 

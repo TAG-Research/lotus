@@ -1,5 +1,6 @@
 from typing import Any
 
+import pandas as pd
 from litellm.types.utils import ChatCompletionTokenLogprob
 from pydantic import BaseModel
 
@@ -56,6 +57,15 @@ class SemanticMapOutput(SemanticMapPostprocessOutput):
     pass
 
 
+class SemanticExtractPostprocessOutput(BaseModel):
+    raw_outputs: list[str]
+    outputs: list[dict[str, str]]
+
+
+class SemanticExtractOutput(SemanticExtractPostprocessOutput):
+    pass
+
+
 class SemanticFilterPostprocessOutput(BaseModel):
     raw_outputs: list[str]
     outputs: list[bool]
@@ -70,22 +80,24 @@ class SemanticAggOutput(BaseModel):
     outputs: list[str]
 
 
-class SemanticExtractPostprocessOutput(BaseModel):
-    raw_outputs: list[str]
-    outputs: list[str]
-    quotes: list[str | None]
-
-
-class SemanticExtractOutput(SemanticExtractPostprocessOutput):
-    pass
-
-
 class SemanticJoinOutput(StatsMixin):
     join_results: list[tuple[int, int, str | None]]
     filter_outputs: list[bool]
     all_raw_outputs: list[str]
     all_explanations: list[str | None]
 
+
+class SemJoinCascadeArgs(BaseModel):
+    recall_target: float | None = None
+    precision_target: float | None = None
+    sampling_percentage: float = 0.1
+    failure_probability: float = 0.2
+    map_instruction: str | None = None
+    map_examples: pd.DataFrame | None = None
+
+    # to enable pandas
+    class Config:
+        arbitrary_types_allowed = True
 
 class SemanticTopKOutput(StatsMixin):
     indexes: list[int]
