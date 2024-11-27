@@ -8,6 +8,7 @@ from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelRespon
 from litellm.utils import token_counter
 from openai import OpenAIError
 from tokenizers import Tokenizer
+from tqdm import tqdm
 
 import lotus
 from lotus.cache import Cache
@@ -65,14 +66,19 @@ class LM:
             [self._get_top_choice_logprobs(resp) for resp in all_responses] if all_kwargs.get("logprobs") else None
         )
 
+        self.print_total_usage()
+        self.reset_stats()
+
         return LMOutput(outputs=outputs, logprobs=logprobs)
 
     def _process_uncached_messages(self, uncached_data, all_kwargs):
         """Processes uncached messages in batches and returns responses."""
         uncached_responses = []
-        for i in range(0, len(uncached_data), self.max_batch_size):
-            batch = [msg for msg, _ in uncached_data[i : i + self.max_batch_size]]
-            uncached_responses.extend(batch_completion(self.model, batch, drop_params=True, **all_kwargs))
+        with tqdm(total=len(uncached_data), desc="Processing uncached messages") as pbar:
+            for i in range(0, len(uncached_data), self.max_batch_size):
+                batch = [msg for msg, _ in uncached_data[i : i + self.max_batch_size]]
+                uncached_responses.extend(batch_completion(self.model, batch, drop_params=True, **all_kwargs))
+                pbar.update(len(batch))
         return uncached_responses
 
     def _cache_response(self, response, hash):
