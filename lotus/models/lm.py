@@ -68,6 +68,7 @@ class LM:
 
         self.print_total_usage()
         self.reset_stats()
+        self.reset_cache()
 
         return LMOutput(outputs=outputs, logprobs=logprobs)
 
