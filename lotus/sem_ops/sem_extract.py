@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Any, Callable
 
 import pandas as pd
 
@@ -11,7 +11,7 @@ from .postprocessors import extract_postprocess
 
 
 def sem_extract(
-    docs: list[str],
+    docs: list[dict[str, Any]],
     model: LM,
     output_cols: dict[str, str | None],
     extract_quotes: bool = False,
@@ -21,7 +21,7 @@ def sem_extract(
     Extracts attributes and values from a list of documents using a model.
 
     Args:
-        docs (list[str]): The list of documents to extract from.
+        docs (list[dict[str, Any]]): The list of documents to extract from.
         model (lotus.models.LM): The model to use.
         output_cols (dict[str, str | None]): A mapping from desired output column names to optional descriptions.
         extract_quotes (bool): Whether to extract quotes for the output columns. Defaults to False.
@@ -88,10 +88,10 @@ class SemExtractDataFrame:
             if column not in self._obj.columns:
                 raise ValueError(f"Column {column} not found in DataFrame")
 
-        docs = task_instructions.df2text(self._obj, input_cols)
+        multimodal_data = task_instructions.df2multimodal_info(self._obj, input_cols)
 
         out = sem_extract(
-            docs=docs,
+            docs=multimodal_data,
             model=lotus.settings.lm,
             output_cols=output_cols,
             extract_quotes=extract_quotes,

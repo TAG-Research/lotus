@@ -1,6 +1,11 @@
+import base64
+from io import BytesIO
 from typing import Callable
 
+import numpy as np
 import pandas as pd
+import requests  # type: ignore
+from PIL import Image
 
 import lotus
 
@@ -53,3 +58,51 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         return list(map(int, indices.flatten().tolist()))
 
     return ret
+
+
+def fetch_image(image: str | np.ndarray | Image.Image | None, image_type: str = "Image") -> Image.Image | str | None:
+    if image is None:
+        return None
+
+    image_obj = None
+    if isinstance(image, Image.Image):
+        image_obj = image
+    elif isinstance(image, np.ndarray):
+        image_obj = Image.fromarray(image.astype("uint8"))
+    elif image.startswith("http://") or image.startswith("https://"):
+        image_obj = Image.open(requests.get(image, stream=True).raw)
+    elif image.startswith("file://"):
+        image_obj = Image.open(image[7:])
+    elif image.startswith("data:image"):
+        if "base64," in image:
+            _, base64_data = image.split("base64,", 1)
+            data = base64.b64decode(base64_data)
+            image_obj = Image.open(BytesIO(data))
+    elif image.startswith("s3://"):
+        from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+
+        try:
+            import boto3
+
+            s3 = boto3.client("s3")
+            bucket_name, key = image[5:].split("/", 1)  # Split after "s3://"
+            response = s3.get_object(Bucket=bucket_name, Key=key)
+            image_data = response["Body"].read()
+            image_obj = Image.open(BytesIO(image_data))
+        except (NoCredentialsError, PartialCredentialsError) as e:
+            raise ValueError("AWS credentials not found or incomplete.") from e
+        except Exception as e:
+            raise ValueError(f"Failed to fetch image from S3: {e}") from e
+    else:
+        image_obj = Image.open(image)
+    if image_obj is None:
+        raise ValueError(
+            f"Unrecognized image input, support local path, http url, base64, S3, and PIL.Image, got {image}"
+        )
+    image_obj = image_obj.convert("RGB")
+    if image_type == "base64":
+        buffered = BytesIO()
+        image_obj.save(buffered, format="PNG")
+        return "data:image/png;base64," + base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    return image_obj

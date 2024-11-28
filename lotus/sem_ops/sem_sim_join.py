@@ -64,9 +64,9 @@ class SemSimJoinDataframe:
             try:
                 queries = rm.get_vectors_from_index(query_index_dir, self._obj.index)
             except NotImplementedError:
-                queries = self._obj[left_on].tolist()
+                queries = self._obj[left_on]
         else:
-            queries = self._obj[left_on].tolist()
+            queries = self._obj[left_on]
 
         # load index to search over
         try:
@@ -95,19 +95,16 @@ class SemSimJoinDataframe:
         df1["_left_id"] = df1.index
         df2["_right_id"] = df2.index
         temp_df = pd.DataFrame(join_results, columns=["_left_id", "_right_id", "_scores" + score_suffix])
-        joined_df = (
-            df1.join(
-                temp_df.set_index("_left_id"),
-                how="right",
-                on="_left_id",
-            )
-            .join(
-                df2.set_index("_right_id"),
-                how="left",
-                on="_right_id",
-                lsuffix=lsuffix,
-                rsuffix=rsuffix,
-            )
+        joined_df = df1.join(
+            temp_df.set_index("_left_id"),
+            how="right",
+            on="_left_id",
+        ).join(
+            df2.set_index("_right_id"),
+            how="left",
+            on="_right_id",
+            lsuffix=lsuffix,
+            rsuffix=rsuffix,
         )
         if not keep_index:
             joined_df.drop(columns=["_left_id", "_right_id"], inplace=True)

@@ -2,7 +2,9 @@ import pickle
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
+from PIL import Image
 
 from lotus.models.rm import RM
 from lotus.types import RMOutput
@@ -20,14 +22,15 @@ class ColBERTv2RM(RM):
         self.kwargs: dict[str, Any] = {"doc_maxlen": 300, "nbits": 2}
         self.index_dir: str | None = None
 
-    def index(self, docs: list[str], index_dir: str, **kwargs: dict[str, Any]) -> None:
+    def index(self, docs: pd.Series, index_dir: str, **kwargs: dict[str, Any]) -> None:
+        _docs = docs.tolist()
         kwargs = {**self.kwargs, **kwargs}
         checkpoint = "colbert-ir/colbertv2.0"
 
         with Run().context(RunConfig(nranks=1, experiment="lotus")):
             config = ColBERTConfig(doc_maxlen=kwargs["doc_maxlen"], nbits=kwargs["nbits"], kmeans_niters=4)
             indexer = Indexer(checkpoint=checkpoint, config=config)
-            indexer.index(name=f"{index_dir}/index", collection=docs, overwrite=True)
+            indexer.index(name=f"{index_dir}/index", collection=_docs, overwrite=True)
 
         with open(f"experiments/lotus/indexes/{index_dir}/index/docs", "wb") as fp:
             pickle.dump(docs, fp)
@@ -45,7 +48,7 @@ class ColBERTv2RM(RM):
 
     def __call__(
         self,
-        queries: str | list[str] | NDArray[np.float64],
+        queries: str | Image.Image | list | NDArray[np.float64],
         K: int,
         **kwargs: dict[str, Any],
     ) -> RMOutput:
@@ -56,6 +59,7 @@ class ColBERTv2RM(RM):
             searcher = Searcher(index=f"{self.index_dir}/index", collection=self.docs)
 
         # make queries a dict with keys as query ids
+        assert isinstance(queries, list)
         queries_dict = {i: q for i, q in enumerate(queries)}
         all_results = searcher.search_all(queries_dict, k=K).todict()
 
