@@ -1,3 +1,4 @@
+import time
 from typing import Callable
 
 import pandas as pd
@@ -53,3 +54,15 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         return list(map(int, indices.flatten().tolist()))
 
     return ret
+
+
+def show_safe_mode(estimated_cost, estimated_LM_calls):
+    print(f"Estimated cost: {estimated_cost} tokens")
+    print(f"Estimated LM calls: {estimated_LM_calls}")
+    try:
+        for i in range(5, 0, -1):
+            print(f"Proceeding execution in {i} seconds... Press CTRL+C to cancel", end="\r")
+            time.sleep(1)
+            print(" " * 30, end="\r")
+    except KeyboardInterrupt:
+        print("\nExecution cancelled by user")

@@ -1,4 +1,3 @@
-import time
 from typing import Callable
 
 import pandas as pd
@@ -7,6 +6,7 @@ import lotus
 from lotus.models import LM
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, SemanticExtractOutput, SemanticExtractPostprocessOutput
+from lotus.utils import show_safe_mode
 
 from .postprocessors import extract_postprocess
 
@@ -44,15 +44,7 @@ def sem_extract(
     if model.safe_mode:
         estimated_cost = sum(model.count_tokens(input) for input in inputs)
         estimated_LM_calls = len(docs)
-        print(f"Estimated cost: {estimated_cost} tokens")
-        print(f"Estimated LM calls: {estimated_LM_calls}")
-        try:
-            for i in range(5, 0, -1):
-                print(f"Proceeding execution in {i} seconds... Press CTRL+C to cancel", end="\r")
-                time.sleep(1)
-                print(" " * 30, end="\r")
-        except KeyboardInterrupt:
-            print("\nExecution cancelled by user")
+        show_safe_mode(estimated_cost, estimated_LM_calls)
 
     # call model
     lm_output: LMOutput = model(inputs, response_format={"type": "json_object"})
