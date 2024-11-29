@@ -1,3 +1,4 @@
+import time
 from typing import Callable
 
 import pandas as pd
@@ -43,6 +44,20 @@ def sem_map(
         lotus.logger.debug(f"input to model: {prompt}")
         lotus.logger.debug(f"inputs content to model: {[x.get('content') for x in prompt]}")
         inputs.append(prompt)
+
+    # check if safe_mode is enabled
+    if model.safe_mode:
+        estimated_cost = sum(model.count_tokens(input) for input in inputs)
+        estimated_LM_calls = len(docs)
+        print(f"Estimated cost: {estimated_cost} tokens")
+        print(f"Estimated LM calls: {estimated_LM_calls}")
+        try:
+            for i in range(5, 0, -1):
+                print(f"Proceeding execution in {i} seconds... Press CTRL+C to cancel", end="\r")
+                time.sleep(1)
+                print(" " * 30, end="\r")
+        except KeyboardInterrupt:
+            print("\nExecution cancelled by user")
 
     # call model
     lm_output: LMOutput = model(inputs)
