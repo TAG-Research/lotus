@@ -1,4 +1,5 @@
 import hashlib
+import logging
 from typing import Any
 
 import litellm
@@ -13,6 +14,9 @@ from tqdm import tqdm
 import lotus
 from lotus.cache import Cache
 from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
+
+logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
+logging.getLogger("httpx").setLevel(logging.CRITICAL)
 
 
 class LM:
@@ -70,6 +74,7 @@ class LM:
             [self._get_top_choice_logprobs(resp) for resp in all_responses] if all_kwargs.get("logprobs") else None
         )
         if self.safe_mode:
+            print("\n")
             self.print_total_usage()
 
         return LMOutput(outputs=outputs, logprobs=logprobs)

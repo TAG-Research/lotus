@@ -66,3 +66,4 @@ def show_safe_mode(estimated_cost, estimated_LM_calls):
             print(" " * 30, end="\r")
     except KeyboardInterrupt:
         print("\nExecution cancelled by user")
+        exit(0)
