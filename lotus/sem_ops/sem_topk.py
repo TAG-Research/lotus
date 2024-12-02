@@ -11,7 +11,7 @@ from lotus.types import LMOutput, SemanticTopKOutput
 
 
 def get_match_prompt_binary(
-    doc1: str, doc2: str, user_instruction: str, strategy: str | None = None
+    doc1: dict[str, Any], doc2: dict[str, Any], user_instruction: str, strategy: str | None = None
 ) -> list[dict[str, Any]]:
     if strategy == "zs-cot":
         sys_prompt = (
@@ -29,13 +29,13 @@ def get_match_prompt_binary(
             "NUMBER must be either 1 or 2, depending on which document is most relevant.\n"
             'You must pick a number and cannot say things like "None" or "Neither"'
         )
-
-    prompt = f"Question: {user_instruction}\n\n"
+    prompt = [{"type": "text", "text": f"Question: {user_instruction}\n"}]
     for idx, doc in enumerate([doc1, doc2]):
-        prompt = f"{prompt}\nDocument {idx+1}:\n{doc}\n"
+        content_text, content_image_inputs = task_instructions.context_formatter(doc)
+        prompt += [{"type": "text", "text": f"\nDocument {idx+1}:\n{content_text}"}, *content_image_inputs]
 
-    messages = [{"role": "system", "content": sys_prompt}]
-    messages.append({"role": "user", "content": prompt})
+    messages: list[dict[str, Any]] = [{"role": "system", "content": sys_prompt}, {"role": "user", "content": prompt}]
+    lotus.logger.debug(f"Prompt: {messages}")
     return messages
 
 
@@ -56,7 +56,7 @@ def parse_ans_binary(answer: str) -> bool:
 
 
 def compare_batch_binary(
-    pairs: list[tuple[str, str]], user_instruction: str, strategy: str | None = None
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]], user_instruction: str, strategy: str | None = None
 ) -> tuple[list[bool], int]:
     match_prompts = []
     tokens = 0
@@ -69,7 +69,7 @@ def compare_batch_binary(
 
 
 def compare_batch_binary_cascade(
-    pairs: list[tuple[str, str]],
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]],
     user_instruction: str,
     cascade_threshold: float,
     strategy: str | None = None,
@@ -118,7 +118,7 @@ def compare_batch_binary_cascade(
 
 
 def llm_naive_sort(
-    docs: list[str],
+    docs: list[dict[str, Any]],
     user_instruction: str,
     strategy: str | None = None,
 ) -> SemanticTopKOutput:
@@ -157,7 +157,7 @@ def llm_naive_sort(
 
 
 def llm_quicksort(
-    docs: list[str],
+    docs: list[dict[str, Any]],
     user_instruction: str,
     K: int,
     embedding: bool = False,
@@ -168,7 +168,7 @@ def llm_quicksort(
     Sorts the documents using quicksort.
 
     Args:
-        docs (list[str]): The list of documents to sort.
+        docs (list[dict[str, Any]]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
         K (int): The number of documents to return.
         embedding (bool): Whether to use embedding optimization.
@@ -257,7 +257,7 @@ class HeapDoc:
     total_tokens: int = 0
     strategy: str | None = None
 
-    def __init__(self, doc: str, user_instruction: str, idx: int) -> None:
+    def __init__(self, doc: dict[str, Any], user_instruction: str, idx: int) -> None:
         self.doc = doc
         self.user_instruction = user_instruction
         self.idx = idx
@@ -271,7 +271,7 @@ class HeapDoc:
 
 
 def llm_heapsort(
-    docs: list[str],
+    docs: list[dict[str, Any]],
     user_instruction: str,
     K: int,
     strategy: str | None = None,
@@ -280,7 +280,7 @@ def llm_heapsort(
     Sorts the documents using a heap.
 
     Args:
-        docs (list[str]): The list of documents to sort.
+        docs (list[dict[str, Any]]): The list of documents to sort.
         user_instruction (str): The user instruction for sorting.
         K (int): The number of documents to return.
 
@@ -380,13 +380,13 @@ class SemTopKDataframe:
                 col_name, user_instruction, len(self._obj)
             )
 
-        df_txt = task_instructions.df2text(self._obj, col_li)
-        lotus.logger.debug(f"df_txt: {df_txt}")
+        multimodal_data = task_instructions.df2multimodal_info(self._obj, col_li)
+        lotus.logger.debug(f"multimodal_data: {multimodal_data}")
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
 
         if method in ["quick", "quick-sem"]:
             output = llm_quicksort(
-                df_txt,
+                multimodal_data,
                 formatted_usr_instr,
                 K,
                 embedding=method == "quick-sem",
@@ -394,10 +394,10 @@ class SemTopKDataframe:
                 cascade_threshold=cascade_threshold,
             )
         elif method == "heap":
-            output = llm_heapsort(df_txt, formatted_usr_instr, K, strategy=strategy)
+            output = llm_heapsort(multimodal_data, formatted_usr_instr, K, strategy=strategy)
         elif method == "naive":
             output = llm_naive_sort(
-                df_txt,
+                multimodal_data,
                 formatted_usr_instr,
                 strategy=strategy,
             )

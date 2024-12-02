@@ -13,11 +13,11 @@ from .postprocessors import filter_postprocess
 
 
 def sem_filter(
-    docs: list[str],
+    docs: list[dict[str, Any]],
     model: lotus.models.LM,
     user_instruction: str,
     default: bool = True,
-    examples_df_txt: list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
@@ -27,11 +27,11 @@ def sem_filter(
     Filters a list of documents based on a given user instruction using a language model.
 
     Args:
-        docs (list[str]): The list of documents to filter.
+        docs (list[dict[str, Any]]): The list of documents to filter. Each document is a tuple of text and images.
         model (lotus.models.LM): The language model used for filtering.
         user_instruction (str): The user instruction for filtering.
         default (bool): The default value for filtering in case of parsing errors. Defaults to True.
-        examples_df_txt (list[str] | None): The text for examples. Defaults to None.
+        examples_multimodal_data (list[dict[str, Any]] | None): The text for examples. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
         logprobs (bool): Whether to return log probabilities. Defaults to False.
@@ -42,7 +42,7 @@ def sem_filter(
     inputs = []
     for doc in docs:
         prompt = lotus.templates.task_instructions.filter_formatter(
-            doc, user_instruction, examples_df_txt, examples_answers, cot_reasoning, strategy
+            doc, user_instruction, examples_multimodal_data, examples_answers, cot_reasoning, strategy
         )
         lotus.logger.debug(f"input to model: {prompt}")
         inputs.append(prompt)
@@ -60,7 +60,7 @@ def sem_filter(
 
 
 def learn_filter_cascade_thresholds(
-    sample_df_txt: list[str],
+    sample_multimodal_data: list[dict[str, Any]],
     lm: lotus.models.LM,
     formatted_usr_instr: str,
     default: bool,
@@ -69,7 +69,7 @@ def learn_filter_cascade_thresholds(
     delta: float,
     helper_true_probs: list[float],
     sample_correction_factors: NDArray[np.float64],
-    examples_df_txt: list[str] | None = None,
+    examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
@@ -80,11 +80,11 @@ def learn_filter_cascade_thresholds(
 
     try:
         large_outputs = sem_filter(
-            sample_df_txt,
+            sample_multimodal_data,
             lm,
             formatted_usr_instr,
             default=default,
-            examples_df_txt=examples_df_txt,
+            examples_multimodal_data=examples_multimodal_data,
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
@@ -169,16 +169,16 @@ class SemFilterDataframe:
             if column not in self._obj.columns:
                 raise ValueError(f"Column {column} not found in DataFrame")
 
-        df_txt = task_instructions.df2text(self._obj, col_li)
-        lotus.logger.debug(df_txt)
+        multimodal_data = task_instructions.df2multimodal_info(self._obj, col_li)
+        lotus.logger.debug(multimodal_data)
         formatted_usr_instr = lotus.nl_expression.nle2str(user_instruction, col_li)
 
-        examples_df_txt = None
+        examples_multimodal_data = None
         examples_answers = None
         cot_reasoning = None
         if examples is not None:
             assert "Answer" in examples.columns, "Answer must be a column in examples dataframe"
-            examples_df_txt = task_instructions.df2text(examples, col_li)
+            examples_multimodal_data = task_instructions.df2multimodal_info(examples, col_li)
             examples_answers = examples["Answer"].tolist()
 
             if strategy == "cot":
@@ -188,12 +188,12 @@ class SemFilterDataframe:
         pos_cascade_threshold, neg_cascade_threshold = None, None
         if learn_cascade_threshold_sample_percentage is not None:
             # Get few-shot examples for small LM
-            helper_examples_df_txt = None
+            helper_examples_multimodal_data = None
             helper_examples_answers = None
             helper_cot_reasoning = None
             if helper_examples is not None:
                 assert "Answer" in helper_examples.columns, "Answer must be a column in examples dataframe"
-                helper_examples_df_txt = task_instructions.df2text(helper_examples, col_li)
+                helper_examples_multimodal_data = task_instructions.df2multimodal_info(helper_examples, col_li)
                 helper_examples_answers = helper_examples["Answer"].tolist()
 
                 if helper_strategy == "cot":
@@ -212,11 +212,11 @@ class SemFilterDataframe:
 
             # Run small LM and get logits
             helper_output = sem_filter(
-                df_txt,
+                multimodal_data,
                 lotus.settings.helper_lm,
                 formatted_usr_instr,
                 default=default,
-                examples_df_txt=helper_examples_df_txt,
+                examples_multimodal_data=helper_examples_multimodal_data,
                 examples_answers=helper_examples_answers,
                 cot_reasoning=helper_cot_reasoning,
                 logprobs=True,
@@ -232,12 +232,12 @@ class SemFilterDataframe:
                 helper_true_probs, learn_cascade_threshold_sample_percentage
             )
             sample_df = self._obj.loc[sample_indices]
-            sample_df_txt = task_instructions.df2text(sample_df, col_li)
+            sample_multimodal_data = task_instructions.df2multimodal_info(sample_df, col_li)
             sample_helper_true_probs = [helper_true_probs[i] for i in sample_indices]
             sample_correction_factors = correction_factors[sample_indices]
 
             pos_cascade_threshold, neg_cascade_threshold = learn_filter_cascade_thresholds(
-                sample_df_txt=sample_df_txt,
+                sample_multimodal_data=sample_multimodal_data,
                 lm=lotus.settings.lm,
                 formatted_usr_instr=formatted_usr_instr,
                 default=default,
@@ -246,7 +246,7 @@ class SemFilterDataframe:
                 delta=failure_probability / 2,
                 helper_true_probs=sample_helper_true_probs,
                 sample_correction_factors=sample_correction_factors,
-                examples_df_txt=examples_df_txt,
+                examples_multimodal_data=examples_multimodal_data,
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
@@ -277,9 +277,9 @@ class SemFilterDataframe:
             lotus.logger.info(f"Num routed to smaller model: {len(high_conf_idxs)}")
             stats["num_routed_to_helper_model"] = len(high_conf_idxs)
 
-            outputs: list[bool] = [False] * len(df_txt)
-            raw_outputs: list[str] = [""] * len(df_txt)
-            explanations: list[str | None] = [None] * len(df_txt)
+            outputs: list[bool] = [False] * len(multimodal_data)
+            raw_outputs: list[str] = [""] * len(multimodal_data)
+            explanations: list[str | None] = [None] * len(multimodal_data)
 
             assert all(isinstance(x, str) for x in helper_output.explanations) or all(
                 x is None for x in helper_output.explanations
@@ -291,14 +291,14 @@ class SemFilterDataframe:
 
             # Send low confidence samples to large LM if any
             low_conf_idxs = sorted([i for i in range(len(helper_outputs)) if i not in high_conf_idxs])
-            low_conf_df_txt = [df_txt[idx] for idx in low_conf_idxs]
+            low_conf_multimodal_data = [multimodal_data[idx] for idx in low_conf_idxs]
             if low_conf_idxs:
                 large_output = sem_filter(
-                    low_conf_df_txt,
+                    low_conf_multimodal_data,
                     lotus.settings.lm,
                     formatted_usr_instr,
                     default=default,
-                    examples_df_txt=examples_df_txt,
+                    examples_multimodal_data=examples_multimodal_data,
                     examples_answers=examples_answers,
                     cot_reasoning=cot_reasoning,
                     strategy=strategy,
@@ -314,11 +314,11 @@ class SemFilterDataframe:
 
         else:
             output = sem_filter(
-                df_txt,
+                multimodal_data,
                 lotus.settings.lm,
                 formatted_usr_instr,
                 default=default,
-                examples_df_txt=examples_df_txt,
+                examples_multimodal_data=examples_multimodal_data,
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,

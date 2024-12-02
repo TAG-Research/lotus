@@ -30,10 +30,9 @@ class SemIndexDataframe:
         Returns:
             pd.DataFrame: The DataFrame with the index directory saved.
         """
-        documents = self._obj[col_name].tolist()
         rm = lotus.settings.rm
         if rm is None:
             raise AttributeError("Must set rm in lotus.settings")
-        rm.index(documents, index_dir)
+        rm.index(self._obj[col_name], index_dir)
         self._obj.attrs["index_dirs"][col_name] = index_dir
         return self._obj
