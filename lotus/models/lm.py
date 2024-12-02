@@ -73,9 +73,6 @@ class LM:
         logprobs = (
             [self._get_top_choice_logprobs(resp) for resp in all_responses] if all_kwargs.get("logprobs") else None
         )
-        if self.safe_mode:
-            print("\n")
-            self.print_total_usage()
 
         return LMOutput(outputs=outputs, logprobs=logprobs)
 

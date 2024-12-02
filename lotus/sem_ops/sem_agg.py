@@ -5,6 +5,7 @@ import pandas as pd
 import lotus.models
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, SemanticAggOutput
+from lotus.utils import show_safe_mode
 
 
 def sem_agg(
@@ -12,6 +13,7 @@ def sem_agg(
     model: lotus.models.LM,
     user_instruction: str,
     partition_ids: list[int],
+    safe_mode: bool = False,
 ) -> SemanticAggOutput:
     """
     Aggregates multiple documents into a single answer using a model.
@@ -76,6 +78,12 @@ def sem_agg(
         template_tokens = model.count_tokens(template)
         context_tokens = 0
         doc_ctr = 1  # num docs in current prompt
+
+        if safe_mode:
+            print(f"Starting tree level {tree_level} aggregation with {len(docs)} docs")
+            estimated_LM_calls = 0
+            estimated_costs = 0
+
         for idx in range(len(docs)):
             partition_id = partition_ids[idx]
             formatted_doc = doc_formatter(tree_level, docs[idx], doc_ctr)
@@ -98,6 +106,9 @@ def sem_agg(
                 context_str = formatted_doc
                 context_tokens = new_tokens
                 doc_ctr += 1
+                if safe_mode:
+                    estimated_LM_calls += 1
+                    estimated_costs += model.count_tokens(prompt)
             else:
                 context_str = context_str + formatted_doc
                 context_tokens += new_tokens
@@ -108,6 +119,13 @@ def sem_agg(
             lotus.logger.debug(f"Prompt added to batch: {prompt}")
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
+            if safe_mode:
+                estimated_LM_calls += 1
+                estimated_costs += model.count_tokens(prompt)
+
+        if safe_mode:
+            show_safe_mode(estimated_costs, estimated_LM_calls)
+
         lm_output: LMOutput = model(batch)
 
         summaries = lm_output.outputs
@@ -117,6 +135,8 @@ def sem_agg(
         docs = summaries
         lotus.logger.debug(f"Model outputs from tree level {tree_level}: {summaries}")
         tree_level += 1
+
+        model.print_total_usage()
 
     return SemanticAggOutput(outputs=summaries)
 
@@ -139,6 +159,7 @@ class SemAggDataframe:
         all_cols: bool = False,
         suffix: str = "_output",
         group_by: list[str] | None = None,
+        safe_mode: bool = False,
     ) -> pd.DataFrame:
         """
         Applies semantic aggregation over a dataframe.
@@ -189,6 +210,7 @@ class SemAggDataframe:
             lotus.settings.lm,
             formatted_usr_instr,
             partition_ids,
+            safe_mode=safe_mode,
         )
 
         # package answer in a dataframe

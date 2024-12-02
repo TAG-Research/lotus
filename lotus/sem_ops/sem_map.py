@@ -19,6 +19,7 @@ def sem_map(
     examples_answers: list[str] | None = None,
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
+    safe_mode: bool = False,
 ) -> SemanticMapOutput:
     """
     Maps a list of documents to a list of outputs using a model.
@@ -46,7 +47,7 @@ def sem_map(
         inputs.append(prompt)
 
     # check if safe_mode is enabled
-    if model.safe_mode:
+    if safe_mode:
         estimated_cost = sum(model.count_tokens(input) for input in inputs)
         estimated_LM_calls = len(docs)
         show_safe_mode(estimated_cost, estimated_LM_calls)
@@ -59,6 +60,8 @@ def sem_map(
     lotus.logger.debug(f"raw_outputs: {lm_output.outputs}")
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
     lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
+
+    model.print_total_usage()
 
     return SemanticMapOutput(**postprocess_output.model_dump())
 
@@ -85,6 +88,7 @@ class SemMapDataframe:
         suffix: str = "_map",
         examples: pd.DataFrame | None = None,
         strategy: str | None = None,
+        safe_mode: bool = False,
     ) -> pd.DataFrame:
         """
         Applies semantic map over a dataframe.
@@ -132,6 +136,7 @@ class SemMapDataframe:
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
+            safe_mode=safe_mode,
         )
 
         new_df = self._obj.copy()

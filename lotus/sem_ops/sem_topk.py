@@ -8,6 +8,7 @@ import pandas as pd
 import lotus
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, SemanticTopKOutput
+from lotus.utils import show_safe_mode
 
 
 def get_match_prompt_binary(
@@ -121,6 +122,7 @@ def llm_naive_sort(
     docs: list[dict[str, Any]],
     user_instruction: str,
     strategy: str | None = None,
+    safe_mode: bool = False,
 ) -> SemanticTopKOutput:
     """
     Sorts the documents using a naive quadratic method.
@@ -140,6 +142,10 @@ def llm_naive_sort(
 
     llm_calls = len(pairs)
     comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
+    if safe_mode:
+        print("Naive Sort:")
+        show_safe_mode(tokens, llm_calls)
+        print("\n")
     votes = [0] * N
     idx = 0
     for i in range(N):
@@ -163,6 +169,7 @@ def llm_quicksort(
     embedding: bool = False,
     strategy: str | None = None,
     cascade_threshold: float | None = None,
+    safe_mode: bool = False,
 ) -> SemanticTopKOutput:
     """
     Sorts the documents using quicksort.
@@ -207,10 +214,16 @@ def llm_quicksort(
         indexes[pivot_index], indexes[high] = indexes[high], indexes[pivot_index]
 
         pairs = [(docs[indexes[j]], pivot) for j in range(low, high)]
+        if safe_mode:
+            estimated_LM_calls = len(pairs)
         if cascade_threshold is None:
             comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
             stats["total_tokens"] += tokens
             stats["total_llm_calls"] += len(pairs)
+            if safe_mode:
+                estimated_costs = tokens
+                print("Quicksort:")
+                show_safe_mode(estimated_costs, estimated_LM_calls)
         else:
             comparisons, small_tokens, large_tokens, num_large_calls = compare_batch_binary_cascade(
                 pairs,
@@ -275,6 +288,7 @@ def llm_heapsort(
     user_instruction: str,
     K: int,
     strategy: str | None = None,
+    safe_mode: bool = False,
 ) -> SemanticTopKOutput:
     """
     Sorts the documents using a heap.
@@ -292,8 +306,16 @@ def llm_heapsort(
     HeapDoc.strategy = strategy
     N = len(docs)
     heap = [HeapDoc(docs[idx], user_instruction, idx) for idx in range(N)]
+    estimated_LM_calls = len(heap)
+
     heap = heapq.nsmallest(K, heap)
     indexes = [heapq.heappop(heap).idx for _ in range(len(heap))]
+
+    estimated_cost = HeapDoc.total_tokens
+    if safe_mode:
+        print("Heap Sort:")
+        show_safe_mode(estimated_cost, estimated_LM_calls)
+        print("\n")
 
     stats = {"total_tokens": HeapDoc.total_tokens, "total_llm_calls": HeapDoc.num_calls}
     return SemanticTopKOutput(indexes=indexes, stats=stats)
@@ -320,6 +342,7 @@ class SemTopKDataframe:
         group_by: list[str] | None = None,
         cascade_threshold: float | None = None,
         return_stats: bool = False,
+        safe_mode: bool = False,
     ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]:
         """
         Sorts the DataFrame based on the user instruction and returns the top K rows.
@@ -392,14 +415,22 @@ class SemTopKDataframe:
                 embedding=method == "quick-sem",
                 strategy=strategy,
                 cascade_threshold=cascade_threshold,
+                safe_mode=safe_mode,
             )
         elif method == "heap":
-            output = llm_heapsort(multimodal_data, formatted_usr_instr, K, strategy=strategy)
+            output = llm_heapsort(
+                multimodal_data,
+                formatted_usr_instr,
+                K,
+                strategy=strategy,
+                safe_mode=safe_mode,
+            )
         elif method == "naive":
             output = llm_naive_sort(
                 multimodal_data,
                 formatted_usr_instr,
                 strategy=strategy,
+                safe_mode=safe_mode,
             )
         else:
             raise ValueError(f"Method {method} not recognized")
