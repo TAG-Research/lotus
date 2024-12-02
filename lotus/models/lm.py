@@ -16,7 +16,6 @@ from lotus.cache import Cache
 from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
 
 logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
 
 
 class LM:
