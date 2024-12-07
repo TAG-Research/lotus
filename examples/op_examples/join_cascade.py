@@ -5,10 +5,9 @@ from lotus.models import LM, SentenceTransformersRM
 from lotus.types import SemJoinCascadeArgs
 
 lm = LM(model="gpt-4o-mini")
-helper_lm = LM(model="gpt-3.5-turbo")
 rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 
-lotus.settings.configure(lm=lm, rm=rm, helper_lm=helper_lm)
+lotus.settings.configure(lm=lm, rm=rm)
 data = {
     "Course Name": [
         "Digital Design and Integrated Circuits",

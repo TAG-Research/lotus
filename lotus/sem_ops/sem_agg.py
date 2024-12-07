@@ -5,7 +5,6 @@ import pandas as pd
 import lotus.models
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, SemanticAggOutput
-from lotus.utils import show_safe_mode
 
 
 def sem_agg(
@@ -62,6 +61,10 @@ def sem_agg(
     def doc_formatter(tree_level: int, doc: str, ctr: int) -> str:
         return leaf_doc_formatter(doc, ctr) if tree_level == 0 else node_doc_formatter(doc, ctr)
 
+    if safe_mode:
+        # TODO: implement safe mode
+        lotus.logger.warning("Safe mode is not implemented yet")
+
     tree_level = 0
     summaries: list[str] = []
     new_partition_ids: list[int] = []
@@ -78,11 +81,6 @@ def sem_agg(
         template_tokens = model.count_tokens(template)
         context_tokens = 0
         doc_ctr = 1  # num docs in current prompt
-
-        if safe_mode:
-            print(f"Starting tree level {tree_level} aggregation with {len(docs)} docs")
-            estimated_LM_calls = 0
-            estimated_costs = 0
 
         for idx in range(len(docs)):
             partition_id = partition_ids[idx]
@@ -106,9 +104,6 @@ def sem_agg(
                 context_str = formatted_doc
                 context_tokens = new_tokens
                 doc_ctr += 1
-                if safe_mode:
-                    estimated_LM_calls += 1
-                    estimated_costs += model.count_tokens(prompt)
             else:
                 context_str = context_str + formatted_doc
                 context_tokens += new_tokens
@@ -119,12 +114,6 @@ def sem_agg(
             lotus.logger.debug(f"Prompt added to batch: {prompt}")
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
-            if safe_mode:
-                estimated_LM_calls += 1
-                estimated_costs += model.count_tokens(prompt)
-
-        if safe_mode:
-            show_safe_mode(estimated_costs, estimated_LM_calls)
 
         lm_output: LMOutput = model(batch)
 

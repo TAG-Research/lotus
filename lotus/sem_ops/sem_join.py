@@ -199,38 +199,8 @@ def sem_join_cascade(
     num_large = len(helper_low_conf)
 
     if safe_mode:
-        sample_docs1 = task_instructions.df2multimodal_info(l1.to_frame(col1_label), [col1_label])
-        sample_docs2 = task_instructions.df2multimodal_info(l2.to_frame(col2_label), [col2_label])
-        sample_helper_doc = task_instructions.merge_multimodal_info([sample_docs1[0]], sample_docs2)
-
-        estimated_tokens_helper = lotus.settings.helper_lm.count_tokens(
-            lotus.templates.task_instructions.filter_formatter(
-                sample_helper_doc[0],
-                user_instruction,
-                examples_multimodal_data,
-                examples_answers,
-                cot_reasoning,
-                strategy,
-            )
-        )
-        estimated_tokens_large = lotus.settings.lm.count_tokens(
-            lotus.templates.task_instructions.filter_formatter(
-                sample_helper_doc[0],
-                user_instruction,
-                examples_multimodal_data,
-                examples_answers,
-                cot_reasoning,
-                strategy,
-            )
-        )
-
-        total_helper_tokens = estimated_tokens_helper * num_helper
-        total_large_tokens = estimated_tokens_large * num_large
-        total_tokens = total_helper_tokens + total_large_tokens + join_optimization_cost
-        total_lm_calls = num_helper + num_large
-
-        print("Sem_join_cascade:")
-        show_safe_mode(total_tokens, total_lm_calls)
+        # TODO: implement safe mode
+        lotus.logger.warning("Safe mode is not implemented yet.")
 
     # Accept helper results with high confidence
     join_results = [(row["_left_id"], row["_right_id"], None) for _, row in helper_high_conf.iterrows()]
