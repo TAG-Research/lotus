@@ -124,8 +124,8 @@ def sem_agg(
         docs = summaries
         lotus.logger.debug(f"Model outputs from tree level {tree_level}: {summaries}")
         tree_level += 1
-
-        model.print_total_usage()
+        if safe_mode:
+            model.print_total_usage()
 
     return SemanticAggOutput(outputs=summaries)
 

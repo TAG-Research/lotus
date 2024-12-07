@@ -54,8 +54,8 @@ def sem_extract(
     postprocess_output = postprocessor(lm_output.outputs)
     lotus.logger.debug(f"raw_outputs: {lm_output.outputs}")
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
-
-    model.print_total_usage()
+    if safe_mode:
+        model.print_total_usage()
 
     return SemanticExtractOutput(**postprocess_output.model_dump())
 

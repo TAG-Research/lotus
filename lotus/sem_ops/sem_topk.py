@@ -143,7 +143,6 @@ def llm_naive_sort(
     llm_calls = len(pairs)
     comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
     if safe_mode:
-        print("Naive Sort:")
         show_safe_mode(tokens, llm_calls)
     votes = [0] * N
     idx = 0
@@ -192,7 +191,6 @@ def llm_quicksort(
         estimated_quicksort_calls = 2 * len(docs) * np.log(len(docs))
         estimated_total_calls = estimated_quickselect_calls + estimated_quicksort_calls
         estimated_total_tokens = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
-        print("Quicksort:")
         show_safe_mode(estimated_total_tokens, estimated_total_calls)
 
     if cascade_threshold is not None:
@@ -309,7 +307,6 @@ def llm_heapsort(
         estimated_top_k_extraction_calls = K * np.log(len(docs))
         estimated_total_calls = estimated_heap_construction_calls + estimated_top_k_extraction_calls
         estimated_total_cost = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
-        print("Heap Sort:")
         show_safe_mode(estimated_total_cost, estimated_total_calls)
 
     HeapDoc.num_calls = 0

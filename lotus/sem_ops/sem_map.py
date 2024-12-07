@@ -60,8 +60,8 @@ def sem_map(
     lotus.logger.debug(f"raw_outputs: {lm_output.outputs}")
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
     lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
-
-    model.print_total_usage()
+    if safe_mode:
+        model.print_total_usage()
 
     return SemanticMapOutput(**postprocess_output.model_dump())
 

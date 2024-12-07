@@ -29,7 +29,6 @@ class LM:
         max_batch_size: int = 64,
         tokenizer: Tokenizer | None = None,
         max_cache_size: int = 1024,
-        safe_mode: bool = False,
         **kwargs: dict[str, Any],
     ):
         self.model = model
@@ -37,7 +36,6 @@ class LM:
         self.max_tokens = max_tokens
         self.max_batch_size = max_batch_size
         self.tokenizer = tokenizer
-        self.safe_mode = safe_mode
         self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
 
         self.stats: LMStats = LMStats()

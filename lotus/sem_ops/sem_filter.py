@@ -64,7 +64,8 @@ def sem_filter(
     lotus.logger.debug(f"raw_outputs: {postprocess_output.raw_outputs}")
     lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
 
-    model.print_total_usage()
+    if safe_mode:
+        model.print_total_usage()
 
     return SemanticFilterOutput(**postprocess_output.model_dump(), logprobs=lm_output.logprobs if logprobs else None)
 
