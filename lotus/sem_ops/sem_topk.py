@@ -8,6 +8,7 @@ import pandas as pd
 import lotus
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, SemanticTopKOutput
+from lotus.utils import show_safe_mode
 
 
 def get_match_prompt_binary(
@@ -121,6 +122,7 @@ def llm_naive_sort(
     docs: list[dict[str, Any]],
     user_instruction: str,
     strategy: str | None = None,
+    safe_mode: bool = False,
 ) -> SemanticTopKOutput:
     """
     Sorts the documents using a naive quadratic method.
@@ -140,6 +142,8 @@ def llm_naive_sort(
 
     llm_calls = len(pairs)
     comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
+    if safe_mode:
+        show_safe_mode(tokens, llm_calls)
     votes = [0] * N
     idx = 0
     for i in range(N):
@@ -163,6 +167,7 @@ def llm_quicksort(
     embedding: bool = False,
     strategy: str | None = None,
     cascade_threshold: float | None = None,
+    safe_mode: bool = False,
 ) -> SemanticTopKOutput:
     """
     Sorts the documents using quicksort.
@@ -180,6 +185,13 @@ def llm_quicksort(
     stats = {}
     stats["total_tokens"] = 0
     stats["total_llm_calls"] = 0
+    if safe_mode:
+        sample_prompt = get_match_prompt_binary(docs[0], docs[1], user_instruction, strategy=strategy)
+        estimated_quickselect_calls = 2 * K
+        estimated_quicksort_calls = 2 * len(docs) * np.log(len(docs))
+        estimated_total_calls = estimated_quickselect_calls + estimated_quicksort_calls
+        estimated_total_tokens = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
+        show_safe_mode(estimated_total_tokens, estimated_total_calls)
 
     if cascade_threshold is not None:
         stats["total_small_tokens"] = 0
@@ -275,6 +287,7 @@ def llm_heapsort(
     user_instruction: str,
     K: int,
     strategy: str | None = None,
+    safe_mode: bool = False,
 ) -> SemanticTopKOutput:
     """
     Sorts the documents using a heap.
@@ -287,11 +300,21 @@ def llm_heapsort(
     Returns:
         SemanticTopKOutput: The indexes of the top k documents and stats.
     """
+
+    if safe_mode:
+        sample_prompt = get_match_prompt_binary(docs[0], docs[1], user_instruction, strategy=strategy)
+        estimated_heap_construction_calls = len(docs) * np.log(len(docs))
+        estimated_top_k_extraction_calls = K * np.log(len(docs))
+        estimated_total_calls = estimated_heap_construction_calls + estimated_top_k_extraction_calls
+        estimated_total_cost = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
+        show_safe_mode(estimated_total_cost, estimated_total_calls)
+
     HeapDoc.num_calls = 0
     HeapDoc.total_tokens = 0
     HeapDoc.strategy = strategy
     N = len(docs)
     heap = [HeapDoc(docs[idx], user_instruction, idx) for idx in range(N)]
+
     heap = heapq.nsmallest(K, heap)
     indexes = [heapq.heappop(heap).idx for _ in range(len(heap))]
 
@@ -320,6 +343,7 @@ class SemTopKDataframe:
         group_by: list[str] | None = None,
         cascade_threshold: float | None = None,
         return_stats: bool = False,
+        safe_mode: bool = False,
     ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]:
         """
         Sorts the DataFrame based on the user instruction and returns the top K rows.
@@ -392,14 +416,22 @@ class SemTopKDataframe:
                 embedding=method == "quick-sem",
                 strategy=strategy,
                 cascade_threshold=cascade_threshold,
+                safe_mode=safe_mode,
             )
         elif method == "heap":
-            output = llm_heapsort(multimodal_data, formatted_usr_instr, K, strategy=strategy)
+            output = llm_heapsort(
+                multimodal_data,
+                formatted_usr_instr,
+                K,
+                strategy=strategy,
+                safe_mode=safe_mode,
+            )
         elif method == "naive":
             output = llm_naive_sort(
                 multimodal_data,
                 formatted_usr_instr,
                 strategy=strategy,
+                safe_mode=safe_mode,
             )
         else:
             raise ValueError(f"Method {method} not recognized")

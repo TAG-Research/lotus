@@ -12,6 +12,7 @@ def sem_agg(
     model: lotus.models.LM,
     user_instruction: str,
     partition_ids: list[int],
+    safe_mode: bool = False,
 ) -> SemanticAggOutput:
     """
     Aggregates multiple documents into a single answer using a model.
@@ -60,6 +61,10 @@ def sem_agg(
     def doc_formatter(tree_level: int, doc: str, ctr: int) -> str:
         return leaf_doc_formatter(doc, ctr) if tree_level == 0 else node_doc_formatter(doc, ctr)
 
+    if safe_mode:
+        # TODO: implement safe mode
+        lotus.logger.warning("Safe mode is not implemented yet")
+
     tree_level = 0
     summaries: list[str] = []
     new_partition_ids: list[int] = []
@@ -76,6 +81,7 @@ def sem_agg(
         template_tokens = model.count_tokens(template)
         context_tokens = 0
         doc_ctr = 1  # num docs in current prompt
+
         for idx in range(len(docs)):
             partition_id = partition_ids[idx]
             formatted_doc = doc_formatter(tree_level, docs[idx], doc_ctr)
@@ -108,6 +114,7 @@ def sem_agg(
             lotus.logger.debug(f"Prompt added to batch: {prompt}")
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
+
         lm_output: LMOutput = model(batch)
 
         summaries = lm_output.outputs
@@ -117,6 +124,8 @@ def sem_agg(
         docs = summaries
         lotus.logger.debug(f"Model outputs from tree level {tree_level}: {summaries}")
         tree_level += 1
+        if safe_mode:
+            model.print_total_usage()
 
     return SemanticAggOutput(outputs=summaries)
 
@@ -139,6 +148,7 @@ class SemAggDataframe:
         all_cols: bool = False,
         suffix: str = "_output",
         group_by: list[str] | None = None,
+        safe_mode: bool = False,
     ) -> pd.DataFrame:
         """
         Applies semantic aggregation over a dataframe.
@@ -189,6 +199,7 @@ class SemAggDataframe:
             lotus.settings.lm,
             formatted_usr_instr,
             partition_ids,
+            safe_mode=safe_mode,
         )
 
         # package answer in a dataframe

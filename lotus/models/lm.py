@@ -1,4 +1,5 @@
 import hashlib
+import logging
 from typing import Any
 
 import litellm
@@ -8,10 +9,14 @@ from litellm.types.utils import ChatCompletionTokenLogprob, Choices, ModelRespon
 from litellm.utils import token_counter
 from openai import OpenAIError
 from tokenizers import Tokenizer
+from tqdm import tqdm
 
 import lotus
 from lotus.cache import Cache
 from lotus.types import LMOutput, LMStats, LogprobsForCascade, LogprobsForFilterCascade
+
+logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
+logging.getLogger("httpx").setLevel(logging.CRITICAL)
 
 
 class LM:
@@ -36,7 +41,9 @@ class LM:
         self.stats: LMStats = LMStats()
         self.cache = Cache(max_cache_size)
 
-    def __call__(self, messages: list[list[dict[str, str]]], **kwargs: dict[str, Any]) -> LMOutput:
+    def __call__(
+        self, messages: list[list[dict[str, str]]], safe_mode: bool = False, **kwargs: dict[str, Any]
+    ) -> LMOutput:
         all_kwargs = {**self.kwargs, **kwargs}
 
         # Set top_logprobs if logprobs requested
@@ -70,7 +77,7 @@ class LM:
     def _process_uncached_messages(self, uncached_data, all_kwargs):
         """Processes uncached messages in batches and returns responses."""
         uncached_responses = []
-        for i in range(0, len(uncached_data), self.max_batch_size):
+        for i in tqdm(range(0, len(uncached_data), self.max_batch_size), desc="Processing uncached messages"):
             batch = [msg for msg, _ in uncached_data[i : i + self.max_batch_size]]
             uncached_responses.extend(batch_completion(self.model, batch, drop_params=True, **all_kwargs))
         return uncached_responses

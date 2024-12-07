@@ -5,6 +5,7 @@ import pandas as pd
 import lotus
 from lotus.templates import task_instructions
 from lotus.types import SemanticJoinOutput, SemJoinCascadeArgs
+from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_sem_sim_join, importance_sampling, learn_cascade_thresholds
 from .sem_filter import sem_filter
@@ -24,6 +25,7 @@ def sem_join(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
+    safe_mode: bool = False,
 ) -> SemanticJoinOutput:
     """
     Joins two series using a model.
@@ -53,6 +55,19 @@ def sem_join(
 
     left_multimodal_data = task_instructions.df2multimodal_info(l1.to_frame(col1_label), [col1_label])
     right_multimodal_data = task_instructions.df2multimodal_info(l2.to_frame(col2_label), [col2_label])
+
+    if safe_mode:
+        sample_docs = task_instructions.merge_multimodal_info([left_multimodal_data[0]], right_multimodal_data)
+        estimated_tokens_per_call = model.count_tokens(
+            lotus.templates.task_instructions.filter_formatter(
+                sample_docs[0], user_instruction, examples_multimodal_data, examples_answers, cot_reasoning, strategy
+            )
+        )
+        estimated_total_calls = len(l1) * len(l2)
+        estimated_total_cost = estimated_tokens_per_call * estimated_total_calls
+        print("Sem_Join:")
+        show_safe_mode(estimated_total_cost, estimated_total_calls)
+
     # for i1 in enumerate(l1):
     for id1, i1 in zip(ids1, left_multimodal_data):
         # perform llm filter
@@ -113,6 +128,7 @@ def sem_join_cascade(
     cot_reasoning: list[str] | None = None,
     default: bool = True,
     strategy: str | None = None,
+    safe_mode: bool = False,
 ) -> SemanticJoinOutput:
     """
     Joins two series using a cascade helper model and a large model.
@@ -181,6 +197,10 @@ def sem_join_cascade(
 
     num_helper = len(helper_high_conf)
     num_large = len(helper_low_conf)
+
+    if safe_mode:
+        # TODO: implement safe mode
+        lotus.logger.warning("Safe mode is not implemented yet.")
 
     # Accept helper results with high confidence
     join_results = [(row["_left_id"], row["_right_id"], None) for _, row in helper_high_conf.iterrows()]
@@ -538,6 +558,7 @@ class SemJoinDataframe:
         default: bool = True,
         cascade_args: SemJoinCascadeArgs | None = None,
         return_stats: bool = False,
+        safe_mode: bool = False,
     ) -> pd.DataFrame:
         """
         Applies semantic join over a dataframe.
@@ -647,6 +668,7 @@ class SemJoinDataframe:
                 cot_reasoning=cot_reasoning,
                 default=default,
                 strategy=strategy,
+                safe_mode=safe_mode,
             )
         else:
             output = sem_join(
@@ -663,6 +685,7 @@ class SemJoinDataframe:
                 cot_reasoning=cot_reasoning,
                 default=default,
                 strategy=strategy,
+                safe_mode=safe_mode,
             )
         join_results = output.join_results
         all_raw_outputs = output.all_raw_outputs

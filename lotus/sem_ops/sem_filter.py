@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 import lotus
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
+from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_llm_logprobs, importance_sampling, learn_cascade_thresholds
 from .postprocessors import filter_postprocess
@@ -22,6 +23,7 @@ def sem_filter(
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
     logprobs: bool = False,
+    safe_mode: bool = False,
 ) -> SemanticFilterOutput:
     """
     Filters a list of documents based on a given user instruction using a language model.
@@ -47,6 +49,12 @@ def sem_filter(
         lotus.logger.debug(f"input to model: {prompt}")
         inputs.append(prompt)
     kwargs: dict[str, Any] = {"logprobs": logprobs}
+
+    if safe_mode:
+        estimated_total_calls = len(docs)
+        estimated_total_cost = sum(model.count_tokens(input) for input in inputs)
+        show_safe_mode(estimated_total_cost, estimated_total_calls)
+
     lm_output: LMOutput = model(inputs, **kwargs)
 
     postprocess_output = filter_postprocess(
@@ -55,6 +63,9 @@ def sem_filter(
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
     lotus.logger.debug(f"raw_outputs: {postprocess_output.raw_outputs}")
     lotus.logger.debug(f"explanations: {postprocess_output.explanations}")
+
+    if safe_mode:
+        model.print_total_usage()
 
     return SemanticFilterOutput(**postprocess_output.model_dump(), logprobs=lm_output.logprobs if logprobs else None)
 
@@ -88,6 +99,7 @@ def learn_filter_cascade_thresholds(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
+            safe_mode=False,
         ).outputs
 
         best_combination, _ = learn_cascade_thresholds(
@@ -137,6 +149,7 @@ class SemFilterDataframe:
         precision_target: float | None = None,
         failure_probability: float | None = None,
         return_stats: bool = False,
+        safe_mode: bool = False,
     ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]:
         """
         Applies semantic filter over a dataframe.
@@ -221,6 +234,7 @@ class SemFilterDataframe:
                 cot_reasoning=helper_cot_reasoning,
                 logprobs=True,
                 strategy=helper_strategy,
+                safe_mode=safe_mode,
             )
             helper_outputs, helper_logprobs = helper_output.outputs, helper_output.logprobs
             formatted_helper_logprobs: LogprobsForFilterCascade = (
@@ -302,6 +316,7 @@ class SemFilterDataframe:
                     examples_answers=examples_answers,
                     cot_reasoning=cot_reasoning,
                     strategy=strategy,
+                    safe_mode=safe_mode,
                 )
 
                 for idx, large_idx in enumerate(low_conf_idxs):
@@ -322,6 +337,7 @@ class SemFilterDataframe:
                 examples_answers=examples_answers,
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
+                safe_mode=safe_mode,
             )
             outputs = output.outputs
             raw_outputs = output.raw_outputs

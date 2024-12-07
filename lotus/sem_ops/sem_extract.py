@@ -6,6 +6,7 @@ import lotus
 from lotus.models import LM
 from lotus.templates import task_instructions
 from lotus.types import LMOutput, SemanticExtractOutput, SemanticExtractPostprocessOutput
+from lotus.utils import show_safe_mode
 
 from .postprocessors import extract_postprocess
 
@@ -16,6 +17,7 @@ def sem_extract(
     output_cols: dict[str, str | None],
     extract_quotes: bool = False,
     postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
+    safe_mode: bool = False,
 ) -> SemanticExtractOutput:
     """
     Extracts attributes and values from a list of documents using a model.
@@ -39,6 +41,12 @@ def sem_extract(
         lotus.logger.debug(f"inputs content to model: {[x.get('content') for x in prompt]}")
         inputs.append(prompt)
 
+    # check if safe_mode is enabled
+    if safe_mode:
+        estimated_cost = sum(model.count_tokens(input) for input in inputs)
+        estimated_LM_calls = len(docs)
+        show_safe_mode(estimated_cost, estimated_LM_calls)
+
     # call model
     lm_output: LMOutput = model(inputs, response_format={"type": "json_object"})
 
@@ -46,6 +54,8 @@ def sem_extract(
     postprocess_output = postprocessor(lm_output.outputs)
     lotus.logger.debug(f"raw_outputs: {lm_output.outputs}")
     lotus.logger.debug(f"outputs: {postprocess_output.outputs}")
+    if safe_mode:
+        model.print_total_usage()
 
     return SemanticExtractOutput(**postprocess_output.model_dump())
 
@@ -68,6 +78,7 @@ class SemExtractDataFrame:
         extract_quotes: bool = False,
         postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
         return_raw_outputs: bool = False,
+        safe_mode: bool = False,
     ) -> pd.DataFrame:
         """
         Extracts the attributes and values of a dataframe.
@@ -96,6 +107,7 @@ class SemExtractDataFrame:
             output_cols=output_cols,
             extract_quotes=extract_quotes,
             postprocessor=postprocessor,
+            safe_mode=safe_mode,
         )
 
         new_df = self._obj.copy()

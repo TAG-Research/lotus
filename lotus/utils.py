@@ -1,4 +1,5 @@
 import base64
+import time
 from io import BytesIO
 from typing import Callable
 
@@ -106,3 +107,17 @@ def fetch_image(image: str | np.ndarray | Image.Image | None, image_type: str = 
         return "data:image/png;base64," + base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     return image_obj
+
+
+def show_safe_mode(estimated_cost, estimated_LM_calls):
+    print(f"Estimated cost: {estimated_cost} tokens")
+    print(f"Estimated LM calls: {estimated_LM_calls}")
+    try:
+        for i in range(5, 0, -1):
+            print(f"Proceeding execution in {i} seconds... Press CTRL+C to cancel", end="\r")
+            time.sleep(1)
+            print(" " * 60, end="\r")
+        print("\n")
+    except KeyboardInterrupt:
+        print("\nExecution cancelled by user")
+        exit(0)
