@@ -145,7 +145,6 @@ def llm_naive_sort(
     if safe_mode:
         print("Naive Sort:")
         show_safe_mode(tokens, llm_calls)
-        print("\n")
     votes = [0] * N
     idx = 0
     for i in range(N):
@@ -187,15 +186,14 @@ def llm_quicksort(
     stats = {}
     stats["total_tokens"] = 0
     stats["total_llm_calls"] = 0
-    sample_prompt = get_match_prompt_binary(docs[0], docs[1], user_instruction, strategy=strategy)
-    estimated_quickselect_calls = 2 * K
-    estimated_quicksort_calls = 2 * len(docs) * np.log(len(docs))
-    estimated_total_calls = estimated_quickselect_calls + estimated_quicksort_calls
-    estimated_total_tokens = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
     if safe_mode:
+        sample_prompt = get_match_prompt_binary(docs[0], docs[1], user_instruction, strategy=strategy)
+        estimated_quickselect_calls = 2 * K
+        estimated_quicksort_calls = 2 * len(docs) * np.log(len(docs))
+        estimated_total_calls = estimated_quickselect_calls + estimated_quicksort_calls
+        estimated_total_tokens = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
         print("Quicksort:")
         show_safe_mode(estimated_total_tokens, estimated_total_calls)
-        print("\n")
 
     if cascade_threshold is not None:
         stats["total_small_tokens"] = 0
@@ -304,15 +302,15 @@ def llm_heapsort(
     Returns:
         SemanticTopKOutput: The indexes of the top k documents and stats.
     """
-    sample_prompt = get_match_prompt_binary(docs[0], docs[1], user_instruction, strategy=strategy)
-    estimated_heap_construction_calls = len(docs) * np.log(len(docs))
-    estimated_top_k_extraction_calls = K * np.log(len(docs))
-    estimated_total_calls = estimated_heap_construction_calls + estimated_top_k_extraction_calls
-    estimated_total_cost = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
+
     if safe_mode:
+        sample_prompt = get_match_prompt_binary(docs[0], docs[1], user_instruction, strategy=strategy)
+        estimated_heap_construction_calls = len(docs) * np.log(len(docs))
+        estimated_top_k_extraction_calls = K * np.log(len(docs))
+        estimated_total_calls = estimated_heap_construction_calls + estimated_top_k_extraction_calls
+        estimated_total_cost = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
         print("Heap Sort:")
         show_safe_mode(estimated_total_cost, estimated_total_calls)
-        print("\n")
 
     HeapDoc.num_calls = 0
     HeapDoc.total_tokens = 0

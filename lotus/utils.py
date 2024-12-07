@@ -117,6 +117,7 @@ def show_safe_mode(estimated_cost, estimated_LM_calls):
             print(f"Proceeding execution in {i} seconds... Press CTRL+C to cancel", end="\r")
             time.sleep(1)
             print(" " * 60, end="\r")
+        print("\n")
     except KeyboardInterrupt:
         print("\nExecution cancelled by user")
         exit(0)

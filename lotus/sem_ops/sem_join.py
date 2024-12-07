@@ -56,18 +56,17 @@ def sem_join(
     left_multimodal_data = task_instructions.df2multimodal_info(l1.to_frame(col1_label), [col1_label])
     right_multimodal_data = task_instructions.df2multimodal_info(l2.to_frame(col2_label), [col2_label])
 
-    sample_docs = task_instructions.merge_multimodal_info([left_multimodal_data[0]], right_multimodal_data)
-    estimated_tokens_per_call = model.count_tokens(
-        lotus.templates.task_instructions.filter_formatter(
-            sample_docs[0], user_instruction, examples_multimodal_data, examples_answers, cot_reasoning, strategy
-        )
-    )
-    estimated_total_calls = len(l1) * len(l2)
-    estimated_total_cost = estimated_tokens_per_call * estimated_total_calls
     if safe_mode:
+        sample_docs = task_instructions.merge_multimodal_info([left_multimodal_data[0]], right_multimodal_data)
+        estimated_tokens_per_call = model.count_tokens(
+            lotus.templates.task_instructions.filter_formatter(
+                sample_docs[0], user_instruction, examples_multimodal_data, examples_answers, cot_reasoning, strategy
+            )
+        )
+        estimated_total_calls = len(l1) * len(l2)
+        estimated_total_cost = estimated_tokens_per_call * estimated_total_calls
         print("Sem_Join:")
         show_safe_mode(estimated_total_cost, estimated_total_calls)
-        print("\n")
 
     # for i1 in enumerate(l1):
     for id1, i1 in zip(ids1, left_multimodal_data):
@@ -232,7 +231,6 @@ def sem_join_cascade(
 
         print("Sem_join_cascade:")
         show_safe_mode(total_tokens, total_lm_calls)
-        print("\n")
 
     # Accept helper results with high confidence
     join_results = [(row["_left_id"], row["_right_id"], None) for _, row in helper_high_conf.iterrows()]
