@@ -70,7 +70,7 @@ def sem_join(
         show_safe_mode(estimated_total_cost, estimated_total_calls)
 
     pbar = tqdm(
-        total=len(l1),
+        total=len(l1) * len(l2),
         desc="Processing uncached messages",
         bar_format="{l_bar}{bar} {n}/{total} LM Calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
     )
@@ -105,7 +105,7 @@ def sem_join(
             ]
         )
 
-        pbar.update(1)
+    pbar.update(len(l1) * len(l2))
     pbar.close()
 
     lotus.logger.debug(f"outputs: {filter_outputs}")
