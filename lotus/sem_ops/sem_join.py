@@ -1,6 +1,7 @@
 from typing import Any
 
 import pandas as pd
+from tqdm import tqdm
 
 import lotus
 from lotus.templates import task_instructions
@@ -68,6 +69,11 @@ def sem_join(
         print("Sem_Join:")
         show_safe_mode(estimated_total_cost, estimated_total_calls)
 
+    pbar = tqdm(
+        total=len(l1),
+        desc="Processing uncached messages",
+        bar_format="{l_bar}{bar} {n}/{total} LM Calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+    )
     # for i1 in enumerate(l1):
     for id1, i1 in zip(ids1, left_multimodal_data):
         # perform llm filter
@@ -81,6 +87,7 @@ def sem_join(
             cot_reasoning=cot_reasoning,
             default=default,
             strategy=strategy,
+            show_pbar=False,
         )
         outputs = output.outputs
         raw_outputs = output.raw_outputs
@@ -97,6 +104,9 @@ def sem_join(
                 if output
             ]
         )
+
+        pbar.update(1)
+    pbar.close()
 
     lotus.logger.debug(f"outputs: {filter_outputs}")
     lotus.logger.debug(f"explanations: {all_explanations}")

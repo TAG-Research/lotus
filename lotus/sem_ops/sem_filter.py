@@ -24,6 +24,7 @@ def sem_filter(
     strategy: str | None = None,
     logprobs: bool = False,
     safe_mode: bool = False,
+    show_pbar: bool = True,
 ) -> SemanticFilterOutput:
     """
     Filters a list of documents based on a given user instruction using a language model.
@@ -55,7 +56,7 @@ def sem_filter(
         estimated_total_cost = sum(model.count_tokens(input) for input in inputs)
         show_safe_mode(estimated_total_cost, estimated_total_calls)
 
-    lm_output: LMOutput = model(inputs, **kwargs)
+    lm_output: LMOutput = model(inputs, show_pbar=show_pbar, **kwargs)
 
     postprocess_output = filter_postprocess(
         lm_output.outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"]
@@ -235,6 +236,7 @@ class SemFilterDataframe:
                 logprobs=True,
                 strategy=helper_strategy,
                 safe_mode=safe_mode,
+                show_pbar=True,
             )
             helper_outputs, helper_logprobs = helper_output.outputs, helper_output.logprobs
             formatted_helper_logprobs: LogprobsForFilterCascade = (
@@ -338,6 +340,7 @@ class SemFilterDataframe:
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
                 safe_mode=safe_mode,
+                show_pbar=True,
             )
             outputs = output.outputs
             raw_outputs = output.raw_outputs
