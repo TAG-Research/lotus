@@ -27,7 +27,7 @@ def sem_join(
     default: bool = True,
     strategy: str | None = None,
     safe_mode: bool = False,
-    show_pbar: bool = True,
+    show_progress_bar: bool = True,
 ) -> SemanticJoinOutput:
     """
     Joins two series using a model.
@@ -69,7 +69,7 @@ def sem_join(
         estimated_total_cost = estimated_tokens_per_call * estimated_total_calls
         print("Sem_Join:")
         show_safe_mode(estimated_total_cost, estimated_total_calls)
-    if show_pbar:
+    if show_progress_bar:
         pbar = tqdm(
             total=len(l1) * len(l2),
             desc="Processing uncached messages",
@@ -88,7 +88,7 @@ def sem_join(
             cot_reasoning=cot_reasoning,
             default=default,
             strategy=strategy,
-            show_pbar=False,
+            show_progress_bar=False,
         )
         outputs = output.outputs
         raw_outputs = output.raw_outputs
@@ -105,7 +105,7 @@ def sem_join(
                 if output
             ]
         )
-    if show_pbar:
+    if show_progress_bar:
         pbar.update(len(l1) * len(l2))
         pbar.close()
 
@@ -217,7 +217,7 @@ def sem_join_cascade(
     join_results = [(row["_left_id"], row["_right_id"], None) for _, row in helper_high_conf.iterrows()]
 
     pbar = tqdm(
-        total=len(helper_low_conf) + len(helper_high_conf),
+        total=num_large,
         desc="Processing uncached messages",
         bar_format="{l_bar}{bar} {n}/{total} LM calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
     )
@@ -240,9 +240,9 @@ def sem_join_cascade(
             cot_reasoning=cot_reasoning,
             default=default,
             strategy=strategy,
-            show_pbar=False,
+            show_progress_bar=False,
         )
-        pbar.update(len(helper_low_conf) + len(helper_high_conf))
+        pbar.update(num_large)
         pbar.close()
         join_results.extend(large_join_output.join_results)
 
@@ -530,7 +530,6 @@ def learn_join_cascade_threshold(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
-            show_pbar=False,
         )
 
         (pos_threshold, neg_threshold), _ = learn_cascade_thresholds(

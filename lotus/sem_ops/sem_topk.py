@@ -67,7 +67,7 @@ def compare_batch_binary(
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
-    lm_results: LMOutput = lotus.settings.lm(match_prompts, show_pbar=False)
+    lm_results: LMOutput = lotus.settings.lm(match_prompts, show_progress_bar=False)
     results: list[bool] = list(map(parse_ans_binary, lm_results.outputs))
     return results, tokens
 
@@ -257,14 +257,21 @@ def llm_quicksort(
         if high <= low:
             return
 
-        if low < high:
-            pi = partition(indexes, low, high, K)
-            left_size = pi - low
-            if left_size + 1 >= K:
-                quicksort_recursive(indexes, low, pi - 1, K)
-            else:
-                quicksort_recursive(indexes, low, pi - 1, left_size)
-                quicksort_recursive(indexes, pi + 1, high, K - left_size - 1)
+        num_comparisons = high - low
+        pbar = tqdm(
+            total=num_comparisons,
+            desc="Processing uncached messages",
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} LM calls [{elapsed}<{remaining}]",
+        )
+        pi = partition(indexes, low, high, K)
+        pbar.update(num_comparisons)
+        pbar.close()
+        left_size = pi - low
+        if left_size + 1 >= K:
+            quicksort_recursive(indexes, low, pi - 1, K)
+        else:
+            quicksort_recursive(indexes, low, pi - 1, left_size)
+            quicksort_recursive(indexes, pi + 1, high, K - left_size - 1)
 
     indexes = list(range(len(docs)))
     quicksort_recursive(indexes, 0, len(indexes) - 1, K)

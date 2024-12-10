@@ -44,7 +44,7 @@ class LM:
     def __call__(
         self,
         messages: list[list[dict[str, str]]],
-        show_pbar: bool = True,
+        show_progress_bar: bool = True,
         **kwargs: dict[str, Any],
     ) -> LMOutput:
         all_kwargs = {**self.kwargs, **kwargs}
@@ -62,7 +62,7 @@ class LM:
         self.stats.total_usage.cache_hits += len(messages) - len(uncached_data)
 
         # Process uncached messages in batches
-        uncached_responses = self._process_uncached_messages(uncached_data, all_kwargs, show_pbar)
+        uncached_responses = self._process_uncached_messages(uncached_data, all_kwargs, show_progress_bar)
 
         # Add new responses to cache
         for resp, (_, hash) in zip(uncached_responses, uncached_data):
@@ -77,7 +77,7 @@ class LM:
 
         return LMOutput(outputs=outputs, logprobs=logprobs)
 
-    def _process_uncached_messages(self, uncached_data, all_kwargs, show_pbar):
+    def _process_uncached_messages(self, uncached_data, all_kwargs, show_progress_bar):
         """Processes uncached messages in batches and returns responses."""
         uncached_responses = []
         total_calls = len(uncached_data)
@@ -85,7 +85,7 @@ class LM:
         pbar = tqdm(
             total=total_calls,
             desc="Processing uncached messages",
-            disable=not show_pbar,
+            disable=not show_progress_bar,
             bar_format="{l_bar}{bar} {n}/{total} LM calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
         )
         for i in range(0, total_calls, self.max_batch_size):
