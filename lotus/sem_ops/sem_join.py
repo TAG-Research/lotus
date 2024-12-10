@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticJoinOutput, CascadeArgs
+from lotus.types import CascadeArgs, SemanticJoinOutput
 from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_sem_sim_join, importance_sampling, learn_cascade_thresholds

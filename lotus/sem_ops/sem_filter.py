@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput, CascadeArgs
+from lotus.types import CascadeArgs, LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
 from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_llm_logprobs, importance_sampling, learn_cascade_thresholds
@@ -178,7 +178,7 @@ class SemFilterDataframe:
         lotus.logger.debug(user_instruction)
         col_li = lotus.nl_expression.parse_cols(user_instruction)
         lotus.logger.debug(col_li)
-        helper_strategy = strategy 
+        helper_strategy = strategy
 
         # check that column exists
         for column in col_li:
@@ -220,7 +220,11 @@ class SemFilterDataframe:
                 lotus.logger.error("CoT not supported for helper models in cascades.")
                 raise Exception
 
-            if cascade_args.recall_target is None or cascade_args.precision_target is None or cascade_args.failure_probability is None:
+            if (
+                cascade_args.recall_target is None
+                or cascade_args.precision_target is None
+                or cascade_args.failure_probability is None
+            ):
                 lotus.logger.error(
                     "Recall target, precision target, and confidence need to be specified for learned thresholds."
                 )
