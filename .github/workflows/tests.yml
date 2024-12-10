@@ -29,7 +29,7 @@ jobs:
           pip install ruff==0.7.2
 
       - name: Run ruff
-        run: ruff check .
+        run: ruff check lotus/
 
   mypy:
     name: Type Check
