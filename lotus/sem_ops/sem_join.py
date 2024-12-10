@@ -28,6 +28,7 @@ def sem_join(
     strategy: str | None = None,
     safe_mode: bool = False,
     show_progress_bar: bool = True,
+    progress_bar_desc: str = "Join comparisons",
 ) -> SemanticJoinOutput:
     """
     Joins two series using a model.
@@ -72,7 +73,7 @@ def sem_join(
     if show_progress_bar:
         pbar = tqdm(
             total=len(l1) * len(l2),
-            desc="Processing uncached messages",
+            desc=progress_bar_desc,
             bar_format="{l_bar}{bar} {n}/{total} LM Calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
         )
     # for i1 in enumerate(l1):
@@ -218,7 +219,7 @@ def sem_join_cascade(
 
     pbar = tqdm(
         total=num_large,
-        desc="Processing uncached messages",
+        desc="Large model join comparisons",
         bar_format="{l_bar}{bar} {n}/{total} LM calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
     )
     # Send low confidence rows to large LM
@@ -343,7 +344,7 @@ def map_l1_to_l2(
     mapped_col1_name = f"_{col1_label}"
 
     # Map l1 to l2
-    out = l1_df.sem_map(inst, suffix=mapped_col1_name, examples=map_examples)
+    out = l1_df.sem_map(inst, suffix=mapped_col1_name, examples=map_examples, progress_bar_desc="Mapping examples")
     out = out.rename(columns={real_left_on: col1_label})
 
     return out, mapped_col1_name
@@ -530,6 +531,7 @@ def learn_join_cascade_threshold(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
+            progress_bar_desc="Large model filter for threshold learning",
         )
 
         (pos_threshold, neg_threshold), _ = learn_cascade_thresholds(
@@ -577,6 +579,7 @@ class SemJoinDataframe:
         cascade_args: SemJoinCascadeArgs | None = None,
         return_stats: bool = False,
         safe_mode: bool = False,
+        progress_bar_desc: str = "Join comparisons",
     ) -> pd.DataFrame:
         """
         Applies semantic join over a dataframe.
@@ -704,6 +707,7 @@ class SemJoinDataframe:
                 default=default,
                 strategy=strategy,
                 safe_mode=safe_mode,
+                progress_bar_desc=progress_bar_desc,
             )
         join_results = output.join_results
         all_raw_outputs = output.all_raw_outputs

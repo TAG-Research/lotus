@@ -20,6 +20,7 @@ def sem_map(
     cot_reasoning: list[str] | None = None,
     strategy: str | None = None,
     safe_mode: bool = False,
+    progress_bar_desc: str = "Mapping",
 ) -> SemanticMapOutput:
     """
     Maps a list of documents to a list of outputs using a model.
@@ -53,7 +54,7 @@ def sem_map(
         show_safe_mode(estimated_cost, estimated_LM_calls)
 
     # call model
-    lm_output: LMOutput = model(inputs)
+    lm_output: LMOutput = model(inputs, progress_bar_desc=progress_bar_desc)
 
     # post process results
     postprocess_output = postprocessor(lm_output.outputs, strategy in ["cot", "zs-cot"])
@@ -89,6 +90,7 @@ class SemMapDataframe:
         examples: pd.DataFrame | None = None,
         strategy: str | None = None,
         safe_mode: bool = False,
+        progress_bar_desc: str = "Mapping",
     ) -> pd.DataFrame:
         """
         Applies semantic map over a dataframe.
@@ -137,6 +139,7 @@ class SemMapDataframe:
             cot_reasoning=cot_reasoning,
             strategy=strategy,
             safe_mode=safe_mode,
+            progress_bar_desc=progress_bar_desc,
         )
 
         new_df = self._obj.copy()

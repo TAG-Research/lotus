@@ -25,6 +25,7 @@ def sem_filter(
     logprobs: bool = False,
     safe_mode: bool = False,
     show_progress_bar: bool = True,
+    progress_bar_desc: str = "Filtering",
 ) -> SemanticFilterOutput:
     """
     Filters a list of documents based on a given user instruction using a language model.
@@ -56,7 +57,9 @@ def sem_filter(
         estimated_total_cost = sum(model.count_tokens(input) for input in inputs)
         show_safe_mode(estimated_total_cost, estimated_total_calls)
 
-    lm_output: LMOutput = model(inputs, show_progress_bar=show_progress_bar, **kwargs)
+    lm_output: LMOutput = model(
+        inputs, show_progress_bar=show_progress_bar, progress_bar_desc=progress_bar_desc, **kwargs
+    )
 
     postprocess_output = filter_postprocess(
         lm_output.outputs, default=default, cot_reasoning=strategy in ["cot", "zs-cot"]
@@ -101,6 +104,7 @@ def learn_filter_cascade_thresholds(
             cot_reasoning=cot_reasoning,
             strategy=strategy,
             safe_mode=False,
+            progress_bar_desc="Large model filter for threshold learning",
         ).outputs
 
         best_combination, _ = learn_cascade_thresholds(
@@ -151,6 +155,7 @@ class SemFilterDataframe:
         failure_probability: float | None = None,
         return_stats: bool = False,
         safe_mode: bool = False,
+        progress_bar_desc: str = "Filtering",
     ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]:
         """
         Applies semantic filter over a dataframe.
@@ -237,6 +242,7 @@ class SemFilterDataframe:
                 strategy=helper_strategy,
                 safe_mode=safe_mode,
                 show_progress_bar=True,
+                progress_bar_desc="Small model filter",
             )
             helper_outputs, helper_logprobs = helper_output.outputs, helper_output.logprobs
             formatted_helper_logprobs: LogprobsForFilterCascade = (
@@ -319,6 +325,7 @@ class SemFilterDataframe:
                     cot_reasoning=cot_reasoning,
                     strategy=strategy,
                     safe_mode=safe_mode,
+                    progress_bar_desc="Large model filter",
                 )
 
                 for idx, large_idx in enumerate(low_conf_idxs):
@@ -341,6 +348,7 @@ class SemFilterDataframe:
                 strategy=strategy,
                 safe_mode=safe_mode,
                 show_progress_bar=True,
+                progress_bar_desc=progress_bar_desc,
             )
             outputs = output.outputs
             raw_outputs = output.raw_outputs

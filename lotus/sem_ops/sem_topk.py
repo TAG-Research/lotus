@@ -146,7 +146,7 @@ def llm_naive_sort(
     llm_calls = len(pairs)
     pbar = tqdm(
         total=llm_calls,
-        desc="Processing uncached messages",
+        desc="All-pairs comparisons",
         bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} LM calls [{elapsed}<{remaining}]",
     )
     comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
@@ -260,7 +260,7 @@ def llm_quicksort(
         num_comparisons = high - low
         pbar = tqdm(
             total=num_comparisons,
-            desc="Processing uncached messages",
+            desc="Quicksort comparisons",
             bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} LM calls [{elapsed}<{remaining}]",
         )
         pi = partition(indexes, low, high, K)
@@ -295,7 +295,7 @@ class HeapDoc:
         prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, strategy=self.strategy)
         HeapDoc.num_calls += 1
         HeapDoc.total_tokens += lotus.settings.lm.count_tokens(prompt)
-        result: LMOutput = lotus.settings.lm([prompt])
+        result: LMOutput = lotus.settings.lm([prompt], progress_bar_desc="Heap comparisons")
         return parse_ans_binary(result.outputs[0])
 
 

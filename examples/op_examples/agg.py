@@ -1,12 +1,11 @@
 import pandas as pd
 
 import lotus
-from lotus.models import LM, SentenceTransformersRM
+from lotus.models import LM
 
 lm = LM(model="gpt-4o-mini")
-rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
 
-lotus.settings.configure(lm=lm, rm=rm)
+lotus.settings.configure(lm=lm)
 data = {
     "Course Name": [
         "Probability and Random Processes",
