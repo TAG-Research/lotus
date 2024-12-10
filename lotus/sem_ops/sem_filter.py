@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
+from lotus.types import LMOutput, LogprobsForFilterCascade, SemanticFilterOutput, CascadeArgs
 from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_llm_logprobs, importance_sampling, learn_cascade_thresholds
@@ -148,11 +148,7 @@ class SemFilterDataframe:
         examples: pd.DataFrame | None = None,
         helper_examples: pd.DataFrame | None = None,
         strategy: str | None = None,
-        helper_strategy: str | None = None,
-        learn_cascade_threshold_sample_percentage: int | None = None,
-        recall_target: float | None = None,
-        precision_target: float | None = None,
-        failure_probability: float | None = None,
+        cascade_args: CascadeArgs | None = None,
         return_stats: bool = False,
         safe_mode: bool = False,
         progress_bar_desc: str = "Filtering",
@@ -168,11 +164,11 @@ class SemFilterDataframe:
             examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
             helper_examples (pd.DataFrame | None): The helper examples dataframe. Defaults to None.
             strategy (str | None): The reasoning strategy. Defaults to None.
-            helper_strategy (str | None): The reasoning strategy for helper. Defaults to None.
-            learn_cascade_threshold_sample_size (Optional[int]): The percentage of samples from which to learn thresholds when cascading.
-            recall_target (float | None): The specified recall target when cascading.
-            precision_target (float | None): The specified precision target when cascading.
-            failure_probability (float | None): The specified failure probability for precision/recall targets when cascading.
+            cascade_args (CascadeArgs | None): The arguments for join cascade. Defaults to None.
+                recall_target (float | None): The target recall. Defaults to None.
+                precision_target (float | None): The target precision when cascading. Defaults to None.
+                sampling_percentage (float): The percentage of the data to sample when cascading. Defaults to 0.1.
+                failure_probability (float): The failure probability when cascading. Defaults to 0.2.
             return_stats (bool): Whether to return statistics. Defaults to False.
 
         Returns:
@@ -182,6 +178,7 @@ class SemFilterDataframe:
         lotus.logger.debug(user_instruction)
         col_li = lotus.nl_expression.parse_cols(user_instruction)
         lotus.logger.debug(col_li)
+        helper_strategy = strategy 
 
         # check that column exists
         for column in col_li:
@@ -205,7 +202,7 @@ class SemFilterDataframe:
                 cot_reasoning = examples["Reasoning"].tolist()
 
         pos_cascade_threshold, neg_cascade_threshold = None, None
-        if learn_cascade_threshold_sample_percentage is not None:
+        if cascade_args is not None:
             # Get few-shot examples for small LM
             helper_examples_multimodal_data = None
             helper_examples_answers = None
@@ -218,12 +215,12 @@ class SemFilterDataframe:
                 if helper_strategy == "cot":
                     helper_cot_reasoning = examples["Reasoning"].tolist()
 
-        if learn_cascade_threshold_sample_percentage and lotus.settings.helper_lm:
+        if cascade_args and lotus.settings.helper_lm:
             if helper_strategy == "cot":
                 lotus.logger.error("CoT not supported for helper models in cascades.")
                 raise Exception
 
-            if recall_target is None or precision_target is None or failure_probability is None:
+            if cascade_args.recall_target is None or cascade_args.precision_target is None or cascade_args.failure_probability is None:
                 lotus.logger.error(
                     "Recall target, precision target, and confidence need to be specified for learned thresholds."
                 )
@@ -251,7 +248,7 @@ class SemFilterDataframe:
             helper_true_probs = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs)
 
             sample_indices, correction_factors = importance_sampling(
-                helper_true_probs, learn_cascade_threshold_sample_percentage
+                helper_true_probs, cascade_args.sampling_percentage
             )
             sample_df = self._obj.loc[sample_indices]
             sample_multimodal_data = task_instructions.df2multimodal_info(sample_df, col_li)
@@ -263,9 +260,9 @@ class SemFilterDataframe:
                 lm=lotus.settings.lm,
                 formatted_usr_instr=formatted_usr_instr,
                 default=default,
-                recall_target=recall_target,
-                precision_target=precision_target,
-                delta=failure_probability / 2,
+                recall_target=cascade_args.recall_target,
+                precision_target=cascade_args.precision_target,
+                delta=cascade_args.failure_probability / 2,
                 helper_true_probs=sample_helper_true_probs,
                 sample_correction_factors=sample_correction_factors,
                 examples_multimodal_data=examples_multimodal_data,

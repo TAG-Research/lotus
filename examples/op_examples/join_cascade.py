@@ -2,7 +2,7 @@ import pandas as pd
 
 import lotus
 from lotus.models import LM, SentenceTransformersRM
-from lotus.types import SemJoinCascadeArgs
+from lotus.types import CascadeArgs
 
 lm = LM(model="gpt-4o-mini")
 rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
@@ -124,7 +124,7 @@ df1 = pd.DataFrame(data)
 df2 = pd.DataFrame(data2)
 join_instruction = "By taking {Course Name:left} I will learn {Skill:right}"
 
-cascade_args = SemJoinCascadeArgs(recall_target=0.7, precision_target=0.7)
+cascade_args = CascadeArgs(recall_target=0.7, precision_target=0.7)
 res, stats = df1.sem_join(df2, join_instruction, cascade_args=cascade_args, return_stats=True)
 
 

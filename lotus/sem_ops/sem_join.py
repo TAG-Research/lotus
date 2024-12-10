@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticJoinOutput, SemJoinCascadeArgs
+from lotus.types import SemanticJoinOutput, CascadeArgs
 from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_sem_sim_join, importance_sampling, learn_cascade_thresholds
@@ -576,7 +576,7 @@ class SemJoinDataframe:
         examples: pd.DataFrame | None = None,
         strategy: str | None = None,
         default: bool = True,
-        cascade_args: SemJoinCascadeArgs | None = None,
+        cascade_args: CascadeArgs | None = None,
         return_stats: bool = False,
         safe_mode: bool = False,
         progress_bar_desc: str = "Join comparisons",
@@ -593,7 +593,7 @@ class SemJoinDataframe:
             examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
             strategy (str | None): The reasoning strategy. Defaults to None.
             default (bool): The default value for the join in case of parsing errors. Defaults to True.
-            cascade_args (SemJoinCascadeArgs | None): The arguments for join cascade. Defaults to None.
+            cascade_args (CascadeArgs | None): The arguments for join cascade. Defaults to None.
                 recall_target (float | None): The target recall. Defaults to None.
                 precision_target (float | None): The target precision when cascading. Defaults to None.
                 sampling_percentage (float): The percentage of the data to sample when cascading. Defaults to 0.1.
