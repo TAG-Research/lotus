@@ -1,10 +1,11 @@
 from typing import Any
 
 import pandas as pd
+from tqdm import tqdm
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import SemanticJoinOutput, SemJoinCascadeArgs
+from lotus.types import CascadeArgs, SemanticJoinOutput
 from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_sem_sim_join, importance_sampling, learn_cascade_thresholds
@@ -26,6 +27,8 @@ def sem_join(
     default: bool = True,
     strategy: str | None = None,
     safe_mode: bool = False,
+    show_progress_bar: bool = True,
+    progress_bar_desc: str = "Join comparisons",
 ) -> SemanticJoinOutput:
     """
     Joins two series using a model.
@@ -67,7 +70,12 @@ def sem_join(
         estimated_total_cost = estimated_tokens_per_call * estimated_total_calls
         print("Sem_Join:")
         show_safe_mode(estimated_total_cost, estimated_total_calls)
-
+    if show_progress_bar:
+        pbar = tqdm(
+            total=len(l1) * len(l2),
+            desc=progress_bar_desc,
+            bar_format="{l_bar}{bar} {n}/{total} LM Calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+        )
     # for i1 in enumerate(l1):
     for id1, i1 in zip(ids1, left_multimodal_data):
         # perform llm filter
@@ -81,6 +89,7 @@ def sem_join(
             cot_reasoning=cot_reasoning,
             default=default,
             strategy=strategy,
+            show_progress_bar=False,
         )
         outputs = output.outputs
         raw_outputs = output.raw_outputs
@@ -97,6 +106,9 @@ def sem_join(
                 if output
             ]
         )
+    if show_progress_bar:
+        pbar.update(len(l1) * len(l2))
+        pbar.close()
 
     lotus.logger.debug(f"outputs: {filter_outputs}")
     lotus.logger.debug(f"explanations: {all_explanations}")
@@ -131,7 +143,7 @@ def sem_join_cascade(
     safe_mode: bool = False,
 ) -> SemanticJoinOutput:
     """
-    Joins two series using a cascade helper model and a large model.
+    Joins two series using a cascade helper model and a oracle model.
 
     Args:
         l1 (pd.Series): The first series.
@@ -163,7 +175,7 @@ def sem_join_cascade(
             join_resolved_by_helper_model: total number of join records resolved by the helper model
             join_helper_positive: number of high confidence positive results from the helper model
             join_helper_negative: number of high confidence negative results from the helper model
-            join_resolved_by_large_model: total number of joins resolved by the large model
+            join_resolved_by_large_model: total number of joins resolved by the oracle model
             optimized_join_cost: number of LM calls from finding optimal join plan
             total_LM_calls: the total number of LM calls from join cascade, ie: optimized_join_cost + join_resolved_by_helper_model
     """
@@ -205,6 +217,11 @@ def sem_join_cascade(
     # Accept helper results with high confidence
     join_results = [(row["_left_id"], row["_right_id"], None) for _, row in helper_high_conf.iterrows()]
 
+    pbar = tqdm(
+        total=num_large,
+        desc="Running predicate evals with oracle model",
+        bar_format="{l_bar}{bar} {n}/{total} LM calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+    )
     # Send low confidence rows to large LM
     for unique_l1 in helper_low_conf[col1_label].unique():
         unique_l1_id = helper_low_conf[helper_low_conf[col1_label] == unique_l1]["_left_id"].iloc[0]
@@ -224,8 +241,10 @@ def sem_join_cascade(
             cot_reasoning=cot_reasoning,
             default=default,
             strategy=strategy,
+            show_progress_bar=False,
         )
-
+        pbar.update(num_large)
+        pbar.close()
         join_results.extend(large_join_output.join_results)
 
     lotus.logger.debug(f"outputs: {filter_outputs}")
@@ -325,7 +344,7 @@ def map_l1_to_l2(
     mapped_col1_name = f"_{col1_label}"
 
     # Map l1 to l2
-    out = l1_df.sem_map(inst, suffix=mapped_col1_name, examples=map_examples)
+    out = l1_df.sem_map(inst, suffix=mapped_col1_name, examples=map_examples, progress_bar_desc="Mapping examples")
     out = out.rename(columns={real_left_on: col1_label})
 
     return out, mapped_col1_name
@@ -512,6 +531,7 @@ def learn_join_cascade_threshold(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
+            progress_bar_desc="Running oracle for threshold learning",
         )
 
         (pos_threshold, neg_threshold), _ = learn_cascade_thresholds(
@@ -556,9 +576,10 @@ class SemJoinDataframe:
         examples: pd.DataFrame | None = None,
         strategy: str | None = None,
         default: bool = True,
-        cascade_args: SemJoinCascadeArgs | None = None,
+        cascade_args: CascadeArgs | None = None,
         return_stats: bool = False,
         safe_mode: bool = False,
+        progress_bar_desc: str = "Join comparisons",
     ) -> pd.DataFrame:
         """
         Applies semantic join over a dataframe.
@@ -572,7 +593,7 @@ class SemJoinDataframe:
             examples (pd.DataFrame | None): The examples dataframe. Defaults to None.
             strategy (str | None): The reasoning strategy. Defaults to None.
             default (bool): The default value for the join in case of parsing errors. Defaults to True.
-            cascade_args (SemJoinCascadeArgs | None): The arguments for join cascade. Defaults to None.
+            cascade_args (CascadeArgs | None): The arguments for join cascade. Defaults to None.
                 recall_target (float | None): The target recall. Defaults to None.
                 precision_target (float | None): The target precision when cascading. Defaults to None.
                 sampling_percentage (float): The percentage of the data to sample when cascading. Defaults to 0.1.
@@ -686,6 +707,7 @@ class SemJoinDataframe:
                 default=default,
                 strategy=strategy,
                 safe_mode=safe_mode,
+                progress_bar_desc=progress_bar_desc,
             )
         join_results = output.join_results
         all_raw_outputs = output.all_raw_outputs

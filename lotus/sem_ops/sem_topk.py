@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 import lotus
 from lotus.templates import task_instructions
@@ -57,14 +58,16 @@ def parse_ans_binary(answer: str) -> bool:
 
 
 def compare_batch_binary(
-    pairs: list[tuple[dict[str, Any], dict[str, Any]]], user_instruction: str, strategy: str | None = None
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]],
+    user_instruction: str,
+    strategy: str | None = None,
 ) -> tuple[list[bool], int]:
     match_prompts = []
     tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
-    lm_results: LMOutput = lotus.settings.lm(match_prompts)
+    lm_results: LMOutput = lotus.settings.lm(match_prompts, show_progress_bar=False)
     results: list[bool] = list(map(parse_ans_binary, lm_results.outputs))
     return results, tokens
 
@@ -141,7 +144,14 @@ def llm_naive_sort(
             pairs.append((docs[i], docs[j]))
 
     llm_calls = len(pairs)
+    pbar = tqdm(
+        total=llm_calls,
+        desc="All-pairs comparisons",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} LM calls [{elapsed}<{remaining}]",
+    )
     comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
+    pbar.update(len(pairs))
+    pbar.close()
     if safe_mode:
         show_safe_mode(tokens, llm_calls)
     votes = [0] * N
@@ -247,14 +257,21 @@ def llm_quicksort(
         if high <= low:
             return
 
-        if low < high:
-            pi = partition(indexes, low, high, K)
-            left_size = pi - low
-            if left_size + 1 >= K:
-                quicksort_recursive(indexes, low, pi - 1, K)
-            else:
-                quicksort_recursive(indexes, low, pi - 1, left_size)
-                quicksort_recursive(indexes, pi + 1, high, K - left_size - 1)
+        num_comparisons = high - low
+        pbar = tqdm(
+            total=num_comparisons,
+            desc="Quicksort comparisons",
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} LM calls [{elapsed}<{remaining}]",
+        )
+        pi = partition(indexes, low, high, K)
+        pbar.update(num_comparisons)
+        pbar.close()
+        left_size = pi - low
+        if left_size + 1 >= K:
+            quicksort_recursive(indexes, low, pi - 1, K)
+        else:
+            quicksort_recursive(indexes, low, pi - 1, left_size)
+            quicksort_recursive(indexes, pi + 1, high, K - left_size - 1)
 
     indexes = list(range(len(docs)))
     quicksort_recursive(indexes, 0, len(indexes) - 1, K)
@@ -278,7 +295,7 @@ class HeapDoc:
         prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, strategy=self.strategy)
         HeapDoc.num_calls += 1
         HeapDoc.total_tokens += lotus.settings.lm.count_tokens(prompt)
-        result: LMOutput = lotus.settings.lm([prompt])
+        result: LMOutput = lotus.settings.lm([prompt], progress_bar_desc="Heap comparisons")
         return parse_ans_binary(result.outputs[0])
 
 

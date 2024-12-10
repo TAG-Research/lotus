@@ -31,7 +31,7 @@ class SentenceTransformersRM(FaissRM):
             batch = docs[i : i + self.max_batch_size]
             _batch = convert_to_base_data(batch)
             torch_embeddings = self.transformer.encode(
-                _batch, convert_to_tensor=True, normalize_embeddings=self.normalize_embeddings
+                _batch, convert_to_tensor=True, normalize_embeddings=self.normalize_embeddings, show_progress_bar=False
             )
             assert isinstance(torch_embeddings, torch.Tensor)
             cpu_embeddings = torch_embeddings.cpu().numpy()

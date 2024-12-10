@@ -87,7 +87,7 @@ class SemanticJoinOutput(StatsMixin):
     all_explanations: list[str | None]
 
 
-class SemJoinCascadeArgs(BaseModel):
+class CascadeArgs(BaseModel):
     recall_target: float | None = None
     precision_target: float | None = None
     sampling_percentage: float = 0.1
@@ -98,6 +98,7 @@ class SemJoinCascadeArgs(BaseModel):
     # to enable pandas
     class Config:
         arbitrary_types_allowed = True
+
 
 class SemanticTopKOutput(StatsMixin):
     indexes: list[int]

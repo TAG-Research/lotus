@@ -18,6 +18,7 @@ def sem_extract(
     extract_quotes: bool = False,
     postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
     safe_mode: bool = False,
+    progress_bar_desc: str = "Extracting",
 ) -> SemanticExtractOutput:
     """
     Extracts attributes and values from a list of documents using a model.
@@ -48,7 +49,7 @@ def sem_extract(
         show_safe_mode(estimated_cost, estimated_LM_calls)
 
     # call model
-    lm_output: LMOutput = model(inputs, response_format={"type": "json_object"})
+    lm_output: LMOutput = model(inputs, response_format={"type": "json_object"}, progress_bar_desc=progress_bar_desc)
 
     # post process results
     postprocess_output = postprocessor(lm_output.outputs)
@@ -79,6 +80,7 @@ class SemExtractDataFrame:
         postprocessor: Callable[[list[str]], SemanticExtractPostprocessOutput] = extract_postprocess,
         return_raw_outputs: bool = False,
         safe_mode: bool = False,
+        progress_bar_desc: str = "Extracting",
     ) -> pd.DataFrame:
         """
         Extracts the attributes and values of a dataframe.
@@ -108,6 +110,7 @@ class SemExtractDataFrame:
             extract_quotes=extract_quotes,
             postprocessor=postprocessor,
             safe_mode=safe_mode,
+            progress_bar_desc=progress_bar_desc,
         )
 
         new_df = self._obj.copy()

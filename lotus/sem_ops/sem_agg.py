@@ -13,6 +13,7 @@ def sem_agg(
     user_instruction: str,
     partition_ids: list[int],
     safe_mode: bool = False,
+    progress_bar_desc: str = "Aggregating",
 ) -> SemanticAggOutput:
     """
     Aggregates multiple documents into a single answer using a model.
@@ -115,7 +116,7 @@ def sem_agg(
             batch.append([{"role": "user", "content": prompt}])
             new_partition_ids.append(cur_partition_id)
 
-        lm_output: LMOutput = model(batch)
+        lm_output: LMOutput = model(batch, progress_bar_desc=progress_bar_desc)
 
         summaries = lm_output.outputs
         partition_ids = new_partition_ids
@@ -149,6 +150,7 @@ class SemAggDataframe:
         suffix: str = "_output",
         group_by: list[str] | None = None,
         safe_mode: bool = False,
+        progress_bar_desc: str = "Aggregating",
     ) -> pd.DataFrame:
         """
         Applies semantic aggregation over a dataframe.
@@ -178,7 +180,7 @@ class SemAggDataframe:
             grouped = self._obj.groupby(group_by)
             new_df = pd.DataFrame()
             for name, group in grouped:
-                res = group.sem_agg(user_instruction, all_cols, suffix, None)
+                res = group.sem_agg(user_instruction, all_cols, suffix, None, progress_bar_desc=progress_bar_desc)
                 new_df = pd.concat([new_df, res])
             return new_df
 
@@ -200,6 +202,7 @@ class SemAggDataframe:
             formatted_usr_instr,
             partition_ids,
             safe_mode=safe_mode,
+            progress_bar_desc=progress_bar_desc,
         )
 
         # package answer in a dataframe
