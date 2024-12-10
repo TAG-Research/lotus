@@ -27,6 +27,7 @@ def sem_join(
     default: bool = True,
     strategy: str | None = None,
     safe_mode: bool = False,
+    show_pbar: bool = True,
 ) -> SemanticJoinOutput:
     """
     Joins two series using a model.
@@ -68,12 +69,12 @@ def sem_join(
         estimated_total_cost = estimated_tokens_per_call * estimated_total_calls
         print("Sem_Join:")
         show_safe_mode(estimated_total_cost, estimated_total_calls)
-
-    pbar = tqdm(
-        total=len(l1) * len(l2),
-        desc="Processing uncached messages",
-        bar_format="{l_bar}{bar} {n}/{total} LM Calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
-    )
+    if show_pbar:
+        pbar = tqdm(
+            total=len(l1) * len(l2),
+            desc="Processing uncached messages",
+            bar_format="{l_bar}{bar} {n}/{total} LM Calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+        )
     # for i1 in enumerate(l1):
     for id1, i1 in zip(ids1, left_multimodal_data):
         # perform llm filter
@@ -104,9 +105,9 @@ def sem_join(
                 if output
             ]
         )
-
-    pbar.update(len(l1) * len(l2))
-    pbar.close()
+    if show_pbar:
+        pbar.update(len(l1) * len(l2))
+        pbar.close()
 
     lotus.logger.debug(f"outputs: {filter_outputs}")
     lotus.logger.debug(f"explanations: {all_explanations}")
@@ -215,6 +216,11 @@ def sem_join_cascade(
     # Accept helper results with high confidence
     join_results = [(row["_left_id"], row["_right_id"], None) for _, row in helper_high_conf.iterrows()]
 
+    pbar = tqdm(
+        total=len(helper_low_conf) + len(helper_high_conf),
+        desc="Processing uncached messages",
+        bar_format="{l_bar}{bar} {n}/{total} LM calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+    )
     # Send low confidence rows to large LM
     for unique_l1 in helper_low_conf[col1_label].unique():
         unique_l1_id = helper_low_conf[helper_low_conf[col1_label] == unique_l1]["_left_id"].iloc[0]
@@ -234,8 +240,10 @@ def sem_join_cascade(
             cot_reasoning=cot_reasoning,
             default=default,
             strategy=strategy,
+            show_pbar=False,
         )
-
+        pbar.update(len(helper_low_conf) + len(helper_high_conf))
+        pbar.close()
         join_results.extend(large_join_output.join_results)
 
     lotus.logger.debug(f"outputs: {filter_outputs}")
@@ -522,6 +530,7 @@ def learn_join_cascade_threshold(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
+            show_pbar=False,
         )
 
         (pos_threshold, neg_threshold), _ = learn_cascade_thresholds(

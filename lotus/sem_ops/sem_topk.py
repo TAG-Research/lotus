@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 import lotus
 from lotus.templates import task_instructions
@@ -57,14 +58,16 @@ def parse_ans_binary(answer: str) -> bool:
 
 
 def compare_batch_binary(
-    pairs: list[tuple[dict[str, Any], dict[str, Any]]], user_instruction: str, strategy: str | None = None
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]],
+    user_instruction: str,
+    strategy: str | None = None,
 ) -> tuple[list[bool], int]:
     match_prompts = []
     tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
         tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
-    lm_results: LMOutput = lotus.settings.lm(match_prompts)
+    lm_results: LMOutput = lotus.settings.lm(match_prompts, show_pbar=False)
     results: list[bool] = list(map(parse_ans_binary, lm_results.outputs))
     return results, tokens
 
@@ -141,7 +144,14 @@ def llm_naive_sort(
             pairs.append((docs[i], docs[j]))
 
     llm_calls = len(pairs)
+    pbar = tqdm(
+        total=llm_calls,
+        desc="Processing uncached messages",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} LM calls [{elapsed}<{remaining}]",
+    )
     comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
+    pbar.update(len(pairs))
+    pbar.close()
     if safe_mode:
         show_safe_mode(tokens, llm_calls)
     votes = [0] * N
