@@ -104,7 +104,7 @@ def learn_filter_cascade_thresholds(
             cot_reasoning=cot_reasoning,
             strategy=strategy,
             safe_mode=False,
-            progress_bar_desc="Large model filter for threshold learning",
+            progress_bar_desc="Running oracle for threshold learning",
         ).outputs
 
         best_combination, _ = learn_cascade_thresholds(
@@ -242,7 +242,7 @@ class SemFilterDataframe:
                 strategy=helper_strategy,
                 safe_mode=safe_mode,
                 show_progress_bar=True,
-                progress_bar_desc="Small model filter",
+                progress_bar_desc="Running helper LM",
             )
             helper_outputs, helper_logprobs = helper_output.outputs, helper_output.logprobs
             formatted_helper_logprobs: LogprobsForFilterCascade = (
@@ -325,7 +325,7 @@ class SemFilterDataframe:
                     cot_reasoning=cot_reasoning,
                     strategy=strategy,
                     safe_mode=safe_mode,
-                    progress_bar_desc="Large model filter",
+                    progress_bar_desc="Running predicate evals with oracle LM",
                 )
 
                 for idx, large_idx in enumerate(low_conf_idxs):

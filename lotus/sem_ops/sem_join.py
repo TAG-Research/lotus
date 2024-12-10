@@ -143,7 +143,7 @@ def sem_join_cascade(
     safe_mode: bool = False,
 ) -> SemanticJoinOutput:
     """
-    Joins two series using a cascade helper model and a large model.
+    Joins two series using a cascade helper model and a oracle model.
 
     Args:
         l1 (pd.Series): The first series.
@@ -175,7 +175,7 @@ def sem_join_cascade(
             join_resolved_by_helper_model: total number of join records resolved by the helper model
             join_helper_positive: number of high confidence positive results from the helper model
             join_helper_negative: number of high confidence negative results from the helper model
-            join_resolved_by_large_model: total number of joins resolved by the large model
+            join_resolved_by_large_model: total number of joins resolved by the oracle model
             optimized_join_cost: number of LM calls from finding optimal join plan
             total_LM_calls: the total number of LM calls from join cascade, ie: optimized_join_cost + join_resolved_by_helper_model
     """
@@ -219,7 +219,7 @@ def sem_join_cascade(
 
     pbar = tqdm(
         total=num_large,
-        desc="Large model join comparisons",
+        desc="Running predicate evals with oracle model",
         bar_format="{l_bar}{bar} {n}/{total} LM calls [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
     )
     # Send low confidence rows to large LM
@@ -531,7 +531,7 @@ def learn_join_cascade_threshold(
             examples_answers=examples_answers,
             cot_reasoning=cot_reasoning,
             strategy=strategy,
-            progress_bar_desc="Large model filter for threshold learning",
+            progress_bar_desc="Running oracle for threshold learning",
         )
 
         (pos_threshold, neg_threshold), _ = learn_cascade_thresholds(
