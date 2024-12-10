@@ -270,10 +270,12 @@ def test_filter_cascade(setup_models):
     # All filters resolved by the helper model
     filtered_df, stats = df.sem_filter(
         user_instruction=user_instruction,
-        learn_cascade_threshold_sample_percentage=0.5,
-        recall_target=0.9,
-        precision_target=0.9,
-        failure_probability=0.2,
+        cascade_args=CascadeArgs(
+            learn_cascade_threshold_sample_percentage=0.5,
+            recall_target=0.9,
+            precision_target=0.9,
+            failure_probability=0.2,
+        ),
         return_stats=True,
     )
 
