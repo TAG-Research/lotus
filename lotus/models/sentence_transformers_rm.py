@@ -4,10 +4,10 @@ import pandas as pd
 import torch
 from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
 
 from lotus.dtype_extensions import convert_to_base_data
 from lotus.models.faiss_rm import FaissRM
-from tqdm import tqdm
 
 
 class SentenceTransformersRM(FaissRM):
