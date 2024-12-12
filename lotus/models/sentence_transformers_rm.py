@@ -4,6 +4,7 @@ import pandas as pd
 import torch
 from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
 
 from lotus.dtype_extensions import convert_to_base_data
 from lotus.models.faiss_rm import FaissRM
@@ -27,7 +28,7 @@ class SentenceTransformersRM(FaissRM):
 
     def _embed(self, docs: pd.Series | list) -> NDArray[np.float64]:
         all_embeddings = []
-        for i in range(0, len(docs), self.max_batch_size):
+        for i in tqdm(range(0, len(docs), self.max_batch_size)):
             batch = docs[i : i + self.max_batch_size]
             _batch = convert_to_base_data(batch)
             torch_embeddings = self.transformer.encode(
