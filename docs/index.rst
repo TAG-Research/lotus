@@ -14,12 +14,37 @@ LOTUS implements the semantic operator programming model and provides an optimiz
    :caption: Getting Started
 
    installation
-   quickstart
+   core_concepts
+   examples
 
 .. toctree::
    :hidden:
    :maxdepth: 1
-   :caption: Module Documentation
+   :caption: Semantic Operators
 
-   models_module
-   sem_ops_module
+   sem_map
+   sem_extract
+   sem_filter
+   sem_agg
+   sem_topk
+   sem_join
+   sem_dedup
+   sem_index
+   sem_search
+   sem_sim_join
+   sem_cluster
+   sem_partition
+
+ .. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: Models   
+
+   llm
+   retriever_models
+   reranker_models
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: Advanced Usage
