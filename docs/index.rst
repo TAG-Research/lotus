@@ -35,7 +35,7 @@ LOTUS implements the semantic operator programming model and provides an optimiz
    sem_cluster
    sem_partition
 
- .. toctree::
+.. toctree::
    :hidden:
    :maxdepth: 1
    :caption: Models   
