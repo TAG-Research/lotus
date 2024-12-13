@@ -48,3 +48,8 @@ LOTUS implements the semantic operator programming model and provides an optimiz
    :hidden:
    :maxdepth: 1
    :caption: Advanced Usage
+
+   approximation_cascades
+   prompt_strategies
+   configurations
+
