@@ -32,4 +32,3 @@ Example
     out = df.sem_agg("Summarize all {Course Name}")._output[0]
     print(out)
 
-Output
