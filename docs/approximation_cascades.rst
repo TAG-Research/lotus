@@ -20,15 +20,15 @@ Using Cascades
 To use this approximation cascade-based operators, begin by configuring both the main and helper LM using
 lotus's configuration settings
 .. code-block:: python
-    import lotus
-    from lotus.models import LM
-    from lotus.types import CascadeArgs
+   import lotus
+   from lotus.models import LM
+   from lotus.types import CascadeArgs
 
 
-    gpt_35_turbo = LM("gpt-4o-mini")
-    gpt_4o = LM("gpt-4o")
+   gpt_4o_mini = LM("gpt-4o-mini")
+   gpt_4o = LM("gpt-4o")
 
-    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_35_turbo)
+   lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
 
 Once the LMs are set up, specify the cascade parameters-like recall and precision targets, sampling percentage, and 
 the acceptable failure probability-using the CascadeArgs object. 
@@ -49,11 +49,11 @@ For cascade operators, Output statistics will contain key performance metrics.
 An Example output statistic: 
 .. code-block:: text
 
-    {'pos_cascade_threshold': 0.62, 
-    'neg_cascade_threshold': 0.52, 
-    'filters_resolved_by_helper_model': 95, 
-    'filters_resolved_by_large_model': 8, 
-    'num_routed_to_helper_model': 95}
+   {'pos_cascade_threshold': 0.62, 
+   'neg_cascade_threshold': 0.52, 
+   'filters_resolved_by_helper_model': 95, 
+   'filters_resolved_by_large_model': 8, 
+   'num_routed_to_helper_model': 95}
 
 Here is a detailed explanation of each metric
 1. **pos_cascade_threshold**
