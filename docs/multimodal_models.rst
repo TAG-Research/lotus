@@ -29,11 +29,11 @@ Loading ImageArray
 -------------------
 
 The ImageArray supports multiple input formats for loading images.
- 
+
 - **PIL Images** : Directly pass a PIL image object
 - **Numpy Arrays** : Convert numpy arrays to PIL Images automatically
 - **Base64 Strings** : Decode base 64 strings into images
-- **URLs** :Fetch images from HTTP/HTTPS URLs
+- **URLs** : Fetch images from HTTP/HTTPS URLs
 - **File Paths** : Load images from local or remote file Paths
 - **S3 URLs** : Fetch images stored in S3 buckets
 
