@@ -1,4 +1,4 @@
-Semantic Filter
+sem_filter
 =================
 
 .. automodule:: lotus.sem_ops.sem_filter
@@ -72,10 +72,10 @@ Filter Cascade Example
     from lotus.types import CascadeArgs
 
 
-    gpt_35_turbo = LM("gpt-3.5-turbo")
+    gpt_4o_mini = LM("gpt-4o-mini")
     gpt_4o = LM("gpt-4o")
 
-    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_35_turbo)
+    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
     data = {
         "Course Name": [
             "Probability and Random Processes", "Optimization Methods in Engineering", "Digital Design and Integrated Circuits",

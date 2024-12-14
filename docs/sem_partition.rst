@@ -1,4 +1,4 @@
-Semantic Partition
+sem_partition_by
 ====================
 
 .. automodule:: lotus.sem_ops.sem_partition_by

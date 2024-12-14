@@ -1,4 +1,4 @@
-Semantic Search
+sem_search
 ==================
 
 .. automodule:: lotus.sem_ops.sem_search

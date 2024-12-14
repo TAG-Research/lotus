@@ -1,4 +1,4 @@
-Semantic TopK
+sem_topk
 ================
 
 .. automodule:: lotus.sem_ops.sem_topk

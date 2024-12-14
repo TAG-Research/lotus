@@ -24,39 +24,23 @@ Configurable Parameters
     * Default: False
 .. code-block:: python
 
-    settings.configure(enable_cache=True)
+    lotus.settings.configure(enable_cache=True)
 
-2. cascade_IS_weight: 
-    * Description: Specifies the weight for importance Sampling in cascade Operators
-    * Default: 0.5
-.. code-block:: python
-
-    settings.configure(cascade_IS_weight=0.8)
-
-3. cascade_num_calibration_quantiles:
-    * Description: Number of quantiles used for calibrating sem_filter
-    * Defualt: 50
-.. code-block:: python
-
-    settings.configure(cascade_num_calibration_quantiles=100)
-
-4. min_join_cascade_size:
-    * Description: Minimum size of qa join cascade to trigger additional Processing
-    * Default: 100
-.. code-block:: python 
-
-    settings.configure(min_join_cascade_size=200)
-
-5. cascade_IS_max_sample_range:
-    * DescriptionL maximum range for sampling during cascade IS Operations
-    * Default: 250
-.. code-block:: python
-
-    settings,configure(cascade_IS_max_sample_range= 500)
-
-6. cascade_IS_random_seed:
-    * Description: Seed value for randomization in casde IS. Use None for non-deterministic behavior
+2. setting RM:
+    * Description: Configures the retrieval model
     * Default: None
 .. code-block:: python
-    
-    settings.configure(cascade_IS_random_seed=42)
+
+    rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
+    lotus.settings.configure(rm=rm)
+
+3. setting helper_lm:
+    * Descriptions: Configures secondary helper LM often set along with primary LM
+    * Default: None
+.. code-block:: python
+
+    gpt_4o_mini = LM("gpt-4o-mini")
+    gpt_4o = LM("gpt-4o")
+
+    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
+

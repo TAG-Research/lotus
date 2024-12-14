@@ -1,4 +1,4 @@
-Semantic Join
+sem_join
 =================
 
 .. automodule:: lotus.sem_ops.sem_join

@@ -1,4 +1,4 @@
-Semantic Map
+sem_map
 =================
 
 .. automodule:: lotus.sem_ops.sem_map

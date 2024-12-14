@@ -1,4 +1,4 @@
-Semantic Aggregation
+sem_agg
 ======================
 
 .. automodule:: lotus.sem_ops.sem_agg
@@ -71,13 +71,57 @@ Examples
 
 Output:
 
-"Recent technological advancements are reshaping various fields and have significant implications for the future. 
-Quantum computing is emerging as a powerful tool capable of solving complex problems at unprecedented speeds, while the 
-global shift towards renewable energy sources like solar and wind power aims to combat climate change and transform economies. 
-In the realm of Artificial Intelligence, rapid growth and integration into industries are enhancing efficiency and revealing 
-hidden data patterns, though ethical concerns regarding privacy and bias persist. Additionally, deep space exploration is 
-advancing with missions targeting exoplanets and black holes, potentially paving the way for human travel beyond our solar 
-system through improved propulsion and life support technologies."
+.. code-block:: text
+    
+    "Recent technological advancements are reshaping various fields and have significant implications for the future. 
+    Quantum computing is emerging as a powerful tool capable of solving complex problems at unprecedented speeds, while the 
+    global shift towards renewable energy sources like solar and wind power aims to combat climate change and transform economies. 
+    In the realm of Artificial Intelligence, rapid growth and integration into industries are enhancing efficiency and revealing 
+    hidden data patterns, though ethical concerns regarding privacy and bias persist. Additionally, deep space exploration is 
+    advancing with missions targeting exoplanets and black holes, potentially paving the way for human travel beyond our solar 
+    system through improved propulsion and life support technologies."
+
+Example with group-by
+---------------------
+.. code-block:: python
+
+    import pandas as pd
+    import lotus
+    from lotus.models import LM
+
+    lm = LM(model="gpt-4o-mini")
+    lotus.settings.configure(lm=lm)
+
+    # Example DataFrame
+    data = {
+        "Category": ["Tech", "Env", "Tech", "Space"],
+        "ArticleContent": [
+            "Quantum computing shows promise in solving complex problems.",
+            "Renewable energy helps mitigate climate change.",
+            "AI improves efficiency but raises ethical concerns.",
+            "Deep space exploration focuses on interstellar missions."
+        ]
+    }
+
+    df = pd.DataFrame(data)
+
+    # Perform semantic aggregation with groupby
+    df = df.sem_agg(
+        "Summarize the {ArticleContent} for each {Category}.",
+        groupby=["Category"]
+    )
+
+    print(df._output)
+
+Output:
+
+.. code-block:: text
+
+    0    Context: Renewable energy plays a crucial role...
+    0    Context: Deep space exploration is primarily c...
+    0    Context: Quantum computing is emerging as a po...
+
+
 
 
 Required Parameters
@@ -88,4 +132,4 @@ Optional Parameters
 --------------------
 - **all_cols** : Whether to use all columns in the dataframe. 
 - **suffix** : The suffix for the new column
-- **groupby** : The columns to group by before aggregation. Each group will be aggregated separately.
+- **group_by** : The columns to group by before aggregation. Each group will be aggregated separately.

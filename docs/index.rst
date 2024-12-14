@@ -3,6 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. image:: Logo-scaled.png
+   :width: 300px
+   :height: 175px
+   :align: center
+
 LOTUS Makes LLM-Powerd Data Processing Fast and Easy
 =================================================================================
 
@@ -28,7 +33,6 @@ LOTUS implements the semantic operator programming model and provides an optimiz
    sem_agg
    sem_topk
    sem_join
-   sem_dedup
    sem_search
    sem_sim_join
    sem_cluster
@@ -40,6 +44,7 @@ LOTUS implements the semantic operator programming model and provides an optimiz
 
    sem_partition
    sem_index
+   sem_dedup
 
 .. toctree::
    :hidden:
@@ -49,6 +54,7 @@ LOTUS implements the semantic operator programming model and provides an optimiz
    llm
    retriever_models
    reranker_models
+   multimodal_models
 
 .. toctree::
    :hidden:

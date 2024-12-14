@@ -1,4 +1,4 @@
-Semantic Clustering
+sem_cluster_by
 =====================
 
 .. automodule:: lotus.sem_ops.sem_cluster_by

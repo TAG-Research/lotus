@@ -1,4 +1,4 @@
-Semantic Similarity Join
+sem_sim_join
 =========================
 
 .. automodule:: lotus.sem_ops.sem_sim_join

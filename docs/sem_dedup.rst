@@ -1,4 +1,4 @@
-Semantic Deduplication
+sem_dedup
 ========================
 
 .. automodule:: lotus.sem_ops.sem_dedup
@@ -10,6 +10,7 @@ Overview
 ---------
 Semantic deduplication is a process designed to identify and eliminate semantically 
 redundant entries from datasets, focusing on meaning rather than exact textual matches. 
+sem_dedup can be implemented as a semantic self-join
 
 Motivation
 -----------

@@ -1,4 +1,4 @@
-Semantic Extract
+sem_extract
 ==================
 
 .. automodule:: lotus.sem_ops.sem_extract

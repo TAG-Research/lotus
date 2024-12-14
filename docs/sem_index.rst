@@ -1,4 +1,4 @@
-Semantic Index
+sem_index
 =================
 
 .. automodule:: lotus.sem_ops.load_sem_index
