@@ -88,7 +88,7 @@ class SemanticJoinOutput(StatsMixin):
     all_explanations: list[str | None]
 
 
-class CascadeMethod(Enum):
+class ProxyModel(Enum):
     HELPER_LM = "helper_lm"
     EMBEDDING_MODEL = "embedding_model"
 
@@ -100,7 +100,7 @@ class CascadeArgs(BaseModel):
     failure_probability: float = 0.2
     map_instruction: str | None = None
     map_examples: pd.DataFrame | None = None
-    cascade_method: CascadeMethod = CascadeMethod.HELPER_LM
+    proxy_model: ProxyModel = ProxyModel.HELPER_LM
 
     # Filter cascade args
     cascade_IS_weight: float = 0.5

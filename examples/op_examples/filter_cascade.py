@@ -2,7 +2,7 @@ import pandas as pd
 
 import lotus
 from lotus.models import LM, LiteLLMRM
-from lotus.types import CascadeArgs, CascadeMethod
+from lotus.types import CascadeArgs, ProxyModel
 
 gpt_4o_mini = LM("gpt-4o-mini")
 gpt_4o = LM("gpt-4o")
@@ -125,7 +125,7 @@ cascade_args = CascadeArgs(
     precision_target=0.9,
     sampling_percentage=0.5,
     failure_probability=0.2,
-    cascade_method=CascadeMethod.HELPER_LM,
+    proxy_model=ProxyModel.HELPER_LM,
 )
 
 df, stats = df.sem_filter(user_instruction=user_instruction, cascade_args=cascade_args, return_stats=True)

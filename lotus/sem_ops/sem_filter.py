@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 
 import lotus
 from lotus.templates import task_instructions
-from lotus.types import CascadeArgs, CascadeMethod, LMOutput, LogprobsForFilterCascade, SemanticFilterOutput
+from lotus.types import CascadeArgs, LMOutput, LogprobsForFilterCascade, ProxyModel, SemanticFilterOutput
 from lotus.utils import show_safe_mode
 
 from .cascade_utils import calibrate_llm_logprobs, importance_sampling, learn_cascade_thresholds
@@ -217,7 +217,7 @@ class SemFilterDataframe:
                     helper_cot_reasoning = examples["Reasoning"].tolist()
 
         if cascade_args:
-            cascade_method = cascade_args.cascade_method
+            proxy_model = cascade_args.proxy_model
             if (
                 cascade_args.recall_target is None
                 or cascade_args.precision_target is None
@@ -228,7 +228,7 @@ class SemFilterDataframe:
                 )
 
             # Get the proxy scores
-            if cascade_method == CascadeMethod.HELPER_LM:
+            if proxy_model == ProxyModel.HELPER_LM:
                 if not lotus.settings.helper_lm:
                     raise ValueError("Helper LM must be set in settings")
 
@@ -256,7 +256,7 @@ class SemFilterDataframe:
                     lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
                 )
                 proxy_scores = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs, cascade_args)
-            elif cascade_method == CascadeMethod.EMBEDDING_MODEL:
+            elif proxy_model == ProxyModel.EMBEDDING_MODEL:
                 if not lotus.settings.rm:
                     raise ValueError("RM must be set in settings")
 
@@ -322,7 +322,7 @@ class SemFilterDataframe:
                 outputs[idx] = proxy_outputs[idx]
 
             # If using helper LM, get raw outputs and explanations
-            if cascade_method == CascadeMethod.HELPER_LM:
+            if proxy_model == ProxyModel.HELPER_LM:
                 assert all(isinstance(x, str) for x in helper_output.explanations) or all(
                     x is None for x in helper_output.explanations
                 )
