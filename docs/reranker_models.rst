@@ -12,6 +12,7 @@ to the model parameter
 Example
 --------
 Passing the LM, Retrieval, and ReRanker to model parameters
+
 .. code-block:: python
 
     import pandas as pd

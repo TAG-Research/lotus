@@ -22,8 +22,8 @@ transform tables in SQL, LOTUS operators can be use to semantically transform Pa
 +==============+=====================================================+
 | Sem_Map      | Map each row of the DataFrame                       |
 +--------------+-----------------------------------------------------+
-| Sem_Extract  | Extracts attributes and values from a DataFrame     |
-+--------------------------------------------------------------------+
+| Sem_Extract  | Extracts attributes and values                      |
++--------------+-----------------------------------------------------+
 | Sem_Filter   | Keep rows that match a predicate                    |
 +--------------+-----------------------------------------------------+
 | Sem_Agg      | Aggregate information across all rows               |
@@ -33,8 +33,6 @@ transform tables in SQL, LOTUS operators can be use to semantically transform Pa
 | Sem_Join     | Join two DataFrames based on a predicate            |
 +--------------+-----------------------------------------------------+
 | Sem_DeDup    | Deduplicate records based on semantic similarity    |
-+--------------+-----------------------------------------------------+
-| Sem_Index    | Create a semantic index over a column               |
 +--------------+-----------------------------------------------------+
 | Sem_Search   | Search the DataFrame for relevant rows              |
 +--------------+-----------------------------------------------------+

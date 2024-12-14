@@ -19,7 +19,9 @@ Using Cascades
 ----------------
 To use this approximation cascade-based operators, begin by configuring both the main and helper LM using
 lotus's configuration settings
+
 .. code-block:: python
+
    import lotus
    from lotus.models import LM
    from lotus.types import CascadeArgs
@@ -30,15 +32,19 @@ lotus's configuration settings
 
    lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
 
+
 Once the LMs are set up, specify the cascade parameters-like recall and precision targets, sampling percentage, and 
 the acceptable failure probability-using the CascadeArgs object. 
+
 .. code-block:: python
-    cascade_args = CascadeArgs(recall_target=0.9, precision_target=0.9, sampling_percentage=0.5, failure_probability=0.2)
+
+   cascade_args = CascadeArgs(recall_target=0.9, precision_target=0.9, sampling_percentage=0.5, failure_probability=0.2)
 
 After preparing the arguments, call the semantic operator method on the DataFrame
+
 .. code-block:: python
 
-    df, stats = df.sem_filter(user_instruction=user_instruction, cascade_args=cascade_args, return_stats=True)
+   df, stats = df.sem_filter(user_instruction=user_instruction, cascade_args=cascade_args, return_stats=True)
 
 Note that these parameters guide the trade-off between speed and accuracy when applying the cascade operators
 
@@ -47,6 +53,7 @@ Interpreting Output Statistics
 For cascade operators, Output statistics will contain key performance metrics.
 
 An Example output statistic: 
+
 .. code-block:: text
 
    {'pos_cascade_threshold': 0.62, 
@@ -56,6 +63,7 @@ An Example output statistic:
    'num_routed_to_helper_model': 95}
 
 Here is a detailed explanation of each metric
+
 1. **pos_cascade_threshold**
    The Minimum score above which tuples are automatically rejected by the helper model. In the above example, any tuple with a 
    score above 0.62 is accepted without the need for the oracle LM.

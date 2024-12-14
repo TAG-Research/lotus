@@ -5,9 +5,27 @@ Semantic Filter
     :members:
     :show-inheritance:
 
+Overview
+---------
+The LOTUS API supports sem_filter, which take a langex predicate. 
+Sem_filter uses semantic understanding to evaluate rows against a natural language condition. 
+This enables more intuitive, context-aware filtering for complex datasets, making it ideal for tasks such as extracting subsets of 
+data based on nuanced criteria or user-defined instructions.
+
+Additionally, the operator supports advanced functionality like cascade filtering, where helper models process 
+easier cases, and large models are reserved for complex queries, ensuring efficient and scalable operation.
+
+Motivation
+-----------
+Semantic filtering is a complex yet vital operation in modern data processing, requiring accurate and efficient 
+evaluation of data rows against nuanced, natural language predicates. Unlike traditional filtering techniques, 
+which rely on rigid and often simplistic rules, semantic filters must leverage language models to reason contextually about the data. 
+
+
 Filter Example
 ---------------
 .. code-block:: python
+
     import pandas as pd
 
     import lotus
@@ -29,12 +47,15 @@ Filter Example
     df = df.sem_filter(user_instruction)
     print(df)
 
-Output
+Output:
+
 +---+---------------------------------------------+
 |   |                Course Name                  |
 +---+---------------------------------------------+
 | 0 | Probability and Random Processes            |
++---+---------------------------------------------+
 | 1 | Optimization Methods in Engineering         |
++---+---------------------------------------------+
 | 2 | Digital Design and Integrated Circuits      |
 +---+---------------------------------------------+
 
@@ -43,6 +64,7 @@ Output
 Filter Cascade Example
 -----------------------
 .. code-block:: python
+
     import pandas as pd
 
     import lotus
@@ -91,49 +113,112 @@ Filter Cascade Example
     print(df)
     print(stats)
 
-Output
+Output:
+
 +-----+---------------------------------------------+
 |     |                Course Name                  |
 +-----+---------------------------------------------+
 |   0 | Probability and Random Processes            |
++-----+---------------------------------------------+
 |   1 | Optimization Methods in Engineering         |
++-----+---------------------------------------------+
 |   2 | Digital Design and Integrated Circuits      |
++-----+---------------------------------------------+
 |   5 | Machine Learning                            |
++-----+---------------------------------------------+
 |   6 | Artificial Intelligence                     |
++-----+---------------------------------------------+
 |   7 | Natural Language Processing                 |
++-----+---------------------------------------------+
 |   8 | Introduction to Robotics                    |
++-----+---------------------------------------------+
 |   9 | Control Systems                             |
++-----+---------------------------------------------+
 |  10 | Linear Algebra and Differential Equations   |
++-----+---------------------------------------------+
 |  15 | Discrete Mathematics                        |
++-----+---------------------------------------------+
 |  16 | Numerical Methods                           |
++-----+---------------------------------------------+
 |  17 | Wireless Communication Systems              |
++-----+---------------------------------------------+
 |  19 | Advanced Computer Architecture              |
++-----+---------------------------------------------+
 |  20 | Graph Theory                                |
++-----+---------------------------------------------+
 |  21 | Cryptography and Network Security           |
++-----+---------------------------------------------+
 |  22 | Big Data Analytics                          |
++-----+---------------------------------------------+
 |  23 | Deep Learning                               |
++-----+---------------------------------------------+
 |  33 | Microeconomics                              |
++-----+---------------------------------------------+
 |  55 | Corporate Finance                           |
++-----+---------------------------------------------+
 |  58 | Operations Research                         |
++-----+---------------------------------------------+
 |  61 | Health Economics                            |
++-----+---------------------------------------------+
 |  62 | Biostatistics                               |
++-----+---------------------------------------------+
 |  67 | Quantitative Research Methods               |
++-----+---------------------------------------------+
 |  69 | Urban Economics                             |
++-----+---------------------------------------------+
 |  81 | Astronomy and Astrophysics                  |
++-----+---------------------------------------------+
 |  84 | Quantum Physics                             |
++-----+---------------------------------------------+
 |  85 | Thermodynamics                              |
++-----+---------------------------------------------+
 |  86 | Fluid Mechanics                             |
++-----+---------------------------------------------+
 |  87 | Solid State Physics                         |
++-----+---------------------------------------------+
 |  88 | Classical Mechanics                         |
++-----+---------------------------------------------+
 |  89 | Introduction to Civil Engineering           |
++-----+---------------------------------------------+
 |  90 | Material Science and Engineering            |
++-----+---------------------------------------------+
 |  91 | Structural Engineering                      |
++-----+---------------------------------------------+
 |  92 | Environmental Engineering                   |
++-----+---------------------------------------------+
 |  93 | Energy Systems Engineering                  |
++-----+---------------------------------------------+
 |  94 | Aerodynamics                                |
++-----+---------------------------------------------+
 |  95 | Heat Transfer                               |
++-----+---------------------------------------------+
 |  96 | Renewable Energy Systems                    |
++-----+---------------------------------------------+
 |  97 | Transportation Engineering                  |
++-----+---------------------------------------------+
 | 102 | Business Analytics                          |
 +-----+---------------------------------------------+
+
+Output Statistics:
+
 {'pos_cascade_threshold': 0.62, 'neg_cascade_threshold': 0.58, 'filters_resolved_by_helper_model': 101, 'filters_resolved_by_large_model': 2, 'num_routed_to_helper_model': 101}
+
+
+Required Parameters
+---------------------
+- **user_instruction** : The user instruction for filtering.
+
+Optional Parameters
+----------------------
+- **return_raw_outputs** : Whether to return raw outputs. Defaults to False.
+- **default** : The default value for filtering in case of parsing errors. Defaults to True.
+- **suffix** : The suffix for the new columns. Defaults to "_filter".
+- **examples** : The examples dataframe. Defaults to None.
+- **helper_examples** : The helper examples dataframe. Defaults to None.
+- **strategy** : The reasoning strategy. Defaults to None.
+- **cascade_args** : The arguments for join cascade. Defaults to None.
+        recall_target : The target recall. Defaults to None.
+        precision_target : The target precision when cascading. Defaults to None.
+        sampling_percentage : The percentage of the data to sample when cascading. Defaults to 0.1.
+        failure_probability : The failure probability when cascading. Defaults to 0.2.
+- **return_stats** : Whether to return statistics. Defaults to False.

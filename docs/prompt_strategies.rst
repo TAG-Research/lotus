@@ -12,7 +12,9 @@ to arrive at a final answer. By breaking down complex tasks into intermediate st
 logical output
 
 Here is a simple example of using chain of thought with the Semantic Filter operator
+
 .. code-block:: python
+
     import pandas as pd
 
     import lotus
@@ -46,15 +48,19 @@ Here is a simple example of using chain of thought with the Semantic Filter oper
 
 When calling the Semantic Filter operator, we pass in an example DataFrame as well as the CoT strategy, which acts as a guide 
 for how the model should reason and respond to the given instructions. For instance, in the examples DataFrame 
+
 * "Machine Learning" has an answer of True, with reasoning that it requires a solid understanding of linear algebra and calculus.
 * "Reaction Mechanisms" also has an answer of True, justified by its reliance on ordinary differential equations for solving reactor design problems.
 * "Nordic History" has an answer of False, as it does not involve any mathematical concepts.
 
 Using the CoT strategy will provide an output below:
+
 +---+----------------------------------------+-------------------------------------------------------------------+
 |   |           Course Name                  |                    explanation_filter                             |
 +---+----------------------------------------+-------------------------------------------------------------------+
 | 0 | Probability and Random Processes       | Probability and Random Processes is heavily based on...           |
++---+----------------------------------------+-------------------------------------------------------------------+
 | 1 | Optimization Methods in Engineering    | Optimization Methods in Engineering typically involves...         |
++---+----------------------------------------+-------------------------------------------------------------------+
 | 2 | Digital Design and Integrated Circuits | Digital Design and Integrated Circuits typically covers...        |
 +---+-------------------------------------+----------------------------------------------------------------------+

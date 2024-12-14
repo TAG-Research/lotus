@@ -5,9 +5,27 @@ Semantic Join
     :members:
     :show-inheritance:
 
+
+Overview
+----------
+The sem_join operator in LOTUS enables intelligent data merging by leveraging semantic understanding to match records from 
+two datasets based on a natural language query. sem_join uses language models to evaluate the contextual alignment between rows in the two datasets. 
+This makes it a powerful tool for integrating data where relationships are implied or semantically nuanced.
+
+Additionally, the operator supports cascade-based optimization to reduce computational overhead by using lightweight 
+models for simpler cases while reserving larger models for more complex evaluations.
+
+Motivation
+-----------
+Traditional join operations often rely on rigid equality conditions, making them unsuitable for scenarios requiring nuanced, 
+context-aware relationships. The sem_join operator addresses these limitations by enabling semantic matching of rows between 
+datasets based on natural language predicates
+
+
 Join Example
 --------------
 .. code-block:: python
+
     import pandas as pd
 
     import lotus
@@ -35,20 +53,26 @@ Join Example
     res = df1.sem_join(df2, join_instruction)
     print(res)
 
-Output
+Output:
+
 +---+----------------------------+-------------------+
 |   |      Course Name           |       Skill       |
 +---+----------------------------+-------------------+                
 | 1 |  Riemannian Geometry       |       Math        |
++---+----------------------------+-------------------+
 | 2 |   Operating Systems        |  Computer Science |
++---+----------------------------+-------------------+
 | 4 |      Compilers             |  Computer Science |
++---+----------------------------+-------------------+
 | 5 | Intro to computer science  |  Computer Science |
 +---+----------------------------+-------------------+
+
 
 
 Join Cascade Example
 ----------------------
 .. code-block:: python
+
     import pandas as pd
 
     import lotus
@@ -103,13 +127,41 @@ Join Cascade Example
     print(f"Naive join would require {df1.shape[0]*df2.shape[0]} LM calls")
     print(res)
 
-Output
+Output:
+
 +---+----------------------------------------+----------------------+
 |   |            Course Name                 |        Skill         |
 +---+----------------------------------------+----------------------+
 | 0 | Digital Design and Integrated Circuits | Circuit Design       |
++---+----------------------------------------+----------------------+
 | 3 | Natural Language Processing            | Machine Learning     |
++---+----------------------------------------+----------------------+
 | 1 | Data Structures and Algorithms         | Computer Science     |
++---+----------------------------------------+----------------------+
 | 0 | Digital Design and Integrated Circuits | Electronics          |
++---+----------------------------------------+----------------------+
 | 0 | Digital Design and Integrated Circuits | Hardware Engineering |
 +---+----------------------------------------+----------------------+
+
+
+Required Parameters
+----------------------
+- **other** : The other dataframe or series to join with.
+- **join_instruction** : The user instruction for join.
+
+Optional Parameters
+----------------------
+- **return_explanations** : Whether to return explanations. Defaults to False.
+- **how** : The type of join to perform. Defaults to "inner".
+- **suffix** : The suffix for the new columns. Defaults to "_join".
+- **examples** : The examples dataframe. Defaults to None.
+- **strategy** : The reasoning strategy. Defaults to None.
+- **default** : The default value for the join in case of parsing errors. Defaults to True.
+- **cascade_args**: The arguments for join cascade. Defaults to None.
+    recall_target : The target recall. Defaults to None.
+    precision_target : The target precision when cascading. Defaults to None.
+    sampling_percentage : The percentage of the data to sample when cascading. Defaults to 0.1.
+    failure_probability : The failure probability when cascading. Defaults to 0.2.
+    map_instruction : The map instruction when cascading. Defaults to None.
+    map_examples : The map examples when cascading. Defaults to None.
+- **return_stats** : Whether to return stats. Defaults to False.

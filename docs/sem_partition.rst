@@ -8,6 +8,7 @@ Semantic Partition
 Example
 ----------
 .. code-block:: python
+    
     import pandas as pd
 
     import lotus

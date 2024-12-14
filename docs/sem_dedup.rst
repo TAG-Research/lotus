@@ -5,9 +5,22 @@ Semantic DeDuplication
     :members:
     :show-inheritance:
 
+
+Overview
+---------
+Semantic deduplication is a process designed to identify and eliminate semantically 
+redundant entries from datasets, focusing on meaning rather than exact textual matches. 
+
+Motivation
+-----------
+Unlike traditional deduplication techniques, which rely on exact or near-exact string comparisons, 
+semantic deduplication uses language models to compare the underlying meaning of text entries. 
+This ensures that even paraphrased or contextually similar items can be identified as duplicates.
+
 Example
 --------
 .. code-block:: python
+
     import pandas as pd
 
     import lotus
@@ -31,11 +44,20 @@ Example
     df = df.sem_index("Text", "index_dir").sem_dedup("Text", threshold=0.815)
     print(df)
 
-Output
+Output:
+
 +---+------------------------------------------+
 |   |                   Text                   |
 +---+------------------------------------------+
 | 0 | Probability and Random Processes         |
++---+------------------------------------------+
 | 5 | I don't know what time it is             |
++---+------------------------------------------+
 | 6 | Harry Potter and the Sorcerer's Stone    |
 +---+------------------------------------------+
+
+Required Parameters
+--------------------
+- **col_name** : The column name to deduplicate on
+- **threshold** : The threshold for similarity score
+

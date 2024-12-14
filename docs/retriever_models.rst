@@ -12,7 +12,9 @@ LiteLLM
 Example
 ----------
 Using just the SentenceTransformersRM class
+
 .. code-block:: python
+
     import pandas as pd
 
     import lotus
@@ -24,7 +26,9 @@ Using just the SentenceTransformersRM class
 
 
 Using SentenceTransformersRM and gpt-40-mini
+
 .. code-block:: python
+    
     import pandas as pd
 
     import lotus
