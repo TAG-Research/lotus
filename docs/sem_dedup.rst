@@ -1,4 +1,4 @@
-Semantic DeDuplication
+Semantic Deduplication
 ========================
 
 .. automodule:: lotus.sem_ops.sem_dedup
