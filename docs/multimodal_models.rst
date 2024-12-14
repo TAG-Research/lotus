@@ -28,7 +28,8 @@ You can initilize an ImageArray with a list of supported image formats
 Loading ImageArray
 -------------------
 
-The ImageArray supports multiple input formats for loading images. 
+The ImageArray supports multiple input formats for loading images.
+ 
 - **PIL Images** : Directly pass a PIL image object
 - **Numpy Arrays** : Convert numpy arrays to PIL Images automatically
 - **Base64 Strings** : Decode base 64 strings into images
