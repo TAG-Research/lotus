@@ -79,9 +79,7 @@ def learn_filter_cascade_thresholds(
     lm: lotus.models.LM,
     formatted_usr_instr: str,
     default: bool,
-    recall_target: float,
-    precision_target: float,
-    delta: float,
+    cascade_args: CascadeArgs,
     helper_true_probs: list[float],
     sample_correction_factors: NDArray[np.float64],
     examples_multimodal_data: list[dict[str, Any]] | None = None,
@@ -111,9 +109,7 @@ def learn_filter_cascade_thresholds(
             proxy_scores=helper_true_probs,
             oracle_outputs=large_outputs,
             sample_correction_factors=sample_correction_factors,
-            recall_target=recall_target,
-            precision_target=precision_target,
-            delta=delta,
+            cascade_args=cascade_args,
         )
 
         lotus.logger.info(f"Learned cascade thresholds: {best_combination}")
@@ -255,11 +251,9 @@ class SemFilterDataframe:
             formatted_helper_logprobs: LogprobsForFilterCascade = (
                 lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
             )
-            helper_true_probs = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs)
+            helper_true_probs = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs, cascade_args)
 
-            sample_indices, correction_factors = importance_sampling(
-                helper_true_probs, cascade_args.sampling_percentage
-            )
+            sample_indices, correction_factors = importance_sampling(helper_true_probs, cascade_args)
             sample_df = self._obj.loc[sample_indices]
             sample_multimodal_data = task_instructions.df2multimodal_info(sample_df, col_li)
             sample_helper_true_probs = [helper_true_probs[i] for i in sample_indices]
@@ -270,9 +264,7 @@ class SemFilterDataframe:
                 lm=lotus.settings.lm,
                 formatted_usr_instr=formatted_usr_instr,
                 default=default,
-                recall_target=cascade_args.recall_target,
-                precision_target=cascade_args.precision_target,
-                delta=cascade_args.failure_probability / 2,
+                cascade_args=cascade_args,
                 helper_true_probs=sample_helper_true_probs,
                 sample_correction_factors=sample_correction_factors,
                 examples_multimodal_data=examples_multimodal_data,

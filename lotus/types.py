@@ -88,12 +88,21 @@ class SemanticJoinOutput(StatsMixin):
 
 
 class CascadeArgs(BaseModel):
-    recall_target: float | None = None
-    precision_target: float | None = None
+    recall_target: float = 0.8
+    precision_target: float = 0.8
     sampling_percentage: float = 0.1
     failure_probability: float = 0.2
     map_instruction: str | None = None
     map_examples: pd.DataFrame | None = None
+
+    # Filter cascade args
+    cascade_IS_weight: float = 0.5
+    cascade_num_calibration_quantiles: int = 50
+
+    # Join cascade args
+    min_join_cascade_size: int = 100
+    cascade_IS_max_sample_range: int = 250
+    cascade_IS_random_seed: int | None = None
 
     # to enable pandas
     class Config:
