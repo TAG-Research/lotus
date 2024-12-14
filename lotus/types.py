@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any
 
 import pandas as pd
@@ -87,6 +88,11 @@ class SemanticJoinOutput(StatsMixin):
     all_explanations: list[str | None]
 
 
+class CascadeMethod(Enum):
+    HELPER_LM = "helper_lm"
+    EMBEDDING_MODEL = "embedding_model"
+
+
 class CascadeArgs(BaseModel):
     recall_target: float | None = None
     precision_target: float | None = None
@@ -94,6 +100,7 @@ class CascadeArgs(BaseModel):
     failure_probability: float = 0.2
     map_instruction: str | None = None
     map_examples: pd.DataFrame | None = None
+    cascade_method: CascadeMethod = CascadeMethod.HELPER_LM
 
     # to enable pandas
     class Config:

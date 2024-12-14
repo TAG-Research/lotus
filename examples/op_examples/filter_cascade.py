@@ -2,13 +2,12 @@ import pandas as pd
 
 import lotus
 from lotus.models import LM
-from lotus.types import CascadeArgs
+from lotus.types import CascadeArgs, CascadeMethod
 
-
-gpt_35_turbo = LM("gpt-3.5-turbo")
+gpt_4o_mini = LM("gpt-4o-mini")
 gpt_4o = LM("gpt-4o")
 
-lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_35_turbo)
+lotus.settings.configure(lm=gpt_4o, helper_lm=gpt_4o_mini)
 data = {
     "Course Name": [
         "Probability and Random Processes",
@@ -119,7 +118,13 @@ data = {
 df = pd.DataFrame(data)
 user_instruction = "{Course Name} requires a lot of math"
 
-cascade_args = CascadeArgs(recall_target=0.9, precision_target=0.9, sampling_percentage=0.5, failure_probability=0.2)
+cascade_args = CascadeArgs(
+    recall_target=0.9,
+    precision_target=0.9,
+    sampling_percentage=0.5,
+    failure_probability=0.2,
+    cascade_method=CascadeMethod.HELPER_LM,
+)
 
 df, stats = df.sem_filter(user_instruction=user_instruction, cascade_args=cascade_args, return_stats=True)
 print(df)
