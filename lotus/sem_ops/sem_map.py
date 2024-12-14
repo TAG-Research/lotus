@@ -107,6 +107,11 @@ class SemMapDataframe:
         Returns:
             pd.DataFrame: The dataframe with the new mapped columns.
         """
+        if lotus.settings.lm is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
+
         col_li = lotus.nl_expression.parse_cols(user_instruction)
 
         # check that column exists

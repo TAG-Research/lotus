@@ -37,6 +37,11 @@ class SemClusterByDataframe:
         Returns:
             pd.DataFrame: The DataFrame with the cluster assignments.
         """
+        if lotus.settings.rm is None:
+            raise ValueError(
+                "The retrieval model must be an instance of RM. Please configure a valid retrieval model using lotus.settings.configure()"
+            )
+
         cluster_fn = lotus.utils.cluster(col_name, ncentroids)
         indices = cluster_fn(self._obj, niter, verbose)
 

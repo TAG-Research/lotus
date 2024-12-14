@@ -59,6 +59,7 @@ def parse_ans_binary(answer: str) -> bool:
 
 def compare_batch_binary(
     pairs: list[tuple[dict[str, Any], dict[str, Any]]],
+    model: lotus.models.LM,
     user_instruction: str,
     strategy: str | None = None,
 ) -> tuple[list[bool], int]:
@@ -66,14 +67,15 @@ def compare_batch_binary(
     tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
-        tokens += lotus.settings.lm.count_tokens(match_prompts[-1])
-    lm_results: LMOutput = lotus.settings.lm(match_prompts, show_progress_bar=False)
+        tokens += model.count_tokens(match_prompts[-1])
+    lm_results: LMOutput = model(match_prompts, show_progress_bar=False)
     results: list[bool] = list(map(parse_ans_binary, lm_results.outputs))
     return results, tokens
 
 
 def compare_batch_binary_cascade(
     pairs: list[tuple[dict[str, Any], dict[str, Any]]],
+    model: lotus.models.LM,
     user_instruction: str,
     cascade_threshold: float,
     strategy: str | None = None,
@@ -82,10 +84,21 @@ def compare_batch_binary_cascade(
     small_tokens = 0
     for doc1, doc2 in pairs:
         match_prompts.append(get_match_prompt_binary(doc1, doc2, user_instruction, strategy=strategy))
-        small_tokens += lotus.settings.helper_lm.count_tokens(match_prompts[-1])
+        small_tokens += model.count_tokens(match_prompts[-1])
 
-    results, helper_logprobs = lotus.settings.helper_lm(match_prompts, logprobs=True)
-    helper_tokens, helper_confidences = lotus.settings.helper_lm.format_logprobs_for_cascade(helper_logprobs)
+    helper_lm = lotus.settings.helper_lm
+    if helper_lm is None:
+        raise ValueError(
+            "The helper language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+        )
+
+    helper_output = helper_lm(match_prompts, kwargs={"logprobs": True})
+    results = helper_output.outputs
+    helper_logprobs = helper_output.logprobs
+    assert helper_logprobs is not None
+    formatted_logprobs = helper_lm.format_logprobs_for_cascade(helper_logprobs)
+    helper_tokens = formatted_logprobs.tokens
+    helper_confidences = formatted_logprobs.confidences
 
     parsed_results = []
     high_conf_idxs = set()
@@ -109,9 +122,9 @@ def compare_batch_binary_cascade(
         large_match_prompts = []
         for i in low_conf_idxs:
             large_match_prompts.append(match_prompts[i])
-            large_tokens += lotus.settings.lm.count_tokens(large_match_prompts[-1])
+            large_tokens += model.count_tokens(large_match_prompts[-1])
 
-        large_lm_results: LMOutput = lotus.settings.lm(large_match_prompts)
+        large_lm_results: LMOutput = model(large_match_prompts)
         for idx, res in enumerate(large_lm_results.outputs):
             new_idx = low_conf_idxs[idx]
             parsed_res = parse_ans_binary(res)
@@ -123,6 +136,7 @@ def compare_batch_binary_cascade(
 
 def llm_naive_sort(
     docs: list[dict[str, Any]],
+    model: lotus.models.LM,
     user_instruction: str,
     strategy: str | None = None,
     safe_mode: bool = False,
@@ -149,7 +163,7 @@ def llm_naive_sort(
         desc="All-pairs comparisons",
         bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} LM calls [{elapsed}<{remaining}]",
     )
-    comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
+    comparisons, tokens = compare_batch_binary(pairs, model, user_instruction, strategy=strategy)
     pbar.update(len(pairs))
     pbar.close()
     if safe_mode:
@@ -172,6 +186,7 @@ def llm_naive_sort(
 
 def llm_quicksort(
     docs: list[dict[str, Any]],
+    model: lotus.models.LM,
     user_instruction: str,
     K: int,
     embedding: bool = False,
@@ -184,6 +199,7 @@ def llm_quicksort(
 
     Args:
         docs (list[dict[str, Any]]): The list of documents to sort.
+        model (lotus.models.LM): The language model to use.
         user_instruction (str): The user instruction for sorting.
         K (int): The number of documents to return.
         embedding (bool): Whether to use embedding optimization.
@@ -200,7 +216,7 @@ def llm_quicksort(
         estimated_quickselect_calls = 2 * K
         estimated_quicksort_calls = 2 * len(docs) * np.log(len(docs))
         estimated_total_calls = estimated_quickselect_calls + estimated_quicksort_calls
-        estimated_total_tokens = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
+        estimated_total_tokens = model.count_tokens(sample_prompt) * estimated_total_calls
         show_safe_mode(estimated_total_tokens, estimated_total_calls)
 
     if cascade_threshold is not None:
@@ -230,12 +246,13 @@ def llm_quicksort(
 
         pairs = [(docs[indexes[j]], pivot) for j in range(low, high)]
         if cascade_threshold is None:
-            comparisons, tokens = compare_batch_binary(pairs, user_instruction, strategy=strategy)
+            comparisons, tokens = compare_batch_binary(pairs, model, user_instruction, strategy=strategy)
             stats["total_tokens"] += tokens
             stats["total_llm_calls"] += len(pairs)
         else:
             comparisons, small_tokens, large_tokens, num_large_calls = compare_batch_binary_cascade(
                 pairs,
+                model,
                 user_instruction,
                 cascade_threshold,
                 strategy=strategy,
@@ -285,6 +302,7 @@ class HeapDoc:
     num_calls: int = 0
     total_tokens: int = 0
     strategy: str | None = None
+    model: lotus.models.LM | None = None
 
     def __init__(self, doc: dict[str, Any], user_instruction: str, idx: int) -> None:
         self.doc = doc
@@ -292,15 +310,17 @@ class HeapDoc:
         self.idx = idx
 
     def __lt__(self, other: "HeapDoc") -> bool:
+        assert HeapDoc.model is not None
         prompt = get_match_prompt_binary(self.doc, other.doc, self.user_instruction, strategy=self.strategy)
         HeapDoc.num_calls += 1
-        HeapDoc.total_tokens += lotus.settings.lm.count_tokens(prompt)
-        result: LMOutput = lotus.settings.lm([prompt], progress_bar_desc="Heap comparisons")
+        HeapDoc.total_tokens += HeapDoc.model.count_tokens(prompt)
+        result: LMOutput = HeapDoc.model([prompt], progress_bar_desc="Heap comparisons")
         return parse_ans_binary(result.outputs[0])
 
 
 def llm_heapsort(
     docs: list[dict[str, Any]],
+    model: lotus.models.LM,
     user_instruction: str,
     K: int,
     strategy: str | None = None,
@@ -311,6 +331,7 @@ def llm_heapsort(
 
     Args:
         docs (list[dict[str, Any]]): The list of documents to sort.
+        model (lotus.models.LM): The language model to use.
         user_instruction (str): The user instruction for sorting.
         K (int): The number of documents to return.
 
@@ -323,12 +344,13 @@ def llm_heapsort(
         estimated_heap_construction_calls = len(docs) * np.log(len(docs))
         estimated_top_k_extraction_calls = K * np.log(len(docs))
         estimated_total_calls = estimated_heap_construction_calls + estimated_top_k_extraction_calls
-        estimated_total_cost = lotus.settings.lm.count_tokens(sample_prompt) * estimated_total_calls
+        estimated_total_cost = model.count_tokens(sample_prompt) * estimated_total_calls
         show_safe_mode(estimated_total_cost, estimated_total_calls)
 
     HeapDoc.num_calls = 0
     HeapDoc.total_tokens = 0
     HeapDoc.strategy = strategy
+    HeapDoc.model = model
     N = len(docs)
     heap = [HeapDoc(docs[idx], user_instruction, idx) for idx in range(N)]
 
@@ -376,6 +398,12 @@ class SemTopKDataframe:
         Returns:
             pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]: The sorted DataFrame. If return_stats is True, returns a tuple with the sorted DataFrame and stats
         """
+        model = lotus.settings.lm
+        if model is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
+
         lotus.logger.debug(f"Sorting DataFrame with user instruction: {user_instruction}")
         col_li = lotus.nl_expression.parse_cols(user_instruction)
         lotus.logger.debug(f"Columns: {col_li}")
@@ -428,6 +456,7 @@ class SemTopKDataframe:
         if method in ["quick", "quick-sem"]:
             output = llm_quicksort(
                 multimodal_data,
+                model,
                 formatted_usr_instr,
                 K,
                 embedding=method == "quick-sem",
@@ -438,6 +467,7 @@ class SemTopKDataframe:
         elif method == "heap":
             output = llm_heapsort(
                 multimodal_data,
+                model,
                 formatted_usr_instr,
                 K,
                 strategy=strategy,
@@ -446,6 +476,7 @@ class SemTopKDataframe:
         elif method == "naive":
             output = llm_naive_sort(
                 multimodal_data,
+                model,
                 formatted_usr_instr,
                 strategy=strategy,
                 safe_mode=safe_mode,

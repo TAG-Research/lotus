@@ -2,30 +2,27 @@ import numpy as np
 from numpy.typing import NDArray
 
 import lotus
+from lotus.types import CascadeArgs
 
 
 def importance_sampling(
     proxy_scores: list[float],
-    sample_percentage: float,
+    cascade_args: CascadeArgs,
 ) -> tuple[NDArray[np.int64], NDArray[np.float64]]:
     """Uses importance sampling and returns the list of indices from which to learn cascade thresholds."""
-    if lotus.settings.cascade_IS_random_seed is not None:
-        np.random.seed(lotus.settings.cascade_IS_random_seed)
+    if cascade_args.cascade_IS_random_seed is not None:
+        np.random.seed(cascade_args.cascade_IS_random_seed)
 
     w = np.sqrt(proxy_scores)
-    is_weight = lotus.settings.cascade_IS_weight
+    is_weight = cascade_args.cascade_IS_weight
     w = is_weight * w / np.sum(w) + (1 - is_weight) * np.ones((len(proxy_scores))) / len(proxy_scores)
 
-    if lotus.settings.cascade_IS_max_sample_range is not None:
-        sample_range = min(lotus.settings.cascade_IS_max_sample_range, len(proxy_scores))
-        sample_w = w[:sample_range]
-        sample_w = sample_w / np.sum(sample_w)
-        indices = np.arange(sample_range)
-    else:
-        sample_w = w
-        indices = np.arange(len(proxy_scores))
+    sample_range = min(cascade_args.cascade_IS_max_sample_range, len(proxy_scores))
+    sample_w = w[:sample_range]
+    sample_w = sample_w / np.sum(sample_w)
+    indices = np.arange(sample_range)
 
-    sample_size = int(sample_percentage * len(proxy_scores))
+    sample_size = int(cascade_args.sampling_percentage * len(proxy_scores))
     sample_indices = np.random.choice(indices, sample_size, p=sample_w)
 
     correction_factors = (1 / len(proxy_scores)) / w
@@ -33,11 +30,11 @@ def importance_sampling(
     return sample_indices, correction_factors
 
 
-def calibrate_llm_logprobs(true_probs: list[float]) -> list[float]:
+def calibrate_llm_logprobs(true_probs: list[float], cascade_args: CascadeArgs) -> list[float]:
     """Transforms true probabilities to calibrate LLM proxies."""
-    num_quantiles = lotus.settings.cascade_num_calibration_quantiles
+    num_quantiles = cascade_args.cascade_num_calibration_quantiles
     quantile_values = np.percentile(true_probs, np.linspace(0, 100, num_quantiles + 1))
-    true_probs = (np.digitize(true_probs, quantile_values) - 1) / num_quantiles
+    true_probs = list((np.digitize(true_probs, quantile_values) - 1) / num_quantiles)
     true_probs = list(np.clip(true_probs, 0, 1))
     return true_probs
 
@@ -46,9 +43,7 @@ def learn_cascade_thresholds(
     proxy_scores: list[float],
     oracle_outputs: list[bool],
     sample_correction_factors: NDArray[np.float64],
-    recall_target: float,
-    precision_target: float,
-    delta: float,
+    cascade_args: CascadeArgs,
 ) -> tuple[tuple[float, float], int]:
     """Learns cascade thresholds given targets and proxy scores,
     oracle outputs over the sample, and correction factors for the
@@ -97,7 +92,7 @@ def learn_cascade_thresholds(
     best_combination = (1.0, 0.0)  # initial tau_+, tau_-
 
     # Find tau_negative based on recall
-    tau_neg_0 = calculate_tau_neg(sorted_pairs, best_combination[0], recall_target)
+    tau_neg_0 = calculate_tau_neg(sorted_pairs, best_combination[0], cascade_args.recall_target)
     best_combination = (best_combination[0], tau_neg_0)
 
     # Do a statistical correction to get a new target recall
@@ -109,8 +104,8 @@ def learn_cascade_thresholds(
     mean_z2 = float(np.mean(Z2)) if Z2 else 0.0
     std_z2 = float(np.std(Z2)) if Z2 else 0.0
 
-    ub_z1 = UB(mean_z1, std_z1, sample_size, delta / 2)
-    lb_z2 = LB(mean_z2, std_z2, sample_size, delta / 2)
+    ub_z1 = UB(mean_z1, std_z1, sample_size, cascade_args.failure_probability / 2)
+    lb_z2 = LB(mean_z2, std_z2, sample_size, cascade_args.failure_probability / 2)
     if ub_z1 + lb_z2 == 0:  # Avoid division by zero
         corrected_recall_target = 1.0
     else:
@@ -127,8 +122,8 @@ def learn_cascade_thresholds(
         Z = [int(x[1]) for x in sorted_pairs if x[0] >= possible_threshold]
         mean_z = float(np.mean(Z)) if Z else 0.0
         std_z = float(np.std(Z)) if Z else 0.0
-        p_l = LB(mean_z, std_z, len(Z), delta / len(sorted_pairs))
-        if p_l > precision_target:
+        p_l = LB(mean_z, std_z, len(Z), cascade_args.failure_probability / len(sorted_pairs))
+        if p_l > cascade_args.precision_target:
             candidate_thresholds.append(possible_threshold)
 
     best_combination = (max(best_combination[1], min(candidate_thresholds)), best_combination[1])
