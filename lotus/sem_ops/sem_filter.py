@@ -216,6 +216,7 @@ class SemFilterDataframe:
                     helper_cot_reasoning = examples["Reasoning"].tolist()
 
         if cascade_args:
+            cascade_method = cascade_args.cascade_method
             if (
                 cascade_args.recall_target is None
                 or cascade_args.precision_target is None
@@ -225,7 +226,11 @@ class SemFilterDataframe:
                     "Recall target, precision target, and confidence need to be specified for learned thresholds."
                 )
 
-            if cascade_args.cascade_method == CascadeMethod.HELPER_LM:
+            # Get the proxy scores
+            if cascade_method == CascadeMethod.HELPER_LM:
+                if not lotus.settings.helper_lm:
+                    raise ValueError("Helper LM must be set in settings")
+
                 if helper_strategy == "cot":
                     raise ValueError("CoT not supported for helper models in cascades.")
 
@@ -249,11 +254,15 @@ class SemFilterDataframe:
                     lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
                 )
                 proxy_scores = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs)
+            elif cascade_method == CascadeMethod.EMBEDDING_MODEL:
+                if not lotus.settings.rm:
+                    raise ValueError("RM must be set in settings")
 
-                sample_indices, correction_factors = importance_sampling(proxy_scores, cascade_args.sampling_percentage)
-            elif cascade_args.cascade_method == CascadeMethod.EMBEDDING_MODEL:
-                raise ValueError("Embedding model not supported yet")
+                # TODO: How to handle multiple columns?
+                search_df = self._obj.sem_search(col_li[0], formatted_usr_instr, K=len(self._obj), return_scores=True)
+                proxy_scores = search_df["vec_scores_sim_score"].tolist()
 
+            sample_indices, correction_factors = importance_sampling(proxy_scores, cascade_args.sampling_percentage)
             sample_df = self._obj.loc[sample_indices]
             sample_multimodal_data = task_instructions.df2multimodal_info(sample_df, col_li)
             sample_proxy_scores = [proxy_scores[i] for i in sample_indices]
@@ -274,6 +283,8 @@ class SemFilterDataframe:
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
             )
+            print(f"pos_cascade_threshold: {pos_cascade_threshold}")
+            print(f"neg_cascade_threshold: {neg_cascade_threshold}")
 
             stats["pos_cascade_threshold"] = pos_cascade_threshold
             stats["neg_cascade_threshold"] = neg_cascade_threshold
@@ -298,6 +309,8 @@ class SemFilterDataframe:
                         else proxy_outputs[idx_i]
                     )
 
+                    print(self._obj.iloc[idx_i], proxy_outputs[idx_i])
+
             lotus.logger.info(f"Num routed to smaller model: {len(high_conf_idxs)}")
             stats["num_routed_to_helper_model"] = len(high_conf_idxs)
 
@@ -305,13 +318,17 @@ class SemFilterDataframe:
             raw_outputs: list[str] = [""] * len(multimodal_data)
             explanations: list[str | None] = [None] * len(multimodal_data)
 
-            assert all(isinstance(x, str) for x in helper_output.explanations) or all(
-                x is None for x in helper_output.explanations
-            )
             for idx in high_conf_idxs:
                 outputs[idx] = proxy_outputs[idx]
-                raw_outputs[idx] = helper_output.raw_outputs[idx]
-                explanations[idx] = helper_output.explanations[idx]
+
+            # If using helper LM, get raw outputs and explanations
+            if cascade_method == CascadeMethod.HELPER_LM:
+                assert all(isinstance(x, str) for x in helper_output.explanations) or all(
+                    x is None for x in helper_output.explanations
+                )
+                for idx in high_conf_idxs:
+                    raw_outputs[idx] = helper_output.raw_outputs[idx]
+                    explanations[idx] = helper_output.explanations[idx]
 
             # Send low confidence samples to large LM if any
             low_conf_idxs = sorted([i for i in range(len(proxy_outputs)) if i not in high_conf_idxs])
