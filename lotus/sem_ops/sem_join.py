@@ -128,6 +128,7 @@ def sem_join_cascade(
     ids2: list[int],
     col1_label: str,
     col2_label: str,
+    model: lotus.models.LM,
     user_instruction: str,
     recall_target: float,
     precision_target: float,
@@ -195,6 +196,7 @@ def sem_join_cascade(
         l2,
         col1_label,
         col2_label,
+        model,
         user_instruction,
         sampling_percentage=sampling_percentage,
         failure_probability=failure_probability,
@@ -234,7 +236,7 @@ def sem_join_cascade(
             l2_for_l1_index.tolist(),
             col1_label,
             col2_label,
-            lotus.settings.lm,
+            model,
             user_instruction,
             examples_multimodal_data=examples_multimodal_data,
             examples_answers=examples_answers,
@@ -357,6 +359,7 @@ def join_optimizer(
     l2: pd.Series,
     col1_label: str,
     col2_label: str,
+    model: lotus.models.LM,
     user_instruction: str,
     sampling_percentage: float = 0.1,
     failure_probability: float = 0.2,
@@ -408,6 +411,7 @@ def join_optimizer(
         precision_target,
         col1_label,
         col2_label,
+        model,
         user_instruction,
         sampling_percentage,
         delta=failure_probability / 2,
@@ -433,6 +437,7 @@ def join_optimizer(
         precision_target,
         col1_label,
         col2_label,
+        model,
         user_instruction,
         sampling_percentage,
         delta=failure_probability / 2,
@@ -478,6 +483,7 @@ def learn_join_cascade_threshold(
     precision_target: float,
     col1_label: str,
     col2_label: str,
+    model: lotus.models.LM,
     user_instruction: str,
     sampling_percentage: float = 0.1,
     delta: float = 0.2,
@@ -524,7 +530,7 @@ def learn_join_cascade_threshold(
     try:
         output = sem_filter(
             sample_multimodal_data,
-            lotus.settings.lm,
+            model,
             user_instruction,
             default=default,
             examples_multimodal_data=examples_multimodal_data,
@@ -605,6 +611,11 @@ class SemJoinDataframe:
         Returns:
             pd.DataFrame: The dataframe with the new joined columns.
         """
+        model = lotus.settings.lm
+        if model is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
 
         if isinstance(other, pd.Series):
             if other.name is None:
@@ -677,6 +688,7 @@ class SemJoinDataframe:
                 other.index,
                 left_on,
                 right_on,
+                model,
                 join_instruction,
                 cascade_args.recall_target,
                 cascade_args.precision_target,
@@ -699,7 +711,7 @@ class SemJoinDataframe:
                 other.index,
                 left_on,
                 right_on,
-                lotus.settings.lm,
+                model,
                 join_instruction,
                 examples_multimodal_data=examples_multimodal_data,
                 examples_answers=examples_answers,

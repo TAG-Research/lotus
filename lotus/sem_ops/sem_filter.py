@@ -174,6 +174,11 @@ class SemFilterDataframe:
         Returns:
             pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]: The filtered dataframe or a tuple containing the filtered dataframe and statistics.
         """
+        if lotus.settings.lm is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
+
         stats = {}
         lotus.logger.debug(user_instruction)
         col_li = lotus.nl_expression.parse_cols(user_instruction)
@@ -246,6 +251,7 @@ class SemFilterDataframe:
                 progress_bar_desc="Running helper LM",
             )
             helper_outputs, helper_logprobs = helper_output.outputs, helper_output.logprobs
+            assert helper_logprobs is not None
             formatted_helper_logprobs: LogprobsForFilterCascade = (
                 lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
             )
