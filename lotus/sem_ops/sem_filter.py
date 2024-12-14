@@ -79,9 +79,7 @@ def learn_filter_cascade_thresholds(
     lm: lotus.models.LM,
     formatted_usr_instr: str,
     default: bool,
-    recall_target: float,
-    precision_target: float,
-    delta: float,
+    cascade_args: CascadeArgs,
     proxy_scores: list[float],
     sample_correction_factors: NDArray[np.float64],
     examples_multimodal_data: list[dict[str, Any]] | None = None,
@@ -111,9 +109,7 @@ def learn_filter_cascade_thresholds(
             proxy_scores=proxy_scores,
             oracle_outputs=large_outputs,
             sample_correction_factors=sample_correction_factors,
-            recall_target=recall_target,
-            precision_target=precision_target,
-            delta=delta,
+            cascade_args=cascade_args,
         )
 
         lotus.logger.info(f"Learned cascade thresholds: {best_combination}")
@@ -174,6 +170,11 @@ class SemFilterDataframe:
         Returns:
             pd.DataFrame | tuple[pd.DataFrame, dict[str, Any]]: The filtered dataframe or a tuple containing the filtered dataframe and statistics.
         """
+        if lotus.settings.lm is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
+
         stats = {}
         lotus.logger.debug(user_instruction)
         col_li = lotus.nl_expression.parse_cols(user_instruction)
@@ -250,10 +251,11 @@ class SemFilterDataframe:
                     progress_bar_desc="Running helper LM",
                 )
                 _, helper_logprobs = helper_output.outputs, helper_output.logprobs
+                assert helper_logprobs is not None
                 formatted_helper_logprobs: LogprobsForFilterCascade = (
                     lotus.settings.helper_lm.format_logprobs_for_filter_cascade(helper_logprobs)
                 )
-                proxy_scores = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs)
+                proxy_scores = calibrate_llm_logprobs(formatted_helper_logprobs.true_probs, cascade_args)
             elif cascade_method == CascadeMethod.EMBEDDING_MODEL:
                 if not lotus.settings.rm:
                     raise ValueError("RM must be set in settings")
@@ -262,7 +264,7 @@ class SemFilterDataframe:
                 search_df = self._obj.sem_search(col_li[0], formatted_usr_instr, K=len(self._obj), return_scores=True)
                 proxy_scores = search_df["vec_scores_sim_score"].tolist()
 
-            sample_indices, correction_factors = importance_sampling(proxy_scores, cascade_args.sampling_percentage)
+            sample_indices, correction_factors = importance_sampling(proxy_scores, cascade_args)
             sample_df = self._obj.loc[sample_indices]
             sample_multimodal_data = task_instructions.df2multimodal_info(sample_df, col_li)
             sample_proxy_scores = [proxy_scores[i] for i in sample_indices]
@@ -273,9 +275,7 @@ class SemFilterDataframe:
                 lm=lotus.settings.lm,
                 formatted_usr_instr=formatted_usr_instr,
                 default=default,
-                recall_target=cascade_args.recall_target,
-                precision_target=cascade_args.precision_target,
-                delta=cascade_args.failure_probability / 2,
+                cascade_args=cascade_args,
                 proxy_scores=sample_proxy_scores,
                 sample_correction_factors=sample_correction_factors,
                 examples_multimodal_data=examples_multimodal_data,

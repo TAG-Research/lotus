@@ -46,6 +46,11 @@ class SemSearchDataframe:
         if K is not None:
             # get retriever model and index
             rm = lotus.settings.rm
+            if rm is None:
+                raise ValueError(
+                    "The retrieval model must be an instance of RM. Please configure a valid retrieval model using lotus.settings.configure()"
+                )
+
             col_index_dir = self._obj.attrs["index_dirs"][col_name]
             if rm.index_dir != col_index_dir:
                 rm.load_index(col_index_dir)
@@ -83,6 +88,9 @@ class SemSearchDataframe:
             new_df = self._obj
 
         if n_rerank is not None:
+            if lotus.settings.reranker is None:
+                raise ValueError("Reranker not found in settings")
+
             docs = new_df[col_name].tolist()
             reranked_output: RerankerOutput = lotus.settings.reranker(query, docs, n_rerank)
             reranked_idxs = reranked_output.indices

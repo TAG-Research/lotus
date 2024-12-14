@@ -125,7 +125,7 @@ cascade_args = CascadeArgs(
     precision_target=0.9,
     sampling_percentage=0.5,
     failure_probability=0.2,
-    cascade_method=CascadeMethod.EMBEDDING_MODEL,
+    cascade_method=CascadeMethod.HELPER_LM,
 )
 
 df, stats = df.sem_filter(user_instruction=user_instruction, cascade_args=cascade_args, return_stats=True)

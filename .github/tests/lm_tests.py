@@ -288,12 +288,7 @@ def test_filter_cascade(setup_models):
 def test_join_cascade(setup_models):
     models = setup_models
     rm = SentenceTransformersRM(model="intfloat/e5-base-v2")
-    lotus.settings.configure(
-        lm=models["gpt-4o-mini"],
-        rm=rm,
-        min_join_cascade_size=10,  # for smaller testings
-        cascade_IS_random_seed=42,
-    )
+    lotus.settings.configure(lm=models["gpt-4o-mini"], rm=rm)
 
     data1 = {
         "School": [
@@ -326,7 +321,12 @@ def test_join_cascade(setup_models):
 
     # Cascade join
     joined_df, stats = df1.sem_join(
-        df2, join_instruction, cascade_args=CascadeArgs(recall_target=0.7, precision_target=0.7), return_stats=True
+        df2,
+        join_instruction,
+        cascade_args=CascadeArgs(
+            recall_target=0.7, precision_target=0.7, min_join_cascade_size=10, cascade_IS_random_seed=42
+        ),
+        return_stats=True,
     )
 
     for pair in expected_pairs:
@@ -337,7 +337,12 @@ def test_join_cascade(setup_models):
 
     # All joins resolved by the large model
     joined_df, stats = df1.sem_join(
-        df2, join_instruction, cascade_args=CascadeArgs(recall_target=1.0, precision_target=1.0), return_stats=True
+        df2,
+        join_instruction,
+        cascade_args=CascadeArgs(
+            recall_target=1.0, precision_target=1.0, min_join_cascade_size=10, cascade_IS_random_seed=42
+        ),
+        return_stats=True,
     )
 
     for pair in expected_pairs:

@@ -39,6 +39,11 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
 
         # get rmodel and index
         rm = lotus.settings.rm
+        if rm is None:
+            raise ValueError(
+                "The retrieval model must be an instance of RM. Please configure a valid retrieval model using lotus.settings.configure()"
+            )
+
         try:
             col_index_dir = df.attrs["index_dirs"][col_name]
         except KeyError:

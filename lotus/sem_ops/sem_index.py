@@ -30,9 +30,12 @@ class SemIndexDataframe:
         Returns:
             pd.DataFrame: The DataFrame with the index directory saved.
         """
+        if lotus.settings.rm is None:
+            raise ValueError(
+                "The retrieval model must be an instance of RM. Please configure a valid retrieval model using lotus.settings.configure()"
+            )
+
         rm = lotus.settings.rm
-        if rm is None:
-            raise AttributeError("Must set rm in lotus.settings")
         rm.index(self._obj[col_name], index_dir)
         self._obj.attrs["index_dirs"][col_name] = index_dir
         return self._obj

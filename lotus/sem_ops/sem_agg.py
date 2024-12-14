@@ -164,6 +164,11 @@ class SemAggDataframe:
             pd.DataFrame: The dataframe with the aggregated answer.
         """
 
+        if lotus.settings.lm is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
+
         lotus.logger.debug(f"User instruction: {user_instruction}")
         if all_cols:
             col_li = list(self._obj.columns)

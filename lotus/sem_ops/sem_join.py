@@ -128,11 +128,9 @@ def sem_join_cascade(
     ids2: list[int],
     col1_label: str,
     col2_label: str,
+    model: lotus.models.LM,
     user_instruction: str,
-    recall_target: float,
-    precision_target: float,
-    sampling_percentage: float = 0.1,
-    failure_probability: float = 0.2,
+    cascade_args: CascadeArgs,
     examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     map_instruction: str | None = None,
@@ -153,10 +151,7 @@ def sem_join_cascade(
         col1_label (str): The label for the first column.
         col2_label (str): The label for the second column.
         user_instruction (str): The user instruction for join.
-        recall_target (float): The target recall.
-        precision_target (float): The target precision.
-        sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
-        failure_probability (float): The failure probability. Defaults to 0.2.
+        cascade_args (CascadeArgs): The cascade arguments.
         examples_multimodal_data (list[dict[str, Any]] | None): The examples multimodal data. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         map_instruction (str | None): The map instruction. Defaults to None.
@@ -189,15 +184,13 @@ def sem_join_cascade(
 
     # Determine the join plan
     helper_high_conf, helper_low_conf, num_helper_high_conf_neg, join_optimization_cost = join_optimizer(
-        recall_target,
-        precision_target,
         l1,
         l2,
         col1_label,
         col2_label,
+        model,
         user_instruction,
-        sampling_percentage=sampling_percentage,
-        failure_probability=failure_probability,
+        cascade_args,
         examples_multimodal_data=examples_multimodal_data,
         examples_answers=examples_answers,
         map_instruction=map_instruction,
@@ -234,7 +227,7 @@ def sem_join_cascade(
             l2_for_l1_index.tolist(),
             col1_label,
             col2_label,
-            lotus.settings.lm,
+            model,
             user_instruction,
             examples_multimodal_data=examples_multimodal_data,
             examples_answers=examples_answers,
@@ -351,15 +344,13 @@ def map_l1_to_l2(
 
 
 def join_optimizer(
-    recall_target: float,
-    precision_target: float,
     l1: pd.Series,
     l2: pd.Series,
     col1_label: str,
     col2_label: str,
+    model: lotus.models.LM,
     user_instruction: str,
-    sampling_percentage: float = 0.1,
-    failure_probability: float = 0.2,
+    cascade_args: CascadeArgs,
     examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     map_instruction: str | None = None,
@@ -373,15 +364,12 @@ def join_optimizer(
     while satisfying the recall and precision target.
 
     Args:
-        recall_target (float): The target recall.
-        precision_target (float): The target precision.
         l1 (pd.Series): The first series.
         l2 (pd.Series): The second series.
         col1_label (str): The label for the first column.
         col2_label (str): The label for the second column.
         user_instruction (str): The user instruction for join.
-        sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
-        failure_probability (float): The failure probability. Defaults to 0.2.
+        cascade_args (CascadeArgs): The cascade arguments.
         examples_multimodal_data (list[dict[str, Any]] | None): The examples multimodal data. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         map_instruction (str | None): The map instruction. Defaults to None.
@@ -404,13 +392,11 @@ def join_optimizer(
     sf_helper_join = run_sem_sim_join(l1, l2, col1_label, col2_label)
     sf_t_pos, sf_t_neg, sf_learn_cost = learn_join_cascade_threshold(
         sf_helper_join,
-        recall_target,
-        precision_target,
         col1_label,
         col2_label,
+        model,
         user_instruction,
-        sampling_percentage,
-        delta=failure_probability / 2,
+        cascade_args,
         examples_multimodal_data=examples_multimodal_data,
         examples_answers=examples_answers,
         cot_reasoning=cot_reasoning,
@@ -429,13 +415,11 @@ def join_optimizer(
     msf_helper_join = run_sem_sim_join(mapped_l1, l2, mapped_col1_label, col2_label)
     msf_t_pos, msf_t_neg, msf_learn_cost = learn_join_cascade_threshold(
         msf_helper_join,
-        recall_target,
-        precision_target,
         col1_label,
         col2_label,
+        model,
         user_instruction,
-        sampling_percentage,
-        delta=failure_probability / 2,
+        cascade_args,
         examples_multimodal_data=examples_multimodal_data,
         examples_answers=examples_answers,
         cot_reasoning=cot_reasoning,
@@ -474,13 +458,11 @@ def join_optimizer(
 
 def learn_join_cascade_threshold(
     helper_join: pd.DataFrame,
-    recall_target: float,
-    precision_target: float,
     col1_label: str,
     col2_label: str,
+    model: lotus.models.LM,
     user_instruction: str,
-    sampling_percentage: float = 0.1,
-    delta: float = 0.2,
+    cascade_args: CascadeArgs,
     examples_multimodal_data: list[dict[str, Any]] | None = None,
     examples_answers: list[bool] | None = None,
     cot_reasoning: list[str] | None = None,
@@ -493,13 +475,12 @@ def learn_join_cascade_threshold(
 
     Args:
         helper_join (pd.DataFrame): The helper join results.
-        recall_target (float): The target recall.
-        precision_target (float): The target precision.
+        cascade_args (CascadeArgs): The cascade arguments.
         col1_label (str): The label for the first column.
         col2_label (str): The label for the second column.
+        model (lotus.models.LM): The language model.
         user_instruction (str): The user instruction for join.
-        sampling_percentage (float): The percentage of the data to sample. Defaults to 0.1.
-        delta (float): The failure probability. Defaults to 0.2.
+        cascade_args (CascadeArgs): The cascade arguments.
         examples_multimodal_data (list[dict[str, Any]] | None): The examples multimodal data. Defaults to None.
         examples_answers (list[bool] | None): The answers for examples. Defaults to None.
         cot_reasoning (list[str] | None): The reasoning for CoT. Defaults to None.
@@ -511,7 +492,7 @@ def learn_join_cascade_threshold(
     # Sample a small subset of the helper join result
     helper_scores = helper_join["_scores"].tolist()
 
-    sample_indices, correction_factors = importance_sampling(helper_scores, sampling_percentage)
+    sample_indices, correction_factors = importance_sampling(helper_scores, cascade_args)
     lotus.logger.info(f"Sampled {len(sample_indices)} out of {len(helper_scores)} helper join results.")
 
     sample_df = helper_join.iloc[sample_indices]
@@ -524,7 +505,7 @@ def learn_join_cascade_threshold(
     try:
         output = sem_filter(
             sample_multimodal_data,
-            lotus.settings.lm,
+            model,
             user_instruction,
             default=default,
             examples_multimodal_data=examples_multimodal_data,
@@ -538,9 +519,7 @@ def learn_join_cascade_threshold(
             proxy_scores=sample_scores,
             oracle_outputs=output.outputs,
             sample_correction_factors=sample_correction_factors,
-            recall_target=recall_target,
-            precision_target=precision_target,
-            delta=delta,
+            cascade_args=cascade_args,
         )
 
         lotus.logger.info(f"Learned cascade thresholds: {(pos_threshold, neg_threshold)}")
@@ -605,6 +584,11 @@ class SemJoinDataframe:
         Returns:
             pd.DataFrame: The dataframe with the new joined columns.
         """
+        model = lotus.settings.lm
+        if model is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
 
         if isinstance(other, pd.Series):
             if other.name is None:
@@ -664,7 +648,7 @@ class SemJoinDataframe:
         if (
             (cascade_args is not None)
             and (cascade_args.recall_target is not None or cascade_args.precision_target is not None)
-            and (num_full_join >= lotus.settings.min_join_cascade_size)
+            and (num_full_join >= cascade_args.min_join_cascade_size)
         ):
             cascade_args.recall_target = 1.0 if cascade_args.recall_target is None else cascade_args.recall_target
             cascade_args.precision_target = (
@@ -677,11 +661,9 @@ class SemJoinDataframe:
                 other.index,
                 left_on,
                 right_on,
+                model,
                 join_instruction,
-                cascade_args.recall_target,
-                cascade_args.precision_target,
-                sampling_percentage=cascade_args.sampling_percentage,
-                failure_probability=cascade_args.failure_probability,
+                cascade_args,
                 examples_multimodal_data=examples_multimodal_data,
                 examples_answers=examples_answers,
                 map_instruction=cascade_args.map_instruction,
@@ -699,7 +681,7 @@ class SemJoinDataframe:
                 other.index,
                 left_on,
                 right_on,
-                lotus.settings.lm,
+                model,
                 join_instruction,
                 examples_multimodal_data=examples_multimodal_data,
                 examples_answers=examples_answers,
