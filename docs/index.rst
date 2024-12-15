@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: Logo-scaled.png
+.. image:: logo_with_text.png
    :width: 300px
-   :height: 175px
+   :height: 170px
    :align: center
 
 LOTUS Makes LLM-Powerd Data Processing Fast and Easy
