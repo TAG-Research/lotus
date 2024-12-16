@@ -4,10 +4,10 @@ import pandas as pd
 from litellm import embedding
 from litellm.types.utils import EmbeddingResponse
 from numpy.typing import NDArray
+from tqdm import tqdm
 
 from lotus.dtype_extensions import convert_to_base_data
 from lotus.models.faiss_rm import FaissRM
-from tqdm import tqdm
 
 
 class LiteLLMRM(FaissRM):
