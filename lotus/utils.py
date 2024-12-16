@@ -11,7 +11,7 @@ from PIL import Image
 import lotus
 
 
-def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int], list[int], np.ndarray]:
+def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:
     """
     Returns a function that clusters a DataFrame by a column using kmeans.
 
@@ -28,7 +28,7 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         niter: int = 20,
         verbose: bool = False,
         method: str = "kmeans",
-    ) -> list[int], list[int], np.ndarray:
+    ) -> list[int]:
         
         
         import faiss
@@ -62,7 +62,8 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         
         # get the cluster centroids
         centroids = kmeans.centroids
-        return indices.flatten(), scores.flatten(), centroids
+        # return indices.flatten(), scores.flatten(), centroids
+        return indices.flatten()
 
     return ret
 

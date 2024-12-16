@@ -48,6 +48,6 @@ Example
 
 Required Parameters
 --------------------
-- **partition_fn** : The partitioning function, which returns a list[int, int], indicating a mapping of each row-id to a partition number.
+- **partition_fn** : The partitioning function, which returns a list[int], indicating the partition-id of each row.
 
 

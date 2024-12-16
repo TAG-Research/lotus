@@ -185,31 +185,9 @@ class SemAggDataframe:
             for name, group in grouped:
                 res = group.sem_agg(user_instruction, all_cols, suffix, None, progress_bar_desc=progress_bar_desc)
                 new_df = pd.concat([new_df, res])
-                # add results from res to grouped
-                # grouped[suffix] = pd.Series(res[suffix].values, index=group.index)
             return new_df
         
-        # groupby with parallel loop
-        if group_by:
-            grouped = self._obj.groupby(group_by)
-            new_df = pd.DataFrame()
-            res_dict = dict()
-    
-            with ThreadPoolExecutor(max_workers=64) as executor:
-                # Submit all groups to the executor
-                for name, group in grouped:
-                    res = executor.submit(group.sem_agg, user_instruction, all_cols, suffix, None, progress_bar_desc=progress_bar_desc)
-                    res_dict[name] = res
-
-            # Retrieve results and concatenate them into a new DataFrame
-            for name, res in res_dict.items():
-                result = res.result()
-                new_df = pd.concat([new_df, result])
-            
-            # for name, group in grouped:
-            #     res = group.sem_agg(user_instruction, all_cols, suffix, None, progress_bar_desc=progress_bar_desc)
-            #     new_df = pd.concat([new_df, res])                
-            # return new_df
+        
             
         # Sort df by partition_id if it exists
         if "_lotus_partition_id" in self._obj.columns:
