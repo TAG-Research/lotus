@@ -10,7 +10,7 @@ Overview
 ---------
 Semantic deduplication is a process designed to identify and eliminate semantically 
 redundant entries from datasets, focusing on meaning rather than exact textual matches. 
-sem_dedup can be implemented as a semantic self-join
+Entity de-duplication can be implemented as a semantic self-join, but we provide an additional utility function.
 
 Motivation
 -----------

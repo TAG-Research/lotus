@@ -7,17 +7,17 @@ sem_extract
 
 Overview
 ---------
-The Extract operator performs a natural language projection over an existing column. Particularly 
-extract projects each tuple to a list of sub-strings from the source text. This is useful 
-for applications, such as entity extraction or fact-checking, where finding snippets or verified quotes 
-may be preferable to synthesized answers.
+The sem_extract operator generates one or more columns from the input columns. 
+Each output columns is specified by a natural language projection.
+Optionally, you can also extract direct quotes from the source text to support each output. 
+
 
 Motivation
 -----------
-In many data processing tasks, the ability to pinpoint and extract specific information from unstructured 
-text is crucial. Traditional keyword-based methods often fail to accurately capture nuanced or context-dependent 
-information, leading to inefficiencies or incomplete results. The sem_extract operator addresses these limitations 
-by leveraging natural language understanding to perform precise, context-aware projections.
+Semantic extractions can be useful for generating structured schemas that provide a simplified view of the data from a column of unstructured documents.
+The quoting functionality can also be useful for tasks, such as entity extraction or fact-checking, where finding snippets or verified quotes 
+may be preferable to synthesized answers.
+
 
 Example
 --------

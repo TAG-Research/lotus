@@ -7,16 +7,14 @@ sem_partition_by
 
 Overview
 ---------
-The sem_partition_by operator in LOTUS enables semantic partitioning of data based on contextual similarities. 
-It divides a DataFrame into subsets, which can then be independently analyzed or aggregated.  This operator works 
-seamlessly with other LOTUS components, like sem_index for creating embeddings and sem_agg for performing 
-aggregations on clustered subsets, to build scalable and efficient workflows.
+The sem_partition_by utility in LOTUS exposes a mechanism for finer-grained control over how data is processed for operators, like sem_agg.
+This operator let's you assign a partition number to each row in a DataFrame. During semantic aggregation, LOTUS, will aggregate over each partition separately,
+before combining intermediate aggregations across partitions. Additionally, the order in which each partition aggregates is combined will follow the order of the partition numbers in increasing order.
+By default, LOTUS implements a hierarchical reduce strategy, assuming that all record belong to the same partition.
 
 Motivation
 ----------
-Real-world data often requires grouping based on meaning rather than exact matches, which traditional methods GROUP BY 
-cannot handle. The sem_partition_by operator solves this by clustering data semantically, allowing for 
-meaningful partitioning of natural language or context-dependent entries.
+Since LLMs are sensitive to the ordering of inputs, specifying an aggregation ordering using sem_partition_by can provide fine-grained control to achieve high quality results for tasks like summarization.
 
 
 Example
@@ -50,6 +48,6 @@ Example
 
 Required Parameters
 --------------------
-- **partition_fn** : The partitioning function.
+- **partition_fn** : The partitioning function, which returns a list[int, int], indicating a mapping of each row-id to a partition number.
 
 

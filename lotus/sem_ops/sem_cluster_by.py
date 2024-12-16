@@ -1,6 +1,7 @@
 from typing import Any
 
 import pandas as pd
+import numpy as np
 
 import lotus
 
@@ -22,9 +23,11 @@ class SemClusterByDataframe:
         self,
         col_name: str,
         ncentroids: int,
+        return_scores: bool = False,
+        return_centroids: bool = False,
         niter: int = 20,
         verbose: bool = False,
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | tuple[pd.DataFrame, np.ndarray]:
         """
         Perform semantic clustering on the DataFrame.
 
@@ -38,7 +41,13 @@ class SemClusterByDataframe:
             pd.DataFrame: The DataFrame with the cluster assignments.
         """
         cluster_fn = lotus.utils.cluster(col_name, ncentroids)
-        indices = cluster_fn(self._obj, niter, verbose)
+        indices, scores, centroids = cluster_fn(self._obj, niter, verbose)
 
         self._obj["cluster_id"] = pd.Series(indices, index=self._obj.index)
-        return self._obj
+        if return_scores:
+            self._obj["centroid_sim_score"] = pd.Series(scores, index=self._obj.index)
+        
+        if return_centroids:
+            return self._obj, centroids
+        else:
+            return self._obj

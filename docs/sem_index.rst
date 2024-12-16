@@ -7,14 +7,10 @@ sem_index
 
 Overview
 ---------
-The sem_index operator in LOTUS creates a semantic index for a given column in a DataFrame. 
-This index enables efficient retrieval and ranking of records based on semantic similarity, making 
-it easier to query and analyze large datasets with natural language or contextual search criteria. 
+The sem_index operator in LOTUS creates a semantic index over the specified column in the dataset.
+This index enables efficient retrieval and ranking of records based on semantic similarity. 
+The index will be generated with the configured retreival model stored locally in the specified directory.
 
-Motivation
------------
-Traditional search techniques struggle with context-dependent queries or subtle semantic nuances. 
-The sem_index operator addresses this by leveraging language models to create an index that supports semantic search
 
 Example
 ----------

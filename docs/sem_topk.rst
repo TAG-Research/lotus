@@ -13,12 +13,7 @@ The groupings are defined using standard equality matches over the group-by colu
 
 Motivation
 -----------
-Performing semantic top-𝐾 ranking is inherently challenging as it requires logical reasoning across 
-rows to determine the most contextually relevant entries. This involves processing large volumes of 
-data and capturing subtle relationships that traditional ranking approaches, such as numerical or 
-keyword-based methods, often miss. sem_topk overcomes these limitations by leveraging advanced language 
-models to evaluate semantic similarity, providing a robust and efficient solution for ranking based on 
-natural language queries.
+This operator is useful for re-ordering records based on complex, arbitrary natural language comparators.
 
 Example
 --------

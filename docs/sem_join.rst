@@ -8,12 +8,7 @@ sem_join
 
 Overview
 ----------
-The sem_join operator in LOTUS enables intelligent data merging by leveraging semantic understanding to match records from 
-two datasets based on a natural language query. sem_join uses language models to evaluate the contextual alignment between rows in the two datasets. 
-This makes it a powerful tool for integrating data where relationships are implied or semantically nuanced.
-
-Additionally, the operator supports cascade-based optimization to reduce computational overhead by using lightweight 
-models for simpler cases while reserving larger models for more complex evaluations.
+The sem_join operator in joins to datasets according to the langex, which specifies a predicate in natural language. 
 
 Motivation
 -----------
@@ -69,7 +64,7 @@ Output:
 
 
 
-Join Cascade Example
+Example of Join with Approximation
 ----------------------
 .. code-block:: python
 

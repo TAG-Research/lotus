@@ -11,7 +11,7 @@ from PIL import Image
 import lotus
 
 
-def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int]]:
+def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool], list[int], list[int], np.ndarray]:
     """
     Returns a function that clusters a DataFrame by a column using kmeans.
 
@@ -27,7 +27,10 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         df: pd.DataFrame,
         niter: int = 20,
         verbose: bool = False,
-    ) -> list[int]:
+        method: str = "kmeans",
+    ) -> list[int], list[int], np.ndarray:
+        
+        
         import faiss
 
         """Cluster by column, and return a series in the dataframe with cluster-ids"""
@@ -55,8 +58,11 @@ def cluster(col_name: str, ncentroids: int) -> Callable[[pd.DataFrame, int, bool
         kmeans.train(vec_set)
 
         # get nearest centroid to each vector
-        _, indices = kmeans.index.search(vec_set, 1)
-        return list(map(int, indices.flatten().tolist()))
+        scores, indices = kmeans.index.search(vec_set, 1)
+        
+        # get the cluster centroids
+        centroids = kmeans.centroids
+        return indices.flatten(), scores.flatten(), centroids
 
     return ret
 

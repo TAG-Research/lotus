@@ -1,9 +1,13 @@
-Approximation Cascades
+Efficient Processing with Approximations
 =======================
 
 Overview
 ---------------
 
+LOTUS serves approximations for semantic operators to let you balance speed and accuracy. 
+You can set accurayc targets according to the requirements of your application, and LOTUS
+will use approximations to optimize the implementation for lower computaitonal overhead, while providing probabilistic accuracy guarantees.
+One core technique for providing these approximations is the use of cascades.
 Cascades provide a way to optimize certian semantic operators (Join Cascade and Filter Cascade) by blending 
 a less costly but potentially inaccurate proxy model with a high-quality oracle model. The method seeks to achieve
 preset precision and recall targets with a given probability while controlling computational overhead.

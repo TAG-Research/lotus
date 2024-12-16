@@ -7,13 +7,7 @@ sem_filter
 
 Overview
 ---------
-The LOTUS API supports sem_filter, which take a langex predicate. 
-Sem_filter uses semantic understanding to evaluate rows against a natural language condition. 
-This enables more intuitive, context-aware filtering for complex datasets, making it ideal for tasks such as extracting subsets of 
-data based on nuanced criteria or user-defined instructions.
-
-Additionally, the operator supports advanced functionality like cascade filtering, where helper models process 
-easier cases, and large models are reserved for complex queries, ensuring efficient and scalable operation.
+sem_filter, which take a langex predicate, and returns data records that pass the predicate. 
 
 Motivation
 -----------
@@ -61,7 +55,7 @@ Output:
 
 
 
-Filter Cascade Example
+Example of Filter with Approximation
 -----------------------
 .. code-block:: python
 
