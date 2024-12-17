@@ -1,10 +1,6 @@
 sem_search
 ==================
 
-.. automodule:: lotus.sem_ops.sem_search
-    :members:
-    :show-inheritance:
-
 Overview
 ----------
 Semantic Search assumes a semantic similarity-based ranking criteria relative to a

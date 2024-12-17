@@ -1,13 +1,11 @@
 ReRanker Models
 ==================
 
+Overview
+----------
 Any CrossEncoder from SentenceTransfomers can be used with the CrossEncoderReranker class, by
 passing the model name to the model parameter. The LM class and Retrieval model class can also be passed
 to the model parameter
-
-.. automodule:: lotus.models.reranker
-    :members:
-    :show-inheritance:
 
 Example
 --------

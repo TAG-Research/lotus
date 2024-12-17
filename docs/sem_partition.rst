@@ -1,10 +1,6 @@
 sem_partition_by
 ====================
 
-.. automodule:: lotus.sem_ops.sem_partition_by
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The sem_partition_by operator in LOTUS enables semantic partitioning of data based on contextual similarities. 

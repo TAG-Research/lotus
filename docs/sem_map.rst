@@ -1,10 +1,6 @@
 sem_map
 =================
 
-.. automodule:: lotus.sem_ops.sem_map
-    :members:
-    :show-inheritance:
-
 Overview
 ----------
 Similar to the Extract operator, sem_map projects to an arbitrary text attribute rather 

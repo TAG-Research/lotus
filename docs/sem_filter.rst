@@ -1,10 +1,6 @@
 sem_filter
 =================
 
-.. automodule:: lotus.sem_ops.sem_filter
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The LOTUS API supports sem_filter, which take a langex predicate. 

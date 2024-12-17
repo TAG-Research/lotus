@@ -1,11 +1,6 @@
 sem_join
 =================
 
-.. automodule:: lotus.sem_ops.sem_join
-    :members:
-    :show-inheritance:
-
-
 Overview
 ----------
 The sem_join operator in LOTUS enables intelligent data merging by leveraging semantic understanding to match records from 

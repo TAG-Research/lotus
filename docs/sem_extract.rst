@@ -1,10 +1,6 @@
 sem_extract
 ==================
 
-.. automodule:: lotus.sem_ops.sem_extract
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The Extract operator performs a natural language projection over an existing column. Particularly 

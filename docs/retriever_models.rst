@@ -1,13 +1,11 @@
 Retrieval Models
 ==================
 
+Overview
+-----------
 Any model from the SentenceTransformers can be used with the SentenceTransformerssRM class, by passing
 the model name to the model parameter. Additionally, LiteLLM can be used with any model supported by
 LiteLLM
-
-.. automodule:: lotus.models.rm
-    :members:
-    :show-inheritance:
 
 Example
 ----------
