@@ -82,6 +82,23 @@ class ImageArray(ExtensionArray):
         new_array._cached_images = self._cached_images.copy()
         return new_array
 
+    def _concat_same_type(cls, to_concat: Sequence["ImageArray"]) -> "ImageArray":
+        """
+        Concatenate multiple ImageArray instances into a single one.
+        
+        Args:
+            to_concat (Sequence[ImageArray]): A sequence of ImageArray instances to concatenate.
+        
+        Returns:
+            ImageArray: A new ImageArray containing all elements from the input arrays.
+        """
+        # create list of all data
+        combined_data = np.concatenate([arr._data for arr in to_concat])
+        return cls._from_sequence(combined_data)
+
+
+
+
     @classmethod
     def _from_sequence(cls, scalars, dtype=None, copy=False):
         if copy:

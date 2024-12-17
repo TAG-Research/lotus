@@ -34,6 +34,11 @@ class SemDedupByDataframe:
         Returns:
             pd.DataFrame: The DataFrame with duplicates removed.
         """
+        if lotus.settings.rm is None:
+            raise ValueError(
+                "The retrieval model must be an instance of RM. Please configure a valid retrieval model using lotus.settings.configure()"
+            )
+
         joined_df = self._obj.sem_sim_join(self._obj, col_name, col_name, len(self._obj), lsuffix="_l", rsuffix="_r")
         dedup_df = joined_df[joined_df["_scores"] > threshold]
         dedup_df = dedup_df[dedup_df[f"{col_name}_l"] != dedup_df[f"{col_name}_r"]]

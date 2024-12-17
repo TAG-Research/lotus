@@ -95,6 +95,10 @@ class SemExtractDataFrame:
         Returns:
             pd.DataFrame: The dataframe with the new mapped columns.
         """
+        if lotus.settings.lm is None:
+            raise ValueError(
+                "The language model must be an instance of LM. Please configure a valid language model using lotus.settings.configure()"
+            )
 
         # check that column exists
         for column in input_cols:
