@@ -3,15 +3,10 @@ sem_map
 
 Overview
 ----------
-Similar to the Extract operator, sem_map projects to an arbitrary text attribute rather 
-than each tuple to a list of sub-strings.
-
+This operato performs a semantic projection over an input column. The langex parameter specifies this projection in natural language.
 Motivation
 -----------
-Traditional data mapping methods often rely on rigid, predefined rules or exact string matches, 
-which limits their ability to handle nuanced or context-sensitive transformations. The sem_map operator 
-leverages language models to perform context-aware projections, making it a powerful tool for generating 
-insights, augmenting data, and enabling intelligent transformations.
+The sem_map operator is useful for performing a row-wise operations over the data.
 
 Example
 ----------

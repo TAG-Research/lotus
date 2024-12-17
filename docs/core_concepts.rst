@@ -1,12 +1,12 @@
 Core Concepts
 ==================
 
-LOTUS' implements the semantic operator programming model. Semantic operators as declarative transformations on one or more
+LOTUS' implements the semantic operator programming model. Semantic operators are declarative transformations over one or more
 datasets, parameterized by a natural langauge expression (*langex*) that can be implemnted by a variety of AI-based algorithms.
-Semantic operators seamlessly extend the relational model, operating over tables that may contain traditional structured data
-as well as unstructured fields, such as free-form text. These composable, modular langaiug-based operaters allow you to write 
-AI-based piplines with high-level logic, leaving the rest of the work to the query engine! Each operator can be implmented and 
-optimized in multiple ways, opening a rich space for execution plans, similar to relational operators. Here is a quick example:
+Semantic operators seamlessly extend the relational model, operating over datasets that may contain traditional structured data
+as well as unstructured fields, such as free-form text or images. Because semantic operators are composable, modular and declarative, they allow you to write 
+AI-based piplines with intuitive, high-level logic, leaving the rest of the work to the query engine! Each operator can be implmented and 
+optimized in multiple ways, opening a rich space for execution plans, similar to relational operators. Here is a quick example of semantic operators in action:
 
 .. code-block:: python
 
@@ -15,29 +15,27 @@ optimized in multiple ways, opening a rich space for execution plans, similar to
 
 
 With LOTUS, applications can be built by chaining togethor different operators. Much like relational operators can be used to 
-transform tables in SQL, LOTUS operators can be use to semantically transform Pandas DataFrames. Here are some key Operators:
+transform tables in SQL, LOTUS operators can be use to semantically transform Pandas DataFrames. 
+Here are some key semantic operators:
+
 
 +--------------+-----------------------------------------------------+
 | Operator     | Description                                         |
 +==============+=====================================================+
-| Sem_Map      | Map each row of the DataFrame                       |
+| sem_map      |  Map each record using a natural language projection|                
 +--------------+-----------------------------------------------------+
-| Sem_Extract  | Extracts attributes and values                      |
+| sem_extract  | Extract one or more attributes from each row        |
 +--------------+-----------------------------------------------------+
-| Sem_Filter   | Keep rows that match a predicate                    |
+| sem_filter   | Keep records that match the natural language predicate |                  
 +--------------+-----------------------------------------------------+
-| Sem_Agg      | Aggregate information across all rows               |
+| sem_agg      | Aggregate across all records (e.g. for summarization)              
 +--------------+-----------------------------------------------------+
-| Sem_TopK     | Order the DataFrame by some criteria                |
+| sem_topk     | Order the records by some natural langauge sorting criteria                 |
 +--------------+-----------------------------------------------------+
-| Sem_Join     | Join two DataFrames based on a predicate            |
+| sem_join     | Join two datasets based on a natural language predicate       |
 +--------------+-----------------------------------------------------+
-| Sem_DeDup    | Deduplicate records based on semantic similarity    |
+| sem_sim_join | Join two DataFrames based on semantic similarity             |
 +--------------+-----------------------------------------------------+
-| Sem_Search   | Search the DataFrame for relevant rows              |
-+--------------+-----------------------------------------------------+
-| Sem_Sim_Join | Join two DataFrames based on Similarity             |
-+--------------+-----------------------------------------------------+
-| Sem_Cluster  | Clustering on the DataFrame.                        |
+| sem_search   | Perform semantic search the over a text column                |
 +--------------+-----------------------------------------------------+
 

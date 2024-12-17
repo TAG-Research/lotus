@@ -91,4 +91,4 @@ Additionally, let's provide some examples to the model that can be used for demo
         Respond with just the topic name and nothing else.", examples=examples_df, suffix="Next Topics"
     )
 
-Now you've seen how to use LOTUS to build LLM applications in a couple steps!
+Now you've seen how to use LOTUS to implement LLM-powered transformations in a couple of steps using semantic operators in LOTUS!

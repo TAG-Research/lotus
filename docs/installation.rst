@@ -1,7 +1,7 @@
 Installation
 ============
 
-Lotus can be installed as a Python library through pip.
+LOTUS can be installed as a Python library through pip.
 
 Requirements
 ------------
@@ -12,7 +12,7 @@ Requirements
 Install with pip
 ----------------
 
-You can install Lotus using pip:
+You can install LOTUS using pip:
 
 .. code-block:: console
 
@@ -20,7 +20,7 @@ You can install Lotus using pip:
     $ conda activate lotus
     $ pip install lotus-ai
 
-After you must install Faiss via conda:
+If you are running on mac, please install Faiss via conda:
 
 .. code-block:: console
 

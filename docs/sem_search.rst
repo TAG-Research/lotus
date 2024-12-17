@@ -3,17 +3,14 @@ sem_search
 
 Overview
 ----------
-Semantic Search assumes a semantic similarity-based ranking criteria relative to a
-natural language query. LOTUS also exposes advanced relevancebased re-ranking functionality for search, 
+Semantic search performs similarity-based search over an indexed column. LOTUS also exposes re-ranking functionality for search, 
 allowing users to specify the n_rerank parameter during the semantic search. The semantic
 search in this case will first find the top-𝐾 most relevant documents and then re-rank 
 the top-𝐾 found documents to return the top n_rerank.
 
 Motivation
 ------------
-Traditional search relies on exact or partial matches, it often fails to capture nuanced relationships 
-and context. The sem_search operator in LOTUS bridges this gap by utilizing advanced language models to 
-perform context-aware retrieval and ranking.
+The sem_search operator is useful for fast, lightweight filtering over your data.
 
 Example
 -----------

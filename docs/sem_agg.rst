@@ -3,16 +3,13 @@ sem_agg
 
 Overview
 ---------
-The Aggregation operator performs an aggregation over the input relation, with
+This operator performs an aggregation over the input relation, with
 a langex signature that provides a commutative and associative aggregation function
 
 Motivation
 -----------
-Performing semantic aggregation is challenging due to the need for logical reasoning across rows, 
-managing large datasets, and addressing context length limitations that can degrade result quality. 
-Traditional methods often struggle with these complexities, requiring efficient orchestration of language models. 
-The sem_agg operator in LOTUS abstracts these challenges, leveraging hierarchical aggregation patterns to ensure 
-scalable, high-quality results while simplifying the user experience.
+Semantic aggregations are useful for tasks, such as summarization and reasoning across multiple rows of the dataset. 
+
 
 
 Examples
@@ -88,12 +85,12 @@ Example with group-by
 
     # Example DataFrame
     data = {
-        "Category": ["Tech", "Env", "Tech", "Space"],
+        "Category": ["Tech", "Env", "Tech", "Env"],
         "ArticleContent": [
             "Quantum computing shows promise in solving complex problems.",
             "Renewable energy helps mitigate climate change.",
             "AI improves efficiency but raises ethical concerns.",
-            "Deep space exploration focuses on interstellar missions."
+            "New holes in the ozone layer have been found."
         ]
     }
 

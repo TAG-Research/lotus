@@ -3,17 +3,13 @@ sem_sim_join
 
 Overview
 ---------
-The Similairty Join matches tuples according to their semantic similarity, rather than an arbitrary 
+The similairty join matches tuples from the right and left table according to their semantic similarity, rather than an arbitrary 
 natural-language predicate. Akin to an equi-join in standard relational algebra, the semantic similarity 
-join is a specialized semantic join, which indicates additional optimization opportunities to the query engine
+join is a specialized semantic join, can be heavily optimized using the semantic index.
 
 Motivation
 -----------
-Traditional joins in relational databases rely on exact or syntactic matching of key attributes, 
-which often falls short in scenarios where data is semantically related but expressed in varied forms. 
-The sem_sim_join operator addresses this limitation by enabling joins based on semantic similarity 
-rather than strict equivalence, leveraging advanced language models to capture contextual relationships 
-between data elements.
+This operator is useful for fast and lightweight fuzzy matching of records in two tables based on their semantic similarity.
 
 Example
 ---------
