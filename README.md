@@ -26,6 +26,20 @@ conda activate lotus
 pip install lotus-ai
 ```
 
+## Running on Mac
+If you are running on mac, please install Faiss via conda:
+
+### CPU-only version
+```
+conda install -c pytorch faiss-cpu=1.8.0
+```
+
+### GPU(+CPU) version
+```
+conda install -c pytorch -c nvidia faiss-gpu=1.8.0
+```
+For more details, see [Installing FAISS via Conda](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md#installing-faiss-via-conda).
+
 # Quickstart
 If you're already familiar with Pandas, getting started will be a breeze! Below we provide a simple example program using the semantic join operator. The join, like many semantic operators, are specified by **langex** (natural language expressions), which the programmer uses to specify the operation. Each langex is parameterized by one or more table columns, denoted in brackets. The join's langex serves as a predicate and is parameterized by a right and left join key.
 ```python
