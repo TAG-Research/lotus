@@ -283,8 +283,6 @@ class SemFilterDataframe:
                 cot_reasoning=cot_reasoning,
                 strategy=strategy,
             )
-            print(f"pos_cascade_threshold: {pos_cascade_threshold}")
-            print(f"neg_cascade_threshold: {neg_cascade_threshold}")
 
             stats["pos_cascade_threshold"] = pos_cascade_threshold
             stats["neg_cascade_threshold"] = neg_cascade_threshold
@@ -308,8 +306,6 @@ class SemFilterDataframe:
                         if true_prob <= neg_cascade_threshold
                         else proxy_outputs[idx_i]
                     )
-
-                    print(self._obj.iloc[idx_i], proxy_outputs[idx_i])
 
             lotus.logger.info(f"Num routed to smaller model: {len(high_conf_idxs)}")
             stats["num_routed_to_helper_model"] = len(high_conf_idxs)
