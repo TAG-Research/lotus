@@ -1,10 +1,6 @@
 sem_cluster_by
 =====================
 
-.. automodule:: lotus.sem_ops.sem_cluster_by
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The cluster operator creates groups over the input dataframe according

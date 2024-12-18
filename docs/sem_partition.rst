@@ -1,10 +1,6 @@
 sem_partition_by
 ====================
 
-.. automodule:: lotus.sem_ops.sem_partition_by
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The sem_partition_by utility in LOTUS exposes a mechanism for finer-grained control over how data is processed for operators, like sem_agg.

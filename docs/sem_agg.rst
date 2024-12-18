@@ -1,12 +1,6 @@
 sem_agg
 ======================
 
-.. automodule:: lotus.sem_ops.sem_agg
-    :members:
-    :show-inheritance:
-
-
-
 Overview
 ---------
 This operator performs an aggregation over the input relation, with

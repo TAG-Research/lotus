@@ -1,12 +1,10 @@
 LLM
 =======
 
+Overview
+---------
 The LM class is built on top of the LiteLLM library, and supports any model that is supported by LiteLLM.
 Example models include but not limited to: OpenAI, Ollama, vLLM
-
-.. automodule:: lotus.models.lm
-    :members:
-    :show-inheritance:
 
 Example
 ---------

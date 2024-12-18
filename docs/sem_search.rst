@@ -1,10 +1,6 @@
 sem_search
 ==================
 
-.. automodule:: lotus.sem_ops.sem_search
-    :members:
-    :show-inheritance:
-
 Overview
 ----------
 Semantic search performs similarity-based search over an indexed column. LOTUS also exposes re-ranking functionality for search, 

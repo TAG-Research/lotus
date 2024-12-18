@@ -1,11 +1,6 @@
 sem_join
 =================
 
-.. automodule:: lotus.sem_ops.sem_join
-    :members:
-    :show-inheritance:
-
-
 Overview
 ----------
 The sem_join operator in joins to datasets according to the langex, which specifies a predicate in natural language. 

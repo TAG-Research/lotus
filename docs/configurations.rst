@@ -1,6 +1,8 @@
 Setting Configurations
 =======================
 
+Overview
+---------
 The Settings module is a central configuration system for managing application-wide settings. 
 It ensures consistent and thread-safe access to configurations, allowing settings to be dynamically 
 adjusted and temporarily overridden within specific contexts. In most examples seen, we have 

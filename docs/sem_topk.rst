@@ -1,10 +1,6 @@
 sem_topk
 ================
 
-.. automodule:: lotus.sem_ops.sem_topk
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 LOTUS supports a semantic top-k, which takes the langex ranking criteria. Programmers can optionally 

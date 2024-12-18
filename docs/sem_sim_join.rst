@@ -1,10 +1,6 @@
 sem_sim_join
 =========================
 
-.. automodule:: lotus.sem_ops.sem_sim_join
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The similairty join matches tuples from the right and left table according to their semantic similarity, rather than an arbitrary 

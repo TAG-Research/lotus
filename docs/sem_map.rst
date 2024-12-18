@@ -1,10 +1,6 @@
 sem_map
 =================
 
-.. automodule:: lotus.sem_ops.sem_map
-    :members:
-    :show-inheritance:
-
 Overview
 ----------
 This operato performs a semantic projection over an input column. The langex parameter specifies this projection in natural language.

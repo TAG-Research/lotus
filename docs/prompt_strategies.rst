@@ -1,6 +1,8 @@
 Prompt Strategies
 ===================
 
+Overview
+----------
 In addition to calling the semantic operators, advanced prompt stratigies can be used to potentially
 get or improve the desired output. Two Prompt Strategies that can be used are Chain of Thought (CoT) and 
 Demonstrations.

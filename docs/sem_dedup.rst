@@ -1,11 +1,6 @@
 sem_dedup
 ========================
 
-.. automodule:: lotus.sem_ops.sem_dedup
-    :members:
-    :show-inheritance:
-
-
 Overview
 ---------
 Semantic deduplication is a process designed to identify and eliminate semantically 

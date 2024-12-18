@@ -1,10 +1,6 @@
 sem_filter
 =================
 
-.. automodule:: lotus.sem_ops.sem_filter
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 sem_filter, which take a langex predicate, and returns data records that pass the predicate. 

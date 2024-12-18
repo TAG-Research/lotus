@@ -1,10 +1,6 @@
 sem_index
 =================
 
-.. automodule:: lotus.sem_ops.load_sem_index
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The sem_index operator in LOTUS creates a semantic index over the specified column in the dataset.

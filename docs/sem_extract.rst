@@ -1,10 +1,6 @@
 sem_extract
 ==================
 
-.. automodule:: lotus.sem_ops.sem_extract
-    :members:
-    :show-inheritance:
-
 Overview
 ---------
 The sem_extract operator generates one or more columns from the input columns. 
