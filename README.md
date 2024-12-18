@@ -82,14 +82,14 @@ LOTUS offers a number of semantic operators in a Pandas-like API, some of which 
 
 | Operator   | Description                                     |
 |------------|-------------------------------------------------|
-| sem_map    | Map each record using a natural language projection                   |
-| sem_filter | Keep records that match the natural language predicate                |
-| sem_agg    | Performs a natural language aggregation across all records (e.g. for summarization)           |
-| sem_topk   | Order the records by some natural langauge sorting criteria            |
-| sem_join   | Join two datasets based on a natural language predicate        |
-| sem_dedup  | Deduplicate records based on semantic similarity           |
-| sem_index  | Create a semantic similarity index over a text column           |
-| sem_search | Perform top-k search the over a text column          |
+| sem_map      |  Map each record using a natural language projection| 
+| sem_filter   | Keep records that match the natural language predicate |  
+| sem_extract  | Extract one or more attributes from each row        |
+| sem_agg      | Aggregate across all records (e.g. for summarization)             |
+| sem_topk     | Order the records by some natural langauge sorting criteria                 |
+| sem_join     | Join two datasets based on a natural language predicate       |
+| sem_sim_join | Join two DataFrames based on semantic similarity             |
+| sem_search   | Perform semantic search the over a text column                |
 
 
 # Supported Models
