@@ -4,6 +4,7 @@ sem_map
 Overview
 ----------
 This operato performs a semantic projection over an input column. The langex parameter specifies this projection in natural language.
+
 Motivation
 -----------
 The sem_map operator is useful for performing a row-wise operations over the data.
