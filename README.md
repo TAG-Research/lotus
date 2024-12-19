@@ -21,7 +21,7 @@ LOTUS (**L**LMs **O**ver **T**ables of **U**nstructured and **S**tructured Data)
 
 # Installation
 ```
-conda create -n lotus python=3.10 -y
+conda env create -f environment.yml
 conda activate lotus
 pip install lotus-ai
 ```
