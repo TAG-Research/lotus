@@ -19,6 +19,8 @@ LOTUS makes LLM-powered data processing fast and easy.
 
 LOTUS (**L**LMs **O**ver **T**ables of **U**nstructured and **S**tructured Data) provides a declarative programming model and an optimized query engine for serving powerful reasoning-based query pipelines over structured and unstructured data! We provide a simple and intuitive Pandas-like API, that implements **semantic operators**. 
 
+For trouble-shooting or feature requests, please raise an issue and we'll get to it promptly. To share feedback and applications you're working on, you can send us a message on our [community slack](https://join.slack.com/t/lotus-fnm8919/shared_invite/zt-2tnq6948j-juGuSIR0__fsh~kUmZ6TJw), or send an email (lianapat@stanford.edu).
+
 # Installation
 ```
 conda create -n lotus python=3.10 -y
