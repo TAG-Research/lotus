@@ -38,6 +38,9 @@ docs = [
     "sphinx_rtd_theme",
 ]
 
+[project.scripts]
+lotus-agent = "lotus.agent.main:main"
+
 [tool.ruff]
 line-length = 120
 indent-width = 4
